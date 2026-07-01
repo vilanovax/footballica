@@ -5,6 +5,14 @@ import { AppModule } from './app.module';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
+  // CORS — پنلِ ادمین (Next.js، مبدأ دیگر) از مرورگر به API می‌زند.
+  // در dev همه‌چیز مجاز؛ در prod فقط مبدأهای CORS_ORIGINS (کاما-جدا).
+  const origins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim());
+  app.enableCors({
+    origin: origins && origins.length > 0 ? origins : true,
+    credentials: true,
+  });
+
   // اعتبارسنجی سراسری ورودی‌ها (DTO + class-validator)
   app.useGlobalPipes(
     new ValidationPipe({
