@@ -21,6 +21,8 @@ export interface PublicUser {
   level: number;
   xp: number;
   coins: number;
+  fans: number;
+  cards: number;
   lives: number;
 }
 
@@ -115,6 +117,8 @@ export function toPublicUser(u: User): PublicUser {
     level: u.level,
     xp: u.xp,
     coins: u.coins,
+    fans: u.fans,
+    cards: u.cards,
     lives: u.lives,
   };
 }

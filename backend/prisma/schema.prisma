@@ -32,17 +32,24 @@ model User {
   avatar    String?
   level     Int      @default(1)
   xp        Int      @default(0)
-  coins     Int      @default(0)
-  lives     Int      @default(5)
+
+  // ---- اقتصاد (سه ارز + جان) ----
+  coins     Int      @default(0)   // 🪙 ارزِ عمومی
+  fans      Int      @default(0)   // 🎽 هوادار/شهرت (از بردِ دوئل)
+  cards     Int      @default(0)   // ⚡ کارت/جوکر (کمیاب)
+  lives     Int      @default(5)   // ❤️
+  lastLifeRegenAt DateTime @default(now()) // مبنای محاسبهٔ بازیابیِ جان
+
   createdAt DateTime @default(now())
 
   // ---- ربات (فقط سمتِ سرور؛ به کلاینت لو نمی‌رود) ----
   isBot         Boolean        @default(false)
   botDifficulty BotDifficulty?
 
-  matchesAsPlayer MatchPlayer[]
-  answers         Answer[]
-  duelRounds      DuelRound[]
+  matchesAsPlayer   MatchPlayer[]
+  answers           Answer[]
+  duelRounds        DuelRound[]
+  walletTransactions WalletTransaction[]
 
   @@index([isBot])
   @@map("users")
@@ -209,6 +216,29 @@ model DuelRound {
 
   @@unique([matchId, userId, order])
   @@map("duel_rounds")
+}
+
+// ---------- اقتصاد ----------
+enum Currency {
+  COINS
+  FANS
+  CARDS
+  LIVES
+}
+
+// دفترِ تراکنش‌های کیف‌پول — برای ردیابی و رفعِ اختلاف (audit).
+// amount مثبت = کسب، منفی = خرج.
+model WalletTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currency  Currency
+  amount    Int
+  reason    String // مثلاً: duel_win, quick_finish, refill_lives
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("wallet_transactions")
 }
 
 // لیدربورد در Redis Sorted Set نگه‌داری می‌شود؛ این جدول فقط

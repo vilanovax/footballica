@@ -11,6 +11,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { REDIS } from '../redis/redis.module';
 import { BotsService } from '../bots/bots.service';
 import { BOT_DIFFICULTY, DUEL_BOT_CONFIG } from '../bots/bot.constants';
+import { EconomyService } from '../economy/economy.service';
+import { ECONOMY } from '../economy/economy.constants';
 
 const DUEL_DURATION_SEC = 15;
 const BASE_POINTS = 100;
@@ -37,6 +39,7 @@ export class DuelService {
     private readonly prisma: PrismaService,
     @Inject(REDIS) private readonly redis: Redis,
     private readonly bots: BotsService,
+    private readonly economy: EconomyService,
   ) {}
 
   // ---------- مچ‌میکینگِ ساده (async) ----------
@@ -73,6 +76,8 @@ export class DuelService {
     });
 
     if (open) {
+      // هر بازی یک جان می‌خورد (طبق ECONOMY). اگر جان نباشد، خطا.
+      await this.economy.spendLife(userId, 'duel_start');
       // بپیوند و فعال کن
       await this.prisma.$transaction([
         this.prisma.matchPlayer.create({
@@ -86,7 +91,9 @@ export class DuelService {
       return { matchId: open.id, status: 'matched', totalRounds: open.totalRounds };
     }
 
-    // در غیر این صورت، دوئلِ جدیدِ منتظر بساز + مجموعهٔ سؤالِ ثابت
+    // دوئلِ جدید = یک بازی → خرجِ جان
+    await this.economy.spendLife(userId, 'duel_start');
+    // دوئلِ جدیدِ منتظر بساز + مجموعهٔ سؤالِ ثابت
     const questionIds = await this.pickQuestionIds(totalRounds);
     const match = await this.prisma.match.create({
       data: {
@@ -360,7 +367,7 @@ export class DuelService {
   private async maybeFinalize(matchId: string): Promise<boolean> {
     const match = await this.prisma.match.findUniqueOrThrow({
       where: { id: matchId },
-      include: { players: true },
+      include: { players: { include: { user: true } } },
     });
     if (match.status === 'FINISHED') return true;
     if (match.players.length < 2) return false;
@@ -389,7 +396,34 @@ export class DuelService {
         data: { isWinner: bWins ? true : aWins ? false : null },
       }),
     ]);
+
+    // جایزهٔ اقتصاد فقط به بازیکنانِ انسانی (نه ربات)
+    await this.awardDuelReward(matchId, a.userId, a.user.isBot, aWins, !aWins && !bWins);
+    await this.awardDuelReward(matchId, b.userId, b.user.isBot, bWins, !aWins && !bWins);
     return true;
+  }
+
+  // 🎽 هوادار (برد/باخت) + 🪙 سکه (به‌ازای هر جوابِ درست) به بازیکنِ انسانی.
+  private async awardDuelReward(
+    matchId: string,
+    userId: string,
+    isBot: boolean,
+    won: boolean,
+    draw: boolean,
+  ): Promise<void> {
+    if (isBot) return;
+    const correct = await this.prisma.duelRound.count({
+      where: { matchId, userId, isCorrect: true },
+    });
+    const reason = won ? 'duel_win' : draw ? 'duel_draw' : 'duel_loss';
+    await this.economy.award(
+      userId,
+      {
+        coins: correct * ECONOMY.coins.perCorrect,
+        fans: won ? ECONOMY.fans.winDuel : ECONOMY.fans.loseDuel,
+      },
+      reason,
+    );
   }
 
   // بازیکن می‌تواند لِگِ خودش را حتی در حالتِ WAITING (پیش از پیوستنِ حریف)

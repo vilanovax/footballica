@@ -3,9 +3,12 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
+import type { User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchEngineService, RoundView } from './match-engine.service';
 import { CreateMatchDto } from './dto/create-match.dto';
+import { EconomyService } from '../economy/economy.service';
+import { ECONOMY } from '../economy/economy.constants';
 
 export interface CreateMatchResult {
   matchId: string;
@@ -26,11 +29,20 @@ export class MatchService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly engine: MatchEngineService,
+    private readonly economy: EconomyService,
   ) {}
 
   // ---------- ساخت مَچ تک‌نفره + شروع راند اول ----------
   async createMatch(dto: CreateMatchDto): Promise<CreateMatchResult> {
     const userId = await this.ensureUser(dto.userId);
+
+    // خرجِ جان فقط برای کاربرانِ واقعی (مهمان/ربات معاف‌اند تا فاز۰ نشکند)
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    if (isRealUser(user)) {
+      await this.economy.spendLife(userId, 'quick_start');
+    }
 
     const match = await this.prisma.match.create({
       data: {
@@ -95,6 +107,21 @@ export class MatchService {
       }),
     ]);
 
+    // 🪙 سکه برای کاربرِ واقعی: پاداشِ اتمام + به‌ازای هر جوابِ درست
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    if (isRealUser(user)) {
+      const correct = await this.prisma.answer.count({
+        where: { userId, isCorrect: true, round: { matchId } },
+      });
+      await this.economy.award(
+        userId,
+        { coins: ECONOMY.coins.winQuick + correct * ECONOMY.coins.perCorrect },
+        'quick_finish',
+      );
+    }
+
     return {
       finished: true,
       summary: {
@@ -125,4 +152,13 @@ export class MatchService {
     });
     return guest.id;
   }
+}
+
+/** کاربرِ واقعی = نه ربات و نه مهمان (اقتصاد فقط برای این‌ها اعمال می‌شود). */
+function isRealUser(user: User): boolean {
+  return (
+    !user.isBot &&
+    !user.phone.startsWith('guest_') &&
+    !user.phone.startsWith('bot:')
+  );
 }

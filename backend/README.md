@@ -34,8 +34,10 @@ npm run start:dev             # سرور روی http://localhost:3000
 - **ادمین (هدرِ `x-admin-key`):** `/admin/questions*` (CMS سؤال) · `/admin/bots*` (ربات‌ها)
 - **دوئل async (پشتِ JWT):** `/duels/find` · `/duels/:id/next-round` ·
   `/duels/rounds/:id/answer` · `GET /duels/:id` · `GET /duels`
+- **اقتصاد (پشتِ JWT):** `GET /economy/wallet` · `POST /economy/refill-lives`
 
-> جزئیاتِ دوئل و سیستمِ ربات در **`../docs/DUEL-AND-BOTS.md`**.
+> جزئیات: **`../docs/DUEL-AND-BOTS.md`** (دوئل و ربات) و
+> **`../docs/ECONOMY-IMPLEMENTATION.md`** (اقتصاد).
 
 نمونه:
 
