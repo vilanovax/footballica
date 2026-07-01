@@ -24,6 +24,7 @@ import { useMatch } from '../src/store/useMatch';
 import { useDuel } from '../src/store/useDuel';
 import { listDuels, type DuelSummary } from '../src/api/duel';
 import { getWallet, refillLives } from '../src/api/economy';
+import { getStreak, claimStreak } from '../src/api/progress';
 import type { GameMode } from '../src/api/match';
 
 export default function HomeScreen() {
@@ -62,6 +63,22 @@ export default function HomeScreen() {
       void queryClient.invalidateQueries({ queryKey: ['wallet', userId] });
     } catch {
       // اگر سکه کم بود، سرور خطا می‌دهد؛ فعلاً بی‌صدا
+    }
+  };
+
+  const streak = useQuery({
+    queryKey: ['streak', userId],
+    queryFn: getStreak,
+    enabled: isAuthed,
+  });
+
+  const onClaimStreak = async () => {
+    try {
+      await claimStreak();
+      void queryClient.invalidateQueries({ queryKey: ['streak', userId] });
+      void queryClient.invalidateQueries({ queryKey: ['wallet', userId] });
+    } catch {
+      // قبلاً امروز گرفته → بی‌صدا
     }
   };
 
@@ -142,12 +159,26 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* کارت استریک */}
+      {/* کارت استریک (دادهٔ واقعی) */}
       <View style={styles.streak}>
         <Text style={styles.fire}>🔥</Text>
         <Text style={styles.streakTxt}>
-          {toFa(4)} روز پشت‌سرهم! امروز هم بازی کن تا نشکند.
+          {isAuthed && streak.data
+            ? streak.data.current > 0
+              ? `${toFa(streak.data.current)} روز پشت‌سرهم!`
+              : 'امروز اولین روزِ استریکت را شروع کن.'
+            : 'برای استریکِ روزانه وارد شو.'}
         </Text>
+        {isAuthed && streak.data?.canClaimToday && (
+          <Pressable style={styles.claimBtn} onPress={onClaimStreak}>
+            <Text style={styles.claimTxt}>
+              گرفتن جایزه 🪙{toFa(streak.data.claimableReward.coins)}
+              {streak.data.claimableReward.cards
+                ? `+⚡${toFa(streak.data.claimableReward.cards)}`
+                : ''}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {/* اکشن اصلی: بازی سریع */}
@@ -168,12 +199,19 @@ export default function HomeScreen() {
         </LinearGradient>
       </Pressable>
 
-      {/* دسترسیِ سریع: رده‌بندی */}
+      {/* دسترسیِ سریع: رده‌بندی + اچیومنت */}
       <Pressable
         style={styles.navRow}
         onPress={() => router.push('/leaderboard')}
       >
         <Text style={styles.navTxt}>📊 جدول رده‌بندی</Text>
+        <Text style={styles.navChevron}>›</Text>
+      </Pressable>
+      <Pressable
+        style={styles.navRow}
+        onPress={() => router.push('/achievements')}
+      >
+        <Text style={styles.navTxt}>🏅 اچیومنت‌ها</Text>
         <Text style={styles.navChevron}>›</Text>
       </Pressable>
 
@@ -367,6 +405,13 @@ const styles = StyleSheet.create({
     fontSize: font.size.body,
     textAlign: 'right',
   },
+  claimBtn: {
+    backgroundColor: colors.amber,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  claimTxt: { color: colors.ink, fontFamily: font.family.bold, fontSize: font.size.caption },
   ready: {
     color: colors.chalkDim,
     fontFamily: font.family.medium,
