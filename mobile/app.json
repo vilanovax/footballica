@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "فوتبالیکا",
+    "slug": "footballica",
+    "version": "0.1.0",
+    "scheme": "footballica",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#07160F",
+    "splash": {
+      "backgroundColor": "#07160F",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "ir.footballica.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:3000"
+    }
+  }
+}
