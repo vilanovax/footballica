@@ -16,13 +16,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { colors, radius, spacing, font } from '../src/theme';
 import { toFa } from '../src/lib/fa';
 import { useSession } from '../src/store/useSession';
 import { useMatch } from '../src/store/useMatch';
 import { useDuel } from '../src/store/useDuel';
 import { listDuels, type DuelSummary } from '../src/api/duel';
+import { getWallet, refillLives } from '../src/api/economy';
 import type { GameMode } from '../src/api/match';
 
 export default function HomeScreen() {
@@ -40,11 +41,29 @@ export default function HomeScreen() {
 
   const isAuthed = sessionStatus === 'authed';
 
+  const queryClient = useQueryClient();
+
   const duels = useQuery({
     queryKey: ['duels', userId],
     queryFn: listDuels,
     enabled: isAuthed,
   });
+
+  const wallet = useQuery({
+    queryKey: ['wallet', userId],
+    queryFn: getWallet,
+    enabled: isAuthed,
+    refetchOnMount: 'always',
+  });
+
+  const onRefill = async () => {
+    try {
+      await refillLives();
+      void queryClient.invalidateQueries({ queryKey: ['wallet', userId] });
+    } catch {
+      // اگر سکه کم بود، سرور خطا می‌دهد؛ فعلاً بی‌صدا
+    }
+  };
 
   // دوئل نیازمندِ ورود است (هویت + حریف). اگر مهمان بود → صفحهٔ ورود.
   const launchDuel = async () => {
@@ -100,12 +119,26 @@ export default function HomeScreen() {
           </View>
         </Pressable>
         <View style={styles.stats}>
+          <Pressable
+            style={styles.chip}
+            onPress={onRefill}
+            disabled={!isAuthed || (wallet.data?.lives ?? 0) >= (wallet.data?.maxLives ?? 5)}
+          >
+            <Text style={styles.chipTxt}>
+              ❤️ {toFa(wallet.data?.lives ?? user?.lives ?? 5)}
+              {wallet.data && wallet.data.lives < wallet.data.maxLives ? ' +' : ''}
+            </Text>
+          </Pressable>
           <View style={styles.chip}>
-            <Text style={styles.chipTxt}>❤️ {toFa(user?.lives ?? 5)}</Text>
+            <Text style={styles.chipTxt}>
+              🪙 {toFa(wallet.data?.coins ?? user?.coins ?? 0)}
+            </Text>
           </View>
-          <View style={styles.chip}>
-            <Text style={styles.chipTxt}>🪙 {toFa(user?.coins ?? 0)}</Text>
-          </View>
+          {isAuthed && (
+            <View style={styles.chip}>
+              <Text style={styles.chipTxt}>🎽 {toFa(wallet.data?.fans ?? 0)}</Text>
+            </View>
+          )}
         </View>
       </View>
 
