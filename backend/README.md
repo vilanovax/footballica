@@ -36,9 +36,10 @@ npm run start:dev             # سرور روی http://localhost:3000
   `/duels/rounds/:id/answer` · `GET /duels/:id` · `GET /duels`
 - **اقتصاد (پشتِ JWT):** `GET /economy/wallet` · `POST /economy/refill-lives`
 - **پیشرفت (پشتِ JWT):** `GET /streak` · `POST /streak/claim` · `GET /achievements`
+- **پاورآپ:** `GET /powerups` · `POST /powerups/rounds/:id` (پشتِ JWT)
 
 > جزئیات: **`../docs/DUEL-AND-BOTS.md`** · **`../docs/ECONOMY-IMPLEMENTATION.md`** ·
-> **`../docs/STREAK-ACHIEVEMENTS.md`**.
+> **`../docs/STREAK-ACHIEVEMENTS.md`** · **`../docs/POWERUPS.md`**.
 
 نمونه:
 

@@ -71,6 +71,37 @@ export class EconomyService {
     ]);
   }
 
+  // ---------- خرجِ ارز (سکه/کارت) ----------
+  // اگر موجودی کافی نباشد خطا می‌دهد. برای پاورآپ‌ها و خریدها.
+  async spend(
+    userId: string,
+    cost: { coins?: number; cards?: number },
+    reason: string,
+  ): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    if (cost.coins && user.coins < cost.coins) {
+      throw new BadRequestException('سکهٔ کافی نداری.');
+    }
+    if (cost.cards && user.cards < cost.cards) {
+      throw new BadRequestException('کارتِ کافی نداری.');
+    }
+    const ops: Prisma.PrismaPromise<unknown>[] = [];
+    const data: Prisma.UserUpdateInput = {};
+    if (cost.coins) {
+      data.coins = { decrement: cost.coins };
+      ops.push(this.tx(userId, 'COINS', -cost.coins, reason));
+    }
+    if (cost.cards) {
+      data.cards = { decrement: cost.cards };
+      ops.push(this.tx(userId, 'CARDS', -cost.cards, reason));
+    }
+    if (ops.length === 0) return;
+    ops.unshift(this.prisma.user.update({ where: { id: userId }, data }));
+    await this.prisma.$transaction(ops);
+  }
+
   // ---------- اعطای جایزه ----------
   async award(userId: string, reward: Reward, reason: string): Promise<void> {
     const ops: Prisma.PrismaPromise<unknown>[] = [];
