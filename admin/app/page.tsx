@@ -63,6 +63,9 @@ export default function DashboardPage() {
             <Link className="btn" href="/questions/new">
               + سؤال جدید
             </Link>
+            <Link className="btn" href="/bots">
+              🤖 ربات‌ها
+            </Link>
           </div>
         </>
       )}

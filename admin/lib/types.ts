@@ -49,3 +49,27 @@ export const DIFF_FA: Record<Difficulty, string> = {
   MEDIUM: 'متوسط',
   HARD: 'سخت',
 };
+
+// ---- ربات‌های دوئل ----
+export type BotDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+
+export interface Bot {
+  id: string;
+  name: string | null;
+  avatar: string | null;
+  difficulty: BotDifficulty | null;
+  createdAt: string;
+  duelsPlayed: number;
+}
+
+export interface NewBotInput {
+  name: string;
+  difficulty: BotDifficulty;
+  avatar?: string;
+}
+
+export const BOT_DIFF_FA: Record<BotDifficulty, string> = {
+  EASY: 'آسان (ضعیف)',
+  MEDIUM: 'متوسط',
+  HARD: 'سخت (حرفه‌ای)',
+};

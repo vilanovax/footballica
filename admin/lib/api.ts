@@ -7,7 +7,9 @@
 
 import type {
   AdminQuestion,
+  Bot,
   Category,
+  NewBotInput,
   NewQuestionInput,
   Overview,
 } from './types';
@@ -84,4 +86,11 @@ export const adminApi = {
   remove: (id: string) =>
     req<{ deleted: boolean }>(`/admin/questions/${id}`, { method: 'DELETE' }),
   categories: () => req<Category[]>('/admin/categories'),
+
+  // ---- ربات‌ها ----
+  listBots: () => req<Bot[]>('/admin/bots'),
+  createBot: (input: NewBotInput) =>
+    req<Bot>('/admin/bots', { method: 'POST', body: input }),
+  removeBot: (id: string) =>
+    req<{ deleted: boolean }>(`/admin/bots/${id}`, { method: 'DELETE' }),
 };
