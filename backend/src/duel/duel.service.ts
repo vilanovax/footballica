@@ -13,6 +13,7 @@ import { BotsService } from '../bots/bots.service';
 import { BOT_DIFFICULTY, DUEL_BOT_CONFIG } from '../bots/bot.constants';
 import { EconomyService } from '../economy/economy.service';
 import { ECONOMY } from '../economy/economy.constants';
+import { AchievementsService } from '../progress/achievements.service';
 
 const DUEL_DURATION_SEC = 15;
 const BASE_POINTS = 100;
@@ -40,6 +41,7 @@ export class DuelService {
     @Inject(REDIS) private readonly redis: Redis,
     private readonly bots: BotsService,
     private readonly economy: EconomyService,
+    private readonly achievements: AchievementsService,
   ) {}
 
   // ---------- مچ‌میکینگِ ساده (async) ----------
@@ -424,6 +426,8 @@ export class DuelService {
       },
       reason,
     );
+    // ممکن است اچیومنتِ جدید باز شود (اولین برد، تعداد دوئل، پاسخِ درست…)
+    await this.achievements.check(userId);
   }
 
   // بازیکن می‌تواند لِگِ خودش را حتی در حالتِ WAITING (پیش از پیوستنِ حریف)

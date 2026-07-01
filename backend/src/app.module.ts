@@ -8,6 +8,7 @@ import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { AdminModule } from './admin/admin.module';
 import { DuelModule } from './duel/duel.module';
 import { EconomyModule } from './economy/economy.module';
+import { ProgressModule } from './progress/progress.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { EconomyModule } from './economy/economy.module';
     AdminModule,
     DuelModule,
     EconomyModule,
+    ProgressModule,
   ],
 })
 export class AppModule {}

@@ -9,6 +9,7 @@ import { MatchEngineService, RoundView } from './match-engine.service';
 import { CreateMatchDto } from './dto/create-match.dto';
 import { EconomyService } from '../economy/economy.service';
 import { ECONOMY } from '../economy/economy.constants';
+import { AchievementsService } from '../progress/achievements.service';
 
 export interface CreateMatchResult {
   matchId: string;
@@ -30,6 +31,7 @@ export class MatchService {
     private readonly prisma: PrismaService,
     private readonly engine: MatchEngineService,
     private readonly economy: EconomyService,
+    private readonly achievements: AchievementsService,
   ) {}
 
   // ---------- ساخت مَچ تک‌نفره + شروع راند اول ----------
@@ -120,6 +122,7 @@ export class MatchService {
         { coins: ECONOMY.coins.winQuick + correct * ECONOMY.coins.perCorrect },
         'quick_finish',
       );
+      await this.achievements.check(userId);
     }
 
     return {

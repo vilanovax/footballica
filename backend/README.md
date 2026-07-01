@@ -35,9 +35,10 @@ npm run start:dev             # سرور روی http://localhost:3000
 - **دوئل async (پشتِ JWT):** `/duels/find` · `/duels/:id/next-round` ·
   `/duels/rounds/:id/answer` · `GET /duels/:id` · `GET /duels`
 - **اقتصاد (پشتِ JWT):** `GET /economy/wallet` · `POST /economy/refill-lives`
+- **پیشرفت (پشتِ JWT):** `GET /streak` · `POST /streak/claim` · `GET /achievements`
 
-> جزئیات: **`../docs/DUEL-AND-BOTS.md`** (دوئل و ربات) و
-> **`../docs/ECONOMY-IMPLEMENTATION.md`** (اقتصاد).
+> جزئیات: **`../docs/DUEL-AND-BOTS.md`** · **`../docs/ECONOMY-IMPLEMENTATION.md`** ·
+> **`../docs/STREAK-ACHIEVEMENTS.md`**.
 
 نمونه:
 

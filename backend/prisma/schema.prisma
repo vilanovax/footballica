@@ -40,6 +40,11 @@ model User {
   lives     Int      @default(5)   // ❤️
   lastLifeRegenAt DateTime @default(now()) // مبنای محاسبهٔ بازیابیِ جان
 
+  // ---- استریکِ روزانه ----
+  streakCurrent Int     @default(0)
+  streakLongest Int     @default(0)
+  streakLastDay String? // آخرین روزِ claim به‌صورت 'YYYY-MM-DD' (وقتِ تهران)
+
   createdAt DateTime @default(now())
 
   // ---- ربات (فقط سمتِ سرور؛ به کلاینت لو نمی‌رود) ----
@@ -50,6 +55,7 @@ model User {
   answers           Answer[]
   duelRounds        DuelRound[]
   walletTransactions WalletTransaction[]
+  achievements      UserAchievement[]
 
   @@index([isBot])
   @@map("users")
@@ -239,6 +245,20 @@ model WalletTransaction {
 
   @@index([userId, createdAt])
   @@map("wallet_transactions")
+}
+
+// ---------- اچیومنت ----------
+// تعریفِ اچیومنت‌ها در کد است (achievements.constants.ts)؛ این جدول فقط
+// «باز شدن» را برای هر کاربر ثبت می‌کند.
+model UserAchievement {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key        String // کلیدِ اچیومنت (مثلاً correct_100)
+  unlockedAt DateTime @default(now())
+
+  @@unique([userId, key])
+  @@map("user_achievements")
 }
 
 // لیدربورد در Redis Sorted Set نگه‌داری می‌شود؛ این جدول فقط
