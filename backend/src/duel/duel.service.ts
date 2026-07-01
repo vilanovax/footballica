@@ -5,10 +5,12 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import type { DuelRound, Question, QuestionOption } from '@prisma/client';
+import type { DuelRound, Question, QuestionOption, User } from '@prisma/client';
 import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS } from '../redis/redis.module';
+import { BotsService } from '../bots/bots.service';
+import { BOT_DIFFICULTY, DUEL_BOT_CONFIG } from '../bots/bot.constants';
 
 const DUEL_DURATION_SEC = 15;
 const BASE_POINTS = 100;
@@ -34,6 +36,7 @@ export class DuelService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(REDIS) private readonly redis: Redis,
+    private readonly bots: BotsService,
   ) {}
 
   // ---------- مچ‌میکینگِ ساده (async) ----------
@@ -107,7 +110,7 @@ export class DuelService {
     userId: string,
     matchId: string,
   ): Promise<{ finishedLeg: true } | { finishedLeg: false; round: DuelRoundView }> {
-    const match = await this.getActivePlayableMatch(matchId, userId);
+    const match = await this.getPlayableMatch(matchId, userId);
 
     const answered = await this.prisma.duelRound.count({
       where: { matchId, userId, answeredAt: { not: null } },
@@ -218,7 +221,9 @@ export class DuelService {
     const legFinished = myAnswered >= match.totalRounds;
 
     let matchFinished = false;
-    if (legFinished) matchFinished = await this.maybeFinalize(round.matchId);
+    if (legFinished) {
+      matchFinished = await this.finalizeOrFillBot(round.matchId, userId);
+    }
 
     return {
       isCorrect,
@@ -387,20 +392,115 @@ export class DuelService {
     return true;
   }
 
-  private async getActivePlayableMatch(matchId: string, userId: string) {
+  // بازیکن می‌تواند لِگِ خودش را حتی در حالتِ WAITING (پیش از پیوستنِ حریف)
+  // بازی کند — دوئل async است. فقط دوئلِ تمام‌شده/رهاشده قابلِ بازی نیست.
+  private async getPlayableMatch(matchId: string, userId: string) {
     const match = await this.prisma.match.findUnique({
       where: { id: matchId },
       include: { players: true },
     });
     if (!match || match.mode !== 'DUEL')
       throw new NotFoundException('دوئل یافت نشد');
-    if (match.status === 'WAITING')
-      throw new BadRequestException('هنوز حریفی نپیوسته');
-    if (match.status !== 'ACTIVE')
-      throw new ForbiddenException('دوئل فعال نیست');
+    if (match.status === 'FINISHED' || match.status === 'ABANDONED')
+      throw new ForbiddenException('این دوئل تمام شده');
     if (!match.players.some((p) => p.userId === userId))
       throw new ForbiddenException('بازیکنِ این دوئل نیستی');
     return match;
+  }
+
+  // پس از اتمامِ لِگِ یک بازیکن:
+  //  - اگر حریفِ (انسانیِ) دوم هست → اگر او هم تمام کرده، نهایی کن.
+  //  - اگر هنوز حریفی نیست → یک ربات جایگزین کن، لِگش را شبیه‌سازی و نهایی کن.
+  //    (از دید بازیکن، حریفی عادی است؛ isBot هرگز فاش نمی‌شود.)
+  private async finalizeOrFillBot(
+    matchId: string,
+    _finisherUserId: string,
+  ): Promise<boolean> {
+    const match = await this.prisma.match.findUniqueOrThrow({
+      where: { id: matchId },
+      include: { players: true },
+    });
+
+    if (match.players.length >= 2) {
+      return this.maybeFinalize(matchId);
+    }
+
+    // فقط خودم در دوئلم و لِگم تمام شده → ربات را وارد کن
+    if (!DUEL_BOT_CONFIG.fillEnabled) return false;
+    const bot = await this.bots.pickRandom();
+    if (!bot) return false; // رباتی تعریف نشده → دوئل منتظر می‌ماند
+
+    await this.prisma.$transaction([
+      this.prisma.matchPlayer.create({
+        data: { matchId, userId: bot.id },
+      }),
+      this.prisma.match.update({
+        where: { id: matchId },
+        data: { status: 'ACTIVE' },
+      }),
+    ]);
+
+    await this.simulateBotLeg(matchId, bot);
+    return this.maybeFinalize(matchId);
+  }
+
+  // شبیه‌سازیِ کاملِ لِگِ ربات روی همان مجموعهٔ سؤالِ ثابت.
+  // دقت و سرعت از BOT_DIFFICULTY می‌آید. امتیازِ ربات وارد لیدربوردِ
+  // سراسری نمی‌شود (تا رتبه‌بندی از ربات‌ها پاک بماند).
+  private async simulateBotLeg(matchId: string, bot: User): Promise<void> {
+    const params =
+      BOT_DIFFICULTY[bot.botDifficulty ?? 'MEDIUM'] ?? BOT_DIFFICULTY.MEDIUM;
+
+    const questions = await this.prisma.duelQuestion.findMany({
+      where: { matchId },
+      include: { question: { include: { options: true } } },
+      orderBy: { order: 'asc' },
+    });
+
+    let botScore = 0;
+    const now = Date.now();
+
+    for (const dq of questions) {
+      const options = dq.question.options;
+      const correct = options.find((o) => o.isCorrect);
+      const wrongs = options.filter((o) => !o.isCorrect);
+
+      const answerCorrect = Math.random() < params.pCorrect && !!correct;
+      const chosen = answerCorrect
+        ? correct
+        : wrongs[Math.floor(Math.random() * wrongs.length)] ?? null;
+
+      const msTaken = randInt(params.minMs, params.maxMs);
+      const points = this.calcPoints(answerCorrect, msTaken);
+      botScore += points;
+
+      const startedAt = new Date(now - msTaken);
+      const deadlineAt = new Date(
+        startedAt.getTime() + DUEL_DURATION_SEC * 1000,
+      );
+
+      await this.prisma.duelRound.create({
+        data: {
+          matchId,
+          userId: bot.id,
+          questionId: dq.questionId,
+          order: dq.order,
+          startedAt,
+          deadlineAt,
+          optionId: chosen?.id ?? null,
+          isCorrect: answerCorrect,
+          msTaken,
+          points,
+          answeredAt: new Date(),
+        },
+      });
+    }
+
+    await this.prisma.matchPlayer.updateMany({
+      where: { matchId, userId: bot.id },
+      data: { score: { increment: botScore } },
+    });
+    // عمداً بدونِ zincrby لیدربورد — ربات‌ها در رتبه‌بندی نمی‌آیند.
   }
 
   private async pickQuestionIds(count: number): Promise<string[]> {
@@ -424,4 +524,9 @@ export class DuelService {
     const exists = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!exists) throw new NotFoundException('کاربر یافت نشد');
   }
+}
+
+/** عددِ صحیحِ تصادفی در بازهٔ [min, max]. */
+function randInt(min: number, max: number): number {
+  return Math.floor(min + Math.random() * (max - min + 1));
 }

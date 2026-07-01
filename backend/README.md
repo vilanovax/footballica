@@ -28,6 +28,15 @@ npm run start:dev             # سرور روی http://localhost:3000
 | POST | `/rounds/:id/answer` | ثبت پاسخِ راند (درستی/زمان سمت سرور) |
 | POST | `/matches/:id/next-round` | راند بعد، یا پایان مَچ |
 
+### فاز ۱ و ۲ (خلاصه)
+- **Auth:** `POST /auth/request-otp` · `verify-otp` · `GET /auth/me` (ورود با شماره → JWT)
+- **لیدربورد:** `GET /leaderboard` · `/leaderboard/me`
+- **ادمین (هدرِ `x-admin-key`):** `/admin/questions*` (CMS سؤال) · `/admin/bots*` (ربات‌ها)
+- **دوئل async (پشتِ JWT):** `/duels/find` · `/duels/:id/next-round` ·
+  `/duels/rounds/:id/answer` · `GET /duels/:id` · `GET /duels`
+
+> جزئیاتِ دوئل و سیستمِ ربات در **`../docs/DUEL-AND-BOTS.md`**.
+
 نمونه:
 
 ```bash
