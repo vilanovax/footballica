@@ -26,6 +26,11 @@ build/
 *.db
 *.db-journal
 
+# prisma engine binaries (به‌صورت محلی دانلود می‌شوند؛ محیط‌محور و حجیم)
+backend/engines/
+# prisma generated client
+**/.prisma/
+
 # logs
 *.log
 npm-debug.log*
