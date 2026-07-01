@@ -6,6 +6,7 @@ import { MatchModule } from './match/match.module';
 import { AuthModule } from './auth/auth.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { AdminModule } from './admin/admin.module';
+import { DuelModule } from './duel/duel.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AdminModule } from './admin/admin.module';
     MatchModule,
     LeaderboardModule,
     AdminModule,
+    DuelModule,
   ],
 })
 export class AppModule {}

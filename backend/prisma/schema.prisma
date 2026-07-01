@@ -28,6 +28,7 @@ model User {
 
   matchesAsPlayer MatchPlayer[]
   answers         Answer[]
+  duelRounds      DuelRound[]
 
   @@map("users")
 }
@@ -51,6 +52,8 @@ model Question {
   options     QuestionOption[]
   answers     Answer[]
   rounds      MatchRound[]
+  duelQuestions DuelQuestion[]
+  duelRounds  DuelRound[]
   createdAt   DateTime   @default(now())
 
   @@index([metadata], type: Gin)
@@ -86,6 +89,7 @@ enum GameMode {
 }
 
 enum MatchStatus {
+  WAITING   // دوئل: منتظرِ حریف
   ACTIVE
   FINISHED
   ABANDONED
@@ -99,8 +103,10 @@ model Match {
   createdAt DateTime    @default(now())
   finishedAt DateTime?
 
-  players   MatchPlayer[]
-  rounds    MatchRound[]
+  players       MatchPlayer[]
+  rounds        MatchRound[]
+  duelQuestions DuelQuestion[]
+  duelRounds    DuelRound[]
 
   @@map("matches")
 }
@@ -150,6 +156,44 @@ model Answer {
 
   @@unique([roundId, userId])
   @@map("answers")
+}
+
+// ---------- دوئل async (فاز ۲) ----------
+// مجموعهٔ ثابتِ سؤالِ یک دوئل — هر دو بازیکن به همین‌ها جواب می‌دهند
+// تا مقایسه منصفانه باشد.
+model DuelQuestion {
+  id         String   @id @default(cuid())
+  matchId    String
+  match      Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  order      Int      // ۰..N-1
+
+  @@unique([matchId, order])
+  @@map("duel_questions")
+}
+
+// راندِ یک بازیکن روی یک سؤالِ دوئل — تایمرِ مستقلِ هر بازیکن
+// (ناهم‌زمان). isCorrect و امتیاز را سرور تعیین می‌کند.
+model DuelRound {
+  id         String    @id @default(cuid())
+  matchId    String
+  match      Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  questionId String
+  question   Question  @relation(fields: [questionId], references: [id])
+  order      Int
+  startedAt  DateTime  @default(now())
+  deadlineAt DateTime
+  optionId   String?
+  isCorrect  Boolean   @default(false)
+  msTaken    Int?
+  points     Int       @default(0)
+  answeredAt DateTime?
+
+  @@unique([matchId, userId, order])
+  @@map("duel_rounds")
 }
 
 // لیدربورد در Redis Sorted Set نگه‌داری می‌شود؛ این جدول فقط
