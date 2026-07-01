@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>فوتبالیکا — باشگاه</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800;900&display=swap');
+:root{--pitch-deep:#07160F;--chalk:#EAF2EC;--chalk-dim:#9DB4A6;--leather:#F4EFE4;--leather-sh:#D6CCB7;--ink:#0A1A12;--amber:#FFC23C;--correct:#3DD66E;--wrong:#F0413E}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Vazirmatn',sans-serif;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;background:radial-gradient(1200px 600px at 50% -10%,#123a24 0%,#07160F 55%,#04100A 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 12px;gap:16px}
+.phone{width:390px;max-width:100%;height:800px;border-radius:42px;background:var(--pitch-deep);position:relative;overflow:hidden;box-shadow:0 40px 90px rgba(0,0,0,.6),0 0 0 10px #0c0c0e,0 0 0 12px #1c1c1f}
+.pitch-bg{position:absolute;inset:0;z-index:0}
+.pitch-bg::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(20,98,47,.4) 0 46px,rgba(14,77,42,.4) 46px 92px);transform:scale(1.4)}
+.pitch-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(540px 340px at 50% -4%,rgba(255,224,150,.2),transparent 70%),radial-gradient(900px 900px at 50% 130%,rgba(0,0,0,.6),transparent 60%)}
+.scroll{position:absolute;inset:0;z-index:2;overflow-y:auto;padding-bottom:76px}
+.scroll::-webkit-scrollbar{display:none}
+.clubhead{padding:18px 16px 12px;display:flex;align-items:center;gap:13px}
+.crest{width:62px;height:62px;border-radius:18px;background:linear-gradient(160deg,#2a6df0,#12357f);display:grid;place-items:center;position:relative;box-shadow:0 6px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.25)}
+.crest .ball{font-size:30px}
+.crest .lvl{position:absolute;bottom:-7px;left:-7px;background:var(--amber);color:#3a2400;font-size:11px;font-weight:900;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--pitch-deep)}
+.club-meta{flex:1}
+.club-name{color:#fff;font-size:19px;font-weight:900}
+.club-div{display:inline-flex;align-items:center;gap:5px;margin-top:3px;background:rgba(255,194,60,.15);border:1px solid rgba(255,194,60,.35);color:var(--amber);font-size:11px;font-weight:800;padding:3px 9px;border-radius:8px}
+.edit{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:var(--chalk-dim);width:34px;height:34px;border-radius:11px;font-size:15px;cursor:pointer}
+.wallet{display:flex;gap:8px;padding:0 16px 4px}
+.chip{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px;color:#fff;font-weight:800;font-size:14px}
+.chip small{color:var(--chalk-dim);font-size:9px;font-weight:600}
+.promo{margin:12px 16px 0;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px}
+.promo .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.promo .t{color:#fff;font-size:13px;font-weight:800}
+.promo .n{color:var(--amber);font-size:12px;font-weight:800}
+.bar{height:11px;border-radius:6px;background:rgba(0,0,0,.4);overflow:hidden}
+.bar .fill{height:100%;width:68%;border-radius:6px;background:linear-gradient(90deg,#3DD66E,#8ff0ad)}
+.promo .hint{color:var(--chalk-dim);font-size:10.5px;font-weight:600;margin-top:8px}
+.promo .hint b{color:#fff}
+.st{display:flex;align-items:center;justify-content:space-between;margin:20px 16px 10px}
+.st h3{color:#fff;font-size:16px;font-weight:900}
+.st .idle{display:inline-flex;align-items:center;gap:5px;background:rgba(61,214,110,.15);border:1px solid rgba(61,214,110,.35);color:var(--correct);font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:8px;cursor:pointer}
+.ups{padding:0 16px}
+.up{display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,var(--leather),#ebe4d4);border-radius:16px;padding:13px;margin-bottom:10px;box-shadow:0 7px 0 var(--leather-sh),0 12px 22px rgba(0,0,0,.4);position:relative}
+.up .ic{width:48px;height:48px;border-radius:13px;background:linear-gradient(160deg,#16a34a,#0c5f2c);display:grid;place-items:center;font-size:24px;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.up .body{flex:1;min-width:0}
+.up .nm{color:var(--ink);font-size:14px;font-weight:900;display:flex;align-items:center;gap:7px}
+.up .lv{font-size:10px;font-weight:800;color:#0d6b34;background:rgba(61,214,110,.18);padding:2px 7px;border-radius:6px}
+.up .ef{color:#4a5a50;font-size:11px;font-weight:600;margin-top:3px;line-height:1.5}
+.up .lvbar{height:6px;border-radius:4px;background:rgba(0,0,0,.12);margin-top:7px;overflow:hidden}
+.up .lvbar i{display:block;height:100%;background:var(--amber);border-radius:4px}
+.up .cta{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px}
+.up .btn{background:linear-gradient(180deg,#ffd25a,#f0a91e);color:#3a2400;border:none;border-radius:11px;padding:9px 13px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer;box-shadow:0 4px 0 #c9851a;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.up .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #c9851a}
+.up .btn.locked{background:rgba(0,0,0,.15);color:#9aa;box-shadow:0 4px 0 rgba(0,0,0,.15);cursor:default}
+.up.maxed .ic{background:linear-gradient(160deg,#FFC23C,#E89A1C)}
+.up .maxlbl{font-size:11px;font-weight:900;color:var(--amber)}
+.nav{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:space-around;padding:10px 8px 18px;background:linear-gradient(0deg,#06120c 70%,transparent);border-top:1px solid rgba(255,255,255,.06)}
+.nav .item{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--chalk-dim);font-size:10px;font-weight:700;cursor:pointer}
+.nav .item .ic{font-size:20px}
+.nav .item.active{color:var(--amber)}
+.cap{color:var(--chalk-dim);font-size:12px;text-align:center;max-width:390px;line-height:1.8}.cap b{color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="pitch-bg"></div>
+  <div class="scroll">
+    <div class="clubhead">
+      <div class="crest"><span class="ball">🦅</span><span class="lvl">۷</span></div>
+      <div class="club-meta">
+        <div class="club-name">عقاب‌های تهران</div>
+        <span class="club-div">🏆 دستهٔ سه · رتبهٔ ۴</span>
+      </div>
+      <button class="edit">✏️</button>
+    </div>
+    <div class="wallet">
+      <div class="chip">🪙 ۸۴۰<small>سکه</small></div>
+      <div class="chip">🎽 ۲٫۱K<small>هوادار</small></div>
+      <div class="chip">⚡ ۶<small>کارت</small></div>
+    </div>
+    <div class="promo">
+      <div class="row"><span class="t">صعود به دستهٔ دو</span><span class="n">۲٫۱K / ۳K هوادار</span></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="hint">با <b>۹۰۰ هوادارِ</b> دیگر صعود می‌کنی. هر بردِ دوئل ~۱۲۰ هوادار می‌دهد.</div>
+    </div>
+    <div class="st"><h3>ارتقای باشگاه</h3><span class="idle">💰 درآمد آماده: ۱۲۰ 🪙</span></div>
+    <div class="ups">
+      <div class="up">
+        <div class="ic">🏋️</div>
+        <div class="body"><div class="nm">زمین تمرین <span class="lv">سطح ۳</span></div><div class="ef">جان هر ۱۸ دقیقه پر می‌شود</div><div class="lvbar"><i style="width:30%"></i></div></div>
+        <div class="cta"><button class="btn">🪙 ۴۵۰</button></div>
+      </div>
+      <div class="up">
+        <div class="ic">🏟️</div>
+        <div class="body"><div class="nm">استادیوم <span class="lv">سطح ۲</span></div><div class="ef">+۲۰٪ هوادار در هر برد · درآمد ساعتی ۳۰</div><div class="lvbar"><i style="width:20%"></i></div></div>
+        <div class="cta"><button class="btn">🪙 ۶۰۰</button></div>
+      </div>
+      <div class="up">
+        <div class="ic">📊</div>
+        <div class="body"><div class="nm">اتاق آنالیز <span class="lv">سطح ۱</span></div><div class="ef">یک‌بار در مسابقه، دستهٔ سؤال بعدی را ببین</div><div class="lvbar"><i style="width:10%"></i></div></div>
+        <div class="cta"><button class="btn">🪙 ۳۲۰</button></div>
+      </div>
+      <div class="up">
+        <div class="ic">🎓</div>
+        <div class="body"><div class="nm">آکادمی جوانان <span class="lv">سطح ۲</span></div><div class="ef">یک راهنماییِ رایگان در هر بازی</div><div class="lvbar"><i style="width:20%"></i></div></div>
+        <div class="cta"><button class="btn locked">🔒 دستهٔ ۲</button></div>
+      </div>
+      <div class="up maxed">
+        <div class="ic">⚕️</div>
+        <div class="body"><div class="nm">پزشکیار <span class="lv">سطح ۱۰</span></div><div class="ef">جریمهٔ باخت ۵۰٪ کمتر</div><div class="lvbar"><i style="width:100%"></i></div></div>
+        <div class="cta"><span class="maxlbl">MAX ✦</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="item"><span class="ic">🏠</span>خانه</div>
+    <div class="item"><span class="ic">⚔️</span>بازی‌ها</div>
+    <div class="item active"><span class="ic">🏟️</span>باشگاه</div>
+    <div class="item"><span class="ic">📊</span>رده‌بندی</div>
+    <div class="item"><span class="ic">👤</span>پروفایل</div>
+  </div>
+</div>
+<p class="cap">صفحهٔ <b>باشگاه</b> — قلبِ متا-گیم. هر ارتقا یک اثرِ واقعی روی گیم‌پلی دارد؛ نوار بالا مسیرِ صعود را نشان می‌دهد.</p>
+</body>
+</html>

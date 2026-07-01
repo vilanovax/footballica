@@ -1,0 +1,165 @@
+// ============================================================
+//  فوتبالیکا — schema.prisma  (هستهٔ بازی، فاز ۰–۱)
+//  این فایل را Cursor/Claude Code به‌عنوان نقطهٔ شروعِ دیتابیس می‌گیرد.
+//  فقط جدول‌های لازم برای حلقهٔ اصلی + لیدربورد. بقیه (economy,
+//  achievements, season) در فاز بعد اضافه می‌شوند.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- کاربر ----------
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique          // ورود با شماره (رایج در ایران)
+  name      String?
+  avatar    String?
+  level     Int      @default(1)
+  xp        Int      @default(0)
+  coins     Int      @default(0)
+  lives     Int      @default(5)
+  createdAt DateTime @default(now())
+
+  matchesAsPlayer MatchPlayer[]
+  answers         Answer[]
+
+  @@map("users")
+}
+
+// ---------- بانک سؤال ----------
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Question {
+  id          String     @id @default(cuid())
+  text        String
+  difficulty  Difficulty @default(MEDIUM)
+  categoryId  String?
+  category    Category?  @relation(fields: [categoryId], references: [id])
+  // فیلدِ منعطف: منبع، فصل، payload فوتبالی → jsonb با ایندکس GIN
+  metadata    Json       @default("{}")
+  isApproved  Boolean    @default(false)   // ادمین تأیید می‌کند
+  options     QuestionOption[]
+  answers     Answer[]
+  createdAt   DateTime   @default(now())
+
+  @@index([metadata], type: Gin)
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  // ⚠️ این فیلد هرگز در پاسخِ APIِ کلاینت قرار نمی‌گیرد (server-authoritative)
+  isCorrect  Boolean  @default(false)
+  order      Int
+
+  @@map("question_options")
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  name      String     // لیگ برتر، جام جهانی، لیگ قهرمانان...
+  slug      String     @unique
+  questions Question[]
+
+  @@map("question_categories")
+}
+
+// ---------- مَچ و راند ----------
+enum GameMode {
+  QUICK     // بازی سریع تک‌نفره
+  BOMB      // حالت بمب
+  DUEL      // دوئل async (فاز ۲)
+}
+
+enum MatchStatus {
+  ACTIVE
+  FINISHED
+  ABANDONED
+}
+
+model Match {
+  id        String      @id @default(cuid())
+  mode      GameMode
+  status    MatchStatus @default(ACTIVE)
+  totalRounds Int       @default(5)
+  createdAt DateTime    @default(now())
+  finishedAt DateTime?
+
+  players   MatchPlayer[]
+  rounds    MatchRound[]
+
+  @@map("matches")
+}
+
+model MatchPlayer {
+  id       String @id @default(cuid())
+  matchId  String
+  match    Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+  score    Int    @default(0)
+  isWinner Boolean?
+
+  @@unique([matchId, userId])
+  @@map("match_players")
+}
+
+model MatchRound {
+  id          String   @id @default(cuid())
+  matchId     String
+  match       Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  questionId  String
+  roundIndex  Int      // ۰..۴
+  // ⏱ منبعِ حقیقتِ زمان — سرور پر می‌کند، نه کلاینت
+  startedAt   DateTime @default(now())
+  deadlineAt  DateTime // startedAt + مدتِ مود
+  answers     Answer[]
+
+  @@unique([matchId, roundIndex])
+  @@map("match_rounds")
+}
+
+model Answer {
+  id         String     @id @default(cuid())
+  roundId    String
+  round      MatchRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question   @relation(fields: [questionId], references: [id])
+  userId     String
+  user       User       @relation(fields: [userId], references: [id])
+  optionId   String?    // انتخابِ کاربر؛ null یعنی زمان تمام شد
+  isCorrect  Boolean    @default(false) // سرور تعیین می‌کند
+  msTaken    Int        // میلی‌ثانیه از startedAt تا دریافت پاسخ (سمت سرور)
+  points     Int        @default(0)
+  createdAt  DateTime   @default(now())
+
+  @@unique([roundId, userId])
+  @@map("answers")
+}
+
+// لیدربورد در Redis Sorted Set نگه‌داری می‌شود؛ این جدول فقط
+// اسنپ‌شاتِ فصلی برای آرشیو است.
+model LeaderboardSnapshot {
+  id        String   @id @default(cuid())
+  userId    String
+  season    String
+  rank      Int
+  score     Int
+  takenAt   DateTime @default(now())
+
+  @@index([season, rank])
+  @@map("leaderboard_snapshots")
+}

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>فوتبالیکا — اقتصاد بازی</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800;900&display=swap');
+:root{--pitch-deep:#07160F;--chalk:#EAF2EC;--chalk-dim:#9DB4A6;--card:#0f2a1c;--amber:#FFC23C;--correct:#3DD66E;--wrong:#F0413E;--line:rgba(255,255,255,.1)}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Vazirmatn',sans-serif}
+body{background:radial-gradient(1200px 700px at 50% -10%,#123a24,#07160F 60%,#04100A);color:var(--chalk);min-height:100vh;padding:24px 14px 60px}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:22px;font-weight:900;color:#fff;text-align:center}
+.sub{color:var(--chalk-dim);font-size:13px;text-align:center;margin:6px 0 22px;line-height:1.7}
+.sub b{color:var(--amber)}
+.panel{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+.panel h2{font-size:15px;font-weight:900;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+/* sliders */
+.ctrl{margin-bottom:15px}
+.ctrl .lab{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;margin-bottom:7px}
+.ctrl .lab .v{color:var(--amber);font-weight:900}
+input[type=range]{width:100%;height:6px;border-radius:4px;background:rgba(0,0,0,.4);appearance:none;outline:none}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:var(--amber);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+/* currency table */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line)}
+th{color:var(--chalk-dim);font-weight:700;font-size:11px}
+td{font-weight:600}
+td.n{color:var(--amber);font-weight:900;font-variant-numeric:tabular-nums;text-align:center}
+.pos{color:var(--correct)}.neg{color:var(--wrong)}
+/* result cards */
+.results{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rc{background:linear-gradient(180deg,rgba(255,194,60,.12),rgba(255,194,60,.03));border:1px solid rgba(255,194,60,.3);border-radius:14px;padding:14px;text-align:center}
+.rc.green{background:linear-gradient(180deg,rgba(61,214,110,.12),rgba(61,214,110,.03));border-color:rgba(61,214,110,.3)}
+.rc .big{font-size:26px;font-weight:900;color:#fff}
+.rc .lbl{font-size:11px;color:var(--chalk-dim);font-weight:700;margin-top:3px}
+.note{font-size:11px;color:var(--chalk-dim);line-height:1.8;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.note b{color:var(--amber)}
+.ladder{display:flex;flex-direction:column;gap:8px}
+.rung{display:flex;align-items:center;gap:11px;background:rgba(0,0,0,.25);border-radius:11px;padding:10px 13px}
+.rung .d{font-weight:900;color:#fff;font-size:13px;flex:1}
+.rung .req{color:var(--amber);font-weight:800;font-size:12px;font-variant-numeric:tabular-nums}
+.rung .days{color:var(--chalk-dim);font-size:11px;font-weight:700}
+.rung.done{opacity:.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚖️ شبیه‌ساز اقتصاد فوتبالیکا</h1>
+  <p class="sub">اسلایدرها را حرکت بده و ببین <b>چند روز</b> طول می‌کشد کاربر از دستهٔ سه به لیگ برتر برسد.<br>هدف: نه آن‌قدر سریع که بی‌ارزش شود، نه آن‌قدر کند که کاربر ول کند.</p>
+
+  <div class="panel">
+    <h2>🎮 رفتار کاربر (فرض)</h2>
+    <div class="ctrl"><div class="lab"><span>بازی در روز</span><span class="v" id="vGames">۸ بازی</span></div><input type="range" id="games" min="2" max="30" value="8"></div>
+    <div class="ctrl"><div class="lab"><span>نرخ برد</span><span class="v" id="vWin">۵۵٪</span></div><input type="range" id="win" min="20" max="90" value="55"></div>
+  </div>
+
+  <div class="panel">
+    <h2>💰 جایزهٔ هر بازی</h2>
+    <div class="ctrl"><div class="lab"><span>سکه به‌ازای برد</span><span class="v" id="vCoinW">۶۰ 🪙</span></div><input type="range" id="coinW" min="10" max="200" value="60"></div>
+    <div class="ctrl"><div class="lab"><span>سکه به‌ازای باخت</span><span class="v" id="vCoinL">۲۰ 🪙</span></div><input type="range" id="coinL" min="0" max="100" value="20"></div>
+    <div class="ctrl"><div class="lab"><span>هوادار به‌ازای برد</span><span class="v" id="vFan">۱۲۰ 🎽</span></div><input type="range" id="fan" min="20" max="400" value="120"></div>
+  </div>
+
+  <div class="panel">
+    <h2>📊 نتیجه</h2>
+    <div class="results">
+      <div class="rc green"><div class="big" id="rDays">—</div><div class="lbl">روز تا لیگ برتر</div></div>
+      <div class="rc"><div class="big" id="rCoins">—</div><div class="lbl">سکهٔ روزانه</div></div>
+    </div>
+    <div class="note" id="verdict"></div>
+  </div>
+
+  <div class="panel">
+    <h2>🏆 نردبان صعود (هوادارِ لازم)</h2>
+    <div class="ladder" id="ladder"></div>
+  </div>
+
+  <div class="panel">
+    <h2>🏟️ هزینهٔ ارتقای باشگاه (نمونه)</h2>
+    <table>
+      <thead><tr><th>بخش</th><th>اثر</th><th>سطح ۱</th><th>سطح ۵</th><th>سطح ۱۰</th></tr></thead>
+      <tbody>
+        <tr><td>🏋️ زمین تمرین</td><td>بازیابی جان</td><td class="n">۱۵۰</td><td class="n">۸۰۰</td><td class="n">۳٫۵K</td></tr>
+        <tr><td>🏟️ استادیوم</td><td>درآمد هوادار</td><td class="n">۲۰۰</td><td class="n">۱٫۱K</td><td class="n">۵K</td></tr>
+        <tr><td>📊 اتاق آنالیز</td><td>دید سؤال</td><td class="n">۳۲۰</td><td class="n">۱٫۵K</td><td class="n">۶K</td></tr>
+        <tr><td>🎓 آکادمی</td><td>راهنمایی رایگان</td><td class="n">۲۵۰</td><td class="n">۱٫۳K</td><td class="n">۵٫۵K</td></tr>
+        <tr><td>⚕️ پزشکیار</td><td>جریمهٔ کمتر</td><td class="n">۱۸۰</td><td class="n">۹۰۰</td><td class="n">۴K</td></tr>
+      </tbody>
+    </table>
+    <div class="note">فرمول پیشنهادی هزینه: <b>هزینهٔ سطح = پایه × ۱٫۵^(سطح−۱)</b>. رشد نمایی باعث می‌شود سطوح بالا «چاهِ خرجِ» بلندمدت بمانند و سکه هیچ‌وقت بی‌مصرف نشود.</div>
+  </div>
+
+  <div class="panel">
+    <h2>⚡ منبع کارت (جوکر/سوپرپاور)</h2>
+    <table>
+      <thead><tr><th>منبع</th><th>مقدار</th><th>دوره</th></tr></thead>
+      <tbody>
+        <tr><td>🔥 استریک روزانه (۷ روز)</td><td class="n">۳</td><td>هفتگی</td></tr>
+        <tr><td>🏆 صعود دسته</td><td class="n">۵</td><td>هر صعود</td></tr>
+        <tr><td>🎯 اچیومنت</td><td class="n">۱–۲</td><td>متغیر</td></tr>
+        <tr><td>💳 خرید (Poolakey)</td><td class="n">پکیج</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="note">کارت‌ها <b>عمداً کمیاب</b>اند تا سوپرپاورها ارزش داشته باشند. اگر ارزان شوند، بازی تعادلش را از دست می‌دهد.</div>
+  </div>
+</div>
+
+<script>
+const fa=n=>String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
+const faK=n=>n>=1000?fa((n/1000).toFixed(1))+'K':fa(n);
+// نردبان صعود: هوادار لازم برای هر دسته
+const LADDER=[
+  {d:'دستهٔ سه → دو', req:3000},
+  {d:'دستهٔ دو → یک', req:8000},
+  {d:'دستهٔ یک → لیگ برتر', req:20000},
+];
+const el=id=>document.getElementById(id);
+function calc(){
+  const games=+el('games').value, win=+el('win').value/100;
+  const coinW=+el('coinW').value, coinL=+el('coinL').value, fanW=+el('fan').value;
+  el('vGames').textContent=fa(games)+' بازی';
+  el('vWin').textContent=fa(win*100|0)+'٪';
+  el('vCoinW').textContent=fa(coinW)+' 🪙';
+  el('vCoinL').textContent=fa(coinL)+' 🪙';
+  el('vFan').textContent=fa(fanW)+' 🎽';
+
+  const wins=games*win, losses=games*(1-win);
+  const coinsDay=Math.round(wins*coinW+losses*coinL);
+  const fansDay=Math.round(wins*fanW); // فقط برد هوادار می‌دهد
+  const totalFanReq=LADDER.reduce((s,l)=>s+l.req,0);
+  const days=Math.ceil(totalFanReq/Math.max(fansDay,1));
+
+  el('rCoins').textContent=faK(coinsDay);
+  el('rDays').textContent=fa(days);
+
+  // verdict
+  let v;
+  if(days<10) v='<b>خیلی سریع.</b> کاربر زود به قله می‌رسد و انگیزه‌اش می‌پرد. هوادارِ لازم را بالا ببر یا جایزه را کم کن.';
+  else if(days>75) v='<b>خیلی کند.</b> ریسکِ ول‌کردن بالاست. جایزهٔ هوادار را بیشتر کن یا نردبان را کوتاه‌تر.';
+  else v='<b>نقطهٔ خوب.</b> این بازهٔ ~۲ تا ۱۰ هفته‌ای برای بازیِ نقش‌آفرینِ سبک ایده‌آل است؛ کاربر هدفِ بلندمدت دارد ولی نامیدکننده نیست.';
+  el('verdict').innerHTML=v+` <br>در این تنظیم، صعودِ کامل ~<b>${fa(days)} روز</b> با ~<b>${fa(fansDay)} هوادار</b> و ~<b>${faK(coinsDay)} سکه</b> در روز طول می‌کشد.`;
+
+  // ladder render
+  let acc=0, cum=0;
+  el('ladder').innerHTML=LADDER.map(l=>{
+    cum+=l.req; const d=Math.ceil(l.req/Math.max(fansDay,1));
+    return `<div class="rung"><span class="d">${l.d}</span><span class="req">${faK(l.req)} 🎽</span><span class="days">~${fa(d)} روز</span></div>`;
+  }).join('');
+}
+['games','win','coinW','coinL','fan'].forEach(id=>el(id).addEventListener('input',calc));
+calc();
+</script>
+</body>
+</html>
