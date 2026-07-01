@@ -5,10 +5,18 @@
 // ============================================================
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import type { PowerupType } from '../../src/api/powerups';
 import { colors, radius, spacing, font } from '../../src/theme';
 import { toFa, toFaSigned } from '../../src/lib/fa';
 import { useSession } from '../../src/store/useSession';
@@ -40,8 +48,18 @@ export default function QuestionScreen() {
   const lastResult = useMatch((s) => s.lastResult);
   const answer = useMatch((s) => s.answer);
   const next = useMatch((s) => s.next);
+  const removedOptionIds = useMatch((s) => s.removedOptionIds);
+  const usePowerupAction = useMatch((s) => s.usePowerup);
 
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const [powerupBusy, setPowerupBusy] = React.useState(false);
+
+  const onPowerup = async (type: PowerupType) => {
+    setPowerupBusy(true);
+    const err = await usePowerupAction(type, 'coin');
+    setPowerupBusy(false);
+    if (err) Alert.alert('پاورآپ', err);
+  };
 
   // با آمدنِ راندِ جدید، انتخاب را پاک کن
   React.useEffect(() => {
@@ -156,19 +174,48 @@ export default function QuestionScreen() {
       {/* متن سؤال */}
       <Text style={styles.question}>{round.question.text}</Text>
 
-      {/* گزینه‌ها */}
+      {/* گزینه‌ها (حذف‌شده‌های نصف‌نصف پنهان می‌شوند) */}
       <View style={styles.answers}>
-        {round.options.map((o, i) => (
-          <AnswerButton
-            key={o.id}
-            index={i + 1}
-            label={o.text}
-            state={stateFor(o.id)}
-            disabled={locked}
-            onPress={() => onSelect(o.id)}
-          />
-        ))}
+        {round.options
+          .filter((o) => !removedOptionIds.includes(o.id))
+          .map((o) => (
+            <AnswerButton
+              key={o.id}
+              index={o.order + 1}
+              label={o.text}
+              state={stateFor(o.id)}
+              disabled={locked}
+              onPress={() => onSelect(o.id)}
+            />
+          ))}
       </View>
+
+      {/* نوارِ پاورآپ (فقط حین بازی) */}
+      {status === 'playing' && !lastResult && (
+        <View style={styles.powerups}>
+          <PowerupChip
+            icon="✂️"
+            label="نصف‌نصف"
+            cost="۳۰"
+            disabled={powerupBusy}
+            onPress={() => onPowerup('fifty')}
+          />
+          <PowerupChip
+            icon="⏱️"
+            label="وقت اضافه"
+            cost="۳۰"
+            disabled={powerupBusy}
+            onPress={() => onPowerup('extra_time')}
+          />
+          <PowerupChip
+            icon="🔄"
+            label="تعویض"
+            cost="۶۰"
+            disabled={powerupBusy}
+            onPress={() => onPowerup('swap')}
+          />
+        </View>
+      )}
 
       {/* پس از پاسخ: دکمهٔ راند بعد */}
       <View style={styles.footer}>
@@ -185,8 +232,47 @@ export default function QuestionScreen() {
   );
 }
 
+function PowerupChip(props: {
+  icon: string;
+  label: string;
+  cost: string;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      style={[styles.puChip, props.disabled && { opacity: 0.5 }]}
+      disabled={props.disabled}
+      onPress={props.onPress}
+    >
+      <Text style={styles.puIcon}>{props.icon}</Text>
+      <Text style={styles.puLabel}>{props.label}</Text>
+      <Text style={styles.puCost}>🪙{props.cost}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.pitchDeep, paddingHorizontal: spacing.lg },
+  powerups: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  puChip: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: colors.glass,
+    borderColor: colors.glassBorder,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.sm,
+  },
+  puIcon: { fontSize: 20 },
+  puLabel: { color: colors.chalk, fontFamily: font.family.bold, fontSize: font.size.caption },
+  puCost: { color: colors.amber, fontFamily: font.family.medium, fontSize: 10 },
   centerScreen: {
     flex: 1,
     backgroundColor: colors.pitchDeep,

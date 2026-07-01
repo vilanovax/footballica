@@ -13,6 +13,7 @@ import {
   type RoundView,
   type AnswerResult,
 } from '../api/match';
+import { usePowerup as apiUsePowerup, type PowerupType } from '../api/powerups';
 
 type Status =
   | 'idle'
@@ -38,9 +39,13 @@ interface MatchState {
   lastResult: AnswerResult | null;
   summary: { score: number; totalRounds: number } | null;
 
+  /** گزینه‌هایی که با «نصف‌نصف» حذف شده‌اند (per راند). */
+  removedOptionIds: string[];
+
   start: (userId: string, mode: GameMode, totalRounds?: number) => Promise<void>;
   answer: (userId: string, optionId: string | null) => Promise<void>;
   next: (userId: string) => Promise<void>;
+  usePowerup: (type: PowerupType, pay: 'card' | 'coin') => Promise<string | null>;
   reset: () => void;
 }
 
@@ -58,6 +63,7 @@ function applyRound(round: RoundView): Partial<MatchState> {
     roundNumber: round.roundIndex + 1,
     endsAtMs: toClientDeadline(round),
     lastResult: null,
+    removedOptionIds: [],
   };
 }
 
@@ -73,6 +79,7 @@ export const useMatch = create<MatchState>((set, get) => ({
   score: 0,
   lastResult: null,
   summary: null,
+  removedOptionIds: [],
 
   async start(userId, mode, totalRounds = 5) {
     set({ status: 'loading', error: null, score: 0, summary: null });
@@ -127,6 +134,33 @@ export const useMatch = create<MatchState>((set, get) => ({
     }
   },
 
+  // پاورآپ روی راندِ فعلی. خطا (مثلاً موجودیِ ناکافی) را برمی‌گرداند.
+  async usePowerup(type, pay) {
+    const { round, status } = get();
+    if (!round || status !== 'playing') return 'راندِ فعالی نیست';
+    try {
+      const res = await apiUsePowerup(round.roundId, type, pay);
+      if (res.type === 'fifty') {
+        set((s) => ({
+          removedOptionIds: [...s.removedOptionIds, res.removedOptionId],
+        }));
+      } else if (res.type === 'extra_time') {
+        set((s) => ({ endsAtMs: s.endsAtMs + res.addedSeconds * 1000 }));
+      } else {
+        // swap: راندِ جدید با همان roundIndex
+        const newRound: RoundView = { ...res.round, roundIndex: round.roundIndex };
+        set({
+          round: newRound,
+          endsAtMs: toClientDeadline(newRound),
+          removedOptionIds: [],
+        });
+      }
+      return null;
+    } catch (e) {
+      return errMsg(e);
+    }
+  },
+
   reset() {
     set({
       status: 'idle',
@@ -139,6 +173,7 @@ export const useMatch = create<MatchState>((set, get) => ({
       score: 0,
       lastResult: null,
       summary: null,
+      removedOptionIds: [],
     });
   },
 }));
