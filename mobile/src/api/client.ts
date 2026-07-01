@@ -4,6 +4,7 @@
 // ============================================================
 
 import Constants from 'expo-constants';
+import { getToken } from './authToken';
 
 const BASE_URL: string =
   (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined) ??
@@ -23,9 +24,13 @@ async function request<T>(
   path: string,
   options?: { method?: string; body?: unknown },
 ): Promise<T> {
+  const token = getToken();
   const res = await fetch(`${BASE_URL}${path}`, {
     method: options?.method ?? 'GET',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: options?.body != null ? JSON.stringify(options.body) : undefined,
   });
 

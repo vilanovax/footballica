@@ -27,9 +27,13 @@ export default function HomeScreen() {
   const router = useRouter();
   const userId = useSession((s) => s.userId);
   const displayName = useSession((s) => s.displayName);
+  const sessionStatus = useSession((s) => s.status);
+  const user = useSession((s) => s.user);
   const start = useMatch((s) => s.start);
   const status = useMatch((s) => s.status);
   const [pending, setPending] = React.useState<GameMode | null>(null);
+
+  const isAuthed = sessionStatus === 'authed';
 
   const launch = async (mode: GameMode) => {
     setPending(mode);
@@ -56,21 +60,28 @@ export default function HomeScreen() {
     >
       {/* نوار بالا: پروفایل + جان + سکه */}
       <View style={styles.topbar}>
-        <View style={styles.profile}>
+        <Pressable
+          style={styles.profile}
+          onPress={() => router.push('/login')}
+        >
           <View style={styles.avatar}>
             <Text style={styles.avatarTxt}>{displayName.slice(0, 1)}</Text>
           </View>
           <View>
             <Text style={styles.name}>{displayName}</Text>
-            <Text style={styles.sub}>سطح {toFa(12)} · لیگ طلایی</Text>
+            <Text style={styles.sub}>
+              {isAuthed
+                ? `سطح ${toFa(user?.level ?? 1)} · لیگ طلایی`
+                : 'برای ورود بزن ›'}
+            </Text>
           </View>
-        </View>
+        </Pressable>
         <View style={styles.stats}>
           <View style={styles.chip}>
-            <Text style={styles.chipTxt}>❤️ {toFa(5)}</Text>
+            <Text style={styles.chipTxt}>❤️ {toFa(user?.lives ?? 5)}</Text>
           </View>
           <View style={styles.chip}>
-            <Text style={styles.chipTxt}>🪙 {toFa(840)}</Text>
+            <Text style={styles.chipTxt}>🪙 {toFa(user?.coins ?? 0)}</Text>
           </View>
         </View>
       </View>
@@ -99,6 +110,15 @@ export default function HomeScreen() {
             <Text style={styles.ctaTxt}>بازی سریع ⚡</Text>
           )}
         </LinearGradient>
+      </Pressable>
+
+      {/* دسترسیِ سریع: رده‌بندی */}
+      <Pressable
+        style={styles.navRow}
+        onPress={() => router.push('/leaderboard')}
+      >
+        <Text style={styles.navTxt}>📊 جدول رده‌بندی</Text>
+        <Text style={styles.navChevron}>›</Text>
       </Pressable>
 
       {/* مودهای بازی */}
@@ -300,6 +320,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   link: { color: colors.amber, fontFamily: font.family.medium, fontSize: font.size.body },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.glass,
+    borderColor: colors.glassBorder,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  navTxt: { color: colors.chalk, fontFamily: font.family.bold, fontSize: font.size.label },
+  navChevron: { color: colors.chalkDim, fontFamily: font.family.black, fontSize: font.size.title },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

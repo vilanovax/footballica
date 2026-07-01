@@ -11,6 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { colors } from '../src/theme';
+import { useSession } from '../src/store/useSession';
 
 // RTL را از ابتدا اجباری کن (اپ فارسی است)
 if (!I18nManager.isRTL) {
@@ -31,6 +32,13 @@ export default function RootLayout() {
     'Vazirmatn-Bold': require('../assets/fonts/Vazirmatn-Bold.ttf'),
     'Vazirmatn-Black': require('../assets/fonts/Vazirmatn-Black.ttf'),
   });
+
+  const hydrate = useSession((s) => s.hydrate);
+
+  // بازیابیِ نشست (توکنِ ذخیره‌شده) در استارتِ اپ
+  React.useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
 
   React.useEffect(() => {
     if (loaded || error) {
