@@ -26,9 +26,13 @@ mobile/
 ├─ app/                       # expo-router
 │  ├─ _layout.tsx             # RTL، فونتِ لوکال، providerها (Query/SafeArea)
 │  ├─ index.tsx               # خانه (لابی) — از روی ماک‌آپ
-│  └─ play/
-│     ├─ [matchId].tsx        # صفحهٔ سؤال + تایمر/بمب
-│     └─ result.tsx           # نتیجهٔ مَچ
+│  ├─ login.tsx               # ورود با شماره (OTP)
+│  ├─ leaderboard.tsx         # رده‌بندی
+│  ├─ play/
+│  │  ├─ [matchId].tsx        # صفحهٔ سؤالِ تک‌نفره + تایمر/بمب
+│  │  └─ result.tsx           # نتیجهٔ مَچ
+│  └─ duel/
+│     └─ [matchId].tsx        # صفحهٔ دوئل async (حریفِ انسان/ربات)
 ├─ src/
 │  ├─ theme.ts                # توکن‌های دیزاین (منبع یگانه)
 │  ├─ api/                    # client + قراردادِ مَچ (آینهٔ بک‌اند)

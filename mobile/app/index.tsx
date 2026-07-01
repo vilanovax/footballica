@@ -16,10 +16,13 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { colors, radius, spacing, font } from '../src/theme';
 import { toFa } from '../src/lib/fa';
 import { useSession } from '../src/store/useSession';
 import { useMatch } from '../src/store/useMatch';
+import { useDuel } from '../src/store/useDuel';
+import { listDuels, type DuelSummary } from '../src/api/duel';
 import type { GameMode } from '../src/api/match';
 
 export default function HomeScreen() {
@@ -31,9 +34,29 @@ export default function HomeScreen() {
   const user = useSession((s) => s.user);
   const start = useMatch((s) => s.start);
   const status = useMatch((s) => s.status);
+  const findDuel = useDuel((s) => s.find);
   const [pending, setPending] = React.useState<GameMode | null>(null);
+  const [duelPending, setDuelPending] = React.useState(false);
 
   const isAuthed = sessionStatus === 'authed';
+
+  const duels = useQuery({
+    queryKey: ['duels', userId],
+    queryFn: listDuels,
+    enabled: isAuthed,
+  });
+
+  // دوئل نیازمندِ ورود است (هویت + حریف). اگر مهمان بود → صفحهٔ ورود.
+  const launchDuel = async () => {
+    if (!isAuthed) {
+      router.push('/login');
+      return;
+    }
+    setDuelPending(true);
+    const matchId = await findDuel(5);
+    setDuelPending(false);
+    if (matchId) router.push(`/duel/${matchId}`);
+  };
 
   const launch = async (mode: GameMode) => {
     setPending(mode);
@@ -124,7 +147,13 @@ export default function HomeScreen() {
       {/* مودهای بازی */}
       <Text style={styles.section}>مودهای بازی</Text>
       <View style={styles.grid}>
-        <ModeCard emoji="⚔️" title="دوئل ۱به۱" sub="۵ سؤال، نوبتی" soon />
+        <ModeCard
+          emoji="⚔️"
+          title="دوئل ۱به۱"
+          sub="۵ سؤال، نوبتی"
+          loading={duelPending}
+          onPress={launchDuel}
+        />
         <ModeCard
           emoji="💣"
           title="حالت بمب"
@@ -143,31 +172,29 @@ export default function HomeScreen() {
         <ModeCard emoji="🏆" title="تورنمنت" sub="۳۲ نفر، جایزهٔ بزرگ" soon />
       </View>
 
-      {/* بازی‌های در جریان (استاتیک — فاز ۲) */}
+      {/* دوئل‌های در جریان (دادهٔ واقعی) */}
       <View style={styles.rowBetween}>
-        <Text style={styles.section}>بازی‌های در جریان</Text>
-        <Text style={styles.link}>همه</Text>
+        <Text style={styles.section}>دوئل‌های در جریان</Text>
       </View>
-      <OngoingRow
-        initial="س.ک"
-        name="سینا کریمی"
-        detail={`راند ${toFa(2)} · تو ${toFa(320)} — او ${toFa(280)}`}
-        badge="نوبت تو"
-        turn
-      />
-      <OngoingRow
-        initial="م.ا"
-        name="مهدی احمدی"
-        detail="تورنمنت · مرحلهٔ یک‌هشتم"
-        badge="منتظر او"
-      />
-      <OngoingRow
-        initial="ز.ر"
-        name="زهرا رضایی"
-        detail={`راند ${toFa(1)} · تازه شروع شد`}
-        badge="نوبت تو"
-        turn
-      />
+      {!isAuthed && (
+        <Pressable style={styles.navRow} onPress={() => router.push('/login')}>
+          <Text style={styles.navTxt}>برای دوئل با دیگران وارد شو</Text>
+          <Text style={styles.navChevron}>›</Text>
+        </Pressable>
+      )}
+      {isAuthed &&
+        (duels.data ?? []).map((d: DuelSummary) => (
+          <DuelRow
+            key={d.matchId}
+            duel={d}
+            onPress={() => router.push(`/duel/${d.matchId}`)}
+          />
+        ))}
+      {isAuthed && (duels.data?.length ?? 0) === 0 && !duels.isLoading && (
+        <Text style={styles.emptyHint}>
+          هنوز دوئلی نداری — «دوئل ۱به۱» را بزن!
+        </Text>
+      )}
     </ScrollView>
   );
 }
@@ -208,29 +235,54 @@ function ModeCard(props: {
   );
 }
 
-function OngoingRow(props: {
-  initial: string;
-  name: string;
-  detail: string;
-  badge: string;
-  turn?: boolean;
+function DuelRow({
+  duel,
+  onPress,
+}: {
+  duel: DuelSummary;
+  onPress: () => void;
 }) {
+  const name = duel.opponentName ?? 'در جستجوی حریف';
+  const initial = (duel.opponentName ?? '؟').slice(0, 1);
+
+  const { detail, badge, turn } = describeDuel(duel);
+
   return (
-    <View style={styles.ongoing}>
+    <Pressable style={styles.ongoing} onPress={onPress}>
       <View style={styles.oAvatar}>
-        <Text style={styles.oAvatarTxt}>{props.initial}</Text>
+        <Text style={styles.oAvatarTxt}>{initial}</Text>
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.oName}>{props.name}</Text>
-        <Text style={styles.oDetail}>{props.detail}</Text>
+        <Text style={styles.oName}>{name}</Text>
+        <Text style={styles.oDetail}>{detail}</Text>
       </View>
-      <View style={[styles.oBadge, props.turn && styles.oBadgeTurn]}>
-        <Text style={[styles.oBadgeTxt, props.turn && styles.oBadgeTxtTurn]}>
-          {props.badge}
+      <View style={[styles.oBadge, turn && styles.oBadgeTurn]}>
+        <Text style={[styles.oBadgeTxt, turn && styles.oBadgeTxtTurn]}>
+          {badge}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
+}
+
+function describeDuel(d: DuelSummary): {
+  detail: string;
+  badge: string;
+  turn: boolean;
+} {
+  if (d.status === 'FINISHED') {
+    const label =
+      d.outcome === 'win' ? 'بردی' : d.outcome === 'loss' ? 'باختی' : 'مساوی';
+    return { detail: 'تمام‌شده', badge: label, turn: d.outcome === 'win' };
+  }
+  if (d.myTurn) {
+    return {
+      detail: `راندِ ${toFa(d.myAnswered + 1)} از ${toFa(d.totalRounds)}`,
+      badge: 'نوبت تو',
+      turn: true,
+    };
+  }
+  return { detail: 'لِگت تمام شد', badge: 'منتظر حریف', turn: false };
 }
 
 const styles = StyleSheet.create({
@@ -333,6 +385,13 @@ const styles = StyleSheet.create({
   },
   navTxt: { color: colors.chalk, fontFamily: font.family.bold, fontSize: font.size.label },
   navChevron: { color: colors.chalkDim, fontFamily: font.family.black, fontSize: font.size.title },
+  emptyHint: {
+    color: colors.chalkDim,
+    fontFamily: font.family.medium,
+    fontSize: font.size.body,
+    textAlign: 'center',
+    paddingVertical: spacing.lg,
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
