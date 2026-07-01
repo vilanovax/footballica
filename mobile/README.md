@@ -19,6 +19,38 @@ npm run typecheck   # بررسی نوع‌ها
 `expo.extra.apiBaseUrl` است (پیش‌فرض `http://localhost:3000`). روی دستگاه واقعی،
 به‌جای localhost آی‌پیِ محلیِ کامپیوترت را بگذار.
 
+## پیش‌نمایش و خروجیِ اندروید
+
+سه راه (از سریع به کامل):
+
+### ۱) سریع‌ترین: Expo Go (بدونِ اندروید استودیو)
+```bash
+npm start          # یک QR نشان می‌دهد
+```
+اپِ **Expo Go** را روی گوشی نصب کن و QR را اسکن کن — اپ زنده اجرا می‌شود
+(hot-reload). برای امولاتور: `npm run android` (اگر امولاتور بالا باشد).
+
+### ۲) اندروید استودیو (پروژهٔ native)
+اپ managed-Expo است؛ پروژهٔ `android/` را «تولید» می‌کنیم (CNG):
+```bash
+npx expo prebuild --platform android   # پوشهٔ android/ را می‌سازد
+```
+سپس در **Android Studio** پوشهٔ `mobile/android` را `Open` کن و روی
+امولاتور/دستگاه Run بزن. (توجه: RN «پیش‌نمایشِ استاتیکِ layout» ندارد؛ روی
+امولاتور اجرا می‌شود، نه پنلِ Preview.)
+> پوشهٔ `android/` تولیدشده است و در `.gitignore` است؛ با هر `prebuild` بازساخته می‌شود.
+
+### ۳) خروجیِ APK (لوکال، ایران‌محور)
+چون **EAS Build** (بیلدِ ابریِ Expo) ممکن است در ایران مسدود باشد، بیلدِ لوکال
+با Gradle توصیه می‌شود:
+```bash
+npx expo prebuild --platform android
+cd android && ./gradlew assembleRelease   # خروجی: app/build/outputs/apk/release/
+```
+APK را روی **کافه‌بازار/مایکت** منتشر کن (طبق `CLAUDE.md`).
+
+> پیش‌نیازِ راه ۲ و ۳: JDK 17 + Android SDK (که اندروید استودیو نصب می‌کند).
+
 ## ساختار
 
 ```

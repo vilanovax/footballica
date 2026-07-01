@@ -4,3 +4,7 @@ dist/
 web-build/
 *.log
 .DS_Store
+
+# پروژه‌های native تولیدشده توسط `expo prebuild` (CNG) — لوکال ساخته می‌شوند
+/android/
+/ios/
