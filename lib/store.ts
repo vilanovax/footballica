@@ -12,7 +12,7 @@ import {
 } from "./units";
 import { managerDef } from "./managers";
 import { levelForXp } from "./progress";
-import type { PowerUpId, PowerUpInventory, PowerUpCurrency } from "./powerups";
+import type { PowerUpId, PowerUpInventory } from "./powerups";
 import { powerUpDef } from "./powerups";
 
 export type UpgradeResult = "ok" | "poor" | "locked" | "max";
