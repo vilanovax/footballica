@@ -33,6 +33,7 @@ export default function Page() {
   useEffect(() => {
     void Promise.resolve(useGame.persist.rehydrate()).then(() => {
       useGame.getState().syncLives();
+      useGame.getState().syncClubEconomy();
       setMounted(true);
     });
   }, []);
@@ -124,6 +125,7 @@ export default function Page() {
         <Result
           result={result}
           onHome={() => setScreen("home")}
+          onOpenClub={() => openClub("result")}
           onReplay={() => {
             if (result.mode === "duel") startDuel();
             else startQuiz();

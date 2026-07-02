@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { UPGRADES, CLUB } from "./club";
-import { vaultCapacity, vaultUpgradeCost, VAULT_MAX } from "./vault";
+import { vaultCapacity, vaultUpgradeCost, VAULT_MAX, isBank } from "./vault";
 import {
   UNITS,
   unitDef,
@@ -62,6 +62,8 @@ interface GameState {
   powerups: PowerUpInventory;
   // گزارشِ سؤال‌ها (فعلاً محلی؛ در فاز سرور به API می‌رود)
   reports: { questionId: string; reason: string; at: number }[];
+  /** آموزشِ مسیر پول: تا اولین برداشت از گاوصندوق */
+  showVaultTutorial: boolean;
   // اکشن‌ها
   addCards: (n: number) => void;
   addFans: (n: number) => void;
@@ -96,6 +98,9 @@ interface GameState {
   buyPowerUp: (id: PowerUpId) => UpgradeResult;
   /** مصرفِ یک عدد از موجودی؛ false اگر نداشت */
   usePowerUp: (id: PowerUpId) => boolean;
+  /** همگام‌سازی اقتصاد باشگاه بعد از rehydrate (مدیران + بانک) */
+  syncClubEconomy: () => void;
+  completeVaultTutorial: () => void;
   resetSave: () => void;
 }
 
@@ -145,6 +150,7 @@ const initialState = {
   lastPlayDate: "",
   powerups: {} as PowerUpInventory,
   reports: [] as { questionId: string; reason: string; at: number }[],
+  showVaultTutorial: true,
 };
 
 export const useGame = create<GameState>()(
@@ -160,6 +166,14 @@ export const useGame = create<GameState>()(
       depositVault: (amount) => {
         if (amount <= 0) return { deposited: 0, overflow: 0 };
         const { vaultLevel, vaultBalance } = get();
+
+        // بانکِ اسپانسر: مستقیم به بودجه (بدون توقف در گاوصندوق)
+        if (isBank(vaultLevel)) {
+          set((s) => ({ budget: s.budget + amount }));
+          get().completeVaultTutorial();
+          return { deposited: amount, overflow: 0 };
+        }
+
         const cap = vaultCapacity(vaultLevel);
         const free = Math.max(0, cap - vaultBalance);
         const deposited = Math.min(amount, free);
@@ -216,10 +230,6 @@ export const useGame = create<GameState>()(
         );
         if (pending <= 0) return 0;
 
-        const free = Math.max(0, vaultCapacity(vaultLevel) - vaultBalance);
-        const deposit = Math.min(pending, free);
-        if (deposit <= 0) return 0;
-
         const rate = unitStats(
           def,
           u.level,
@@ -228,13 +238,32 @@ export const useGame = create<GameState>()(
           speed,
           fanMult,
         ).ratePerSecond;
-        const remainder = pending - deposit;
-        const newLast = now - (rate > 0 ? remainder / rate : 0) * 1000;
 
-        set((s) => ({
-          vaultBalance: s.vaultBalance + deposit,
-          units: { ...s.units, [id]: { ...s.units[id], lastCollect: newLast } },
-        }));
+        let deposit: number;
+        let newLast: number;
+
+        if (isBank(vaultLevel)) {
+          deposit = pending;
+          newLast = now;
+        } else {
+          const free = Math.max(0, vaultCapacity(vaultLevel) - vaultBalance);
+          deposit = Math.min(pending, free);
+          if (deposit <= 0) return 0;
+          const rem = pending - deposit;
+          newLast = now - (rate > 0 ? rem / rate : 0) * 1000;
+        }
+
+        if (isBank(vaultLevel)) {
+          set((s) => ({
+            budget: s.budget + deposit,
+            units: { ...s.units, [id]: { ...s.units[id], lastCollect: newLast } },
+          }));
+        } else {
+          set((s) => ({
+            vaultBalance: s.vaultBalance + deposit,
+            units: { ...s.units, [id]: { ...s.units[id], lastCollect: newLast } },
+          }));
+        }
         return deposit;
       },
 
@@ -322,19 +351,26 @@ export const useGame = create<GameState>()(
 
       // برداشت از گاوصندوق → بودجهٔ باشگاه
       withdrawVault: () => {
-        const amt = get().vaultBalance;
-        if (amt <= 0) return 0;
-        set((s) => ({ budget: s.budget + amt, vaultBalance: 0 }));
-        return amt;
+        const { vaultLevel, vaultBalance } = get();
+        if (isBank(vaultLevel) || vaultBalance <= 0) return 0;
+        set((s) => ({ budget: s.budget + vaultBalance, vaultBalance: 0 }));
+        get().completeVaultTutorial();
+        return vaultBalance;
       },
 
       // ارتقای گاوصندوق (ظرفیت ↑ / تبدیل به بانک) — با بودجه
       upgradeVault: () => {
-        const { vaultLevel, budget } = get();
+        const { vaultLevel, budget, vaultBalance } = get();
         if (vaultLevel >= VAULT_MAX) return "max";
         const cost = vaultUpgradeCost(vaultLevel);
         if (budget < cost) return "poor";
-        set({ budget: budget - cost, vaultLevel: vaultLevel + 1 });
+        const nextLevel = vaultLevel + 1;
+        const becomingBank = isBank(nextLevel);
+        set({
+          budget: budget - cost + (becomingBank ? vaultBalance : 0),
+          vaultLevel: nextLevel,
+          vaultBalance: becomingBank ? 0 : vaultBalance,
+        });
         return "ok";
       },
 
@@ -426,11 +462,28 @@ export const useGame = create<GameState>()(
         return true;
       },
 
+      syncClubEconomy: () => {
+        const { xp, assign } = get();
+        for (const u of UNITS) {
+          if (levelForXp(xp) < unitDef(u.id).requiresLevel) continue;
+          if (!assign[u.id]) continue;
+          get().collectUnit(u.id);
+        }
+        const { vaultLevel, vaultBalance } = get();
+        if (!isBank(vaultLevel) || vaultBalance <= 0) return;
+        get().withdrawVault();
+      },
+
+      completeVaultTutorial: () => {
+        if (!get().showVaultTutorial) return;
+        set({ showVaultTutorial: false });
+      },
+
       resetSave: () => set({ ...initialState }),
     }),
     {
       name: "footballica-save",
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
         const s = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -439,6 +492,11 @@ export const useGame = create<GameState>()(
           s.cards = cards + Math.max(0, Math.floor(coins / 30));
           delete s.coins;
           delete s.incomeAvailable;
+        }
+        if (version < 3) {
+          const matchesWon = typeof s.matchesWon === "number" ? s.matchesWon : 0;
+          const budget = typeof s.budget === "number" ? s.budget : 0;
+          s.showVaultTutorial = matchesWon === 0 && budget === 0;
         }
         return persisted;
       },
@@ -471,6 +529,7 @@ export const useGame = create<GameState>()(
         lastPlayDate: s.lastPlayDate,
         powerups: s.powerups,
         reports: s.reports,
+        showVaultTutorial: s.showVaultTutorial,
       }),
     },
   ),

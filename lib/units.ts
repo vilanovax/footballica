@@ -1,10 +1,16 @@
 /**
  * واحدهای تجاریِ باشگاه.
- * دو نوع رشد:
- *  ۱) سطحِ کلیِ واحد (level) → درآمدِ پایه ↑ و آنلاکِ آیتم‌های داخلی
- *  ۲) آیتم‌های داخلی (items) → هر کدام یک اثرِ واضح: درآمد / سرعت / ظرفیت
- * درآمد → بافرِ خودِ واحد → با تپ/مدیر به گاوصندوق.
+ *
+ * الگوریتمِ درآمد:
+ *  ۱) payout پایه = basePayout × payoutGrowth^(unitLevel−1)
+ *  ۲) آیتم income → +base×lvl به payout
+ *  ۳) payout نهایی = payout × incomeMult(مدیر) × fanMult(هوادار)
+ *  ۴) cycle = max(cycleMin, cycleSeconds − Σspeed×lvl) / speedMult(مدیر)
+ *  ۵) cap = payout × (pendingCapCycles + Σcapacity×lvl)
+ *  ۶) pending = min(cap, elapsed×rate) — elapsed حداکثر ۸ساعت آفلاین
  */
+import { offlineCapSeconds } from "./economy";
+import { faMoney, faNum } from "./format";
 export type ItemEffect = "income" | "speed" | "capacity";
 
 export interface ItemDef {
@@ -176,11 +182,63 @@ export function itemUpgradeCost(item: ItemDef, currentLevel: number): number {
   return Math.round(item.baseCost * item.costGrowth ** currentLevel);
 }
 
+export const ITEM_EFFECT_ICON: Record<ItemEffect, string> = {
+  income: "💰",
+  speed: "⚡",
+  capacity: "📦",
+};
+
+export const ITEM_EFFECT_NAME: Record<ItemEffect, string> = {
+  income: "درآمد",
+  speed: "سرعت",
+  capacity: "بافر",
+};
+
+/** اثرِ تجمعیِ یک آیتم در سطحِ lvl (۰ = بدون اثر) */
+export function itemEffectTotal(item: ItemDef, lvl: number): number {
+  return item.base * Math.max(0, lvl);
+}
+
+/** توضیحِ خوانا برای اثرِ تجمعی */
+export function itemEffectDescribe(item: ItemDef, lvl: number): string {
+  if (lvl <= 0) return "—";
+  const amt = itemEffectTotal(item, lvl);
+  if (item.effect === "income") return `+${faMoney(amt)} هر دوره`;
+  if (item.effect === "speed") return `−${faNum(amt)} ثانیه از دوره`;
+  return `+${faNum(amt)} دورهٔ بافر`;
+}
+
+/** افزایشِ هر سطحِ ارتقا */
+export function itemEffectPerLevel(item: ItemDef): string {
+  if (item.effect === "income") return `+${faMoney(item.base)}/دوره`;
+  if (item.effect === "speed") return `−${faNum(item.base)}ث/دوره`;
+  return `+${faNum(item.base)} دورهٔ بافر`;
+}
+
+/** کمترین سطحِ واحد برای باز شدنِ آیتمِ بعدی */
+export function nextItemUnlockLevel(def: UnitDef, unitLevel: number): number | null {
+  let next: number | null = null;
+  for (const it of def.items) {
+    if (unitLevel >= it.unlockLevel) continue;
+    if (next === null || it.unlockLevel < next) next = it.unlockLevel;
+  }
+  return next;
+}
+
+/** تعدادِ آیتم‌های فعال (سطح > ۰) */
+export function activeItemCount(
+  def: UnitDef,
+  itemLevels: Record<string, number>,
+): number {
+  return def.items.filter((it) => (itemLevels[it.id] ?? 0) > 0).length;
+}
+
 export interface UnitStats {
   payout: number; // درآمدِ هر دوره (با آیتم‌ها و ضریبِ مدیر)
   cycle: number; // ثانیهٔ هر دوره
   cap: number; // سقفِ بافر
   ratePerSecond: number;
+  baseCapCycles: number; // تعدادِ دوره‌های ذخیره (پایه + آیتمِ capacity)
 }
 
 /** آمارِ مؤثرِ واحد از سطحِ واحد + آیتم‌های داخلی + ضریبِ مدیر + هوادار */
@@ -208,7 +266,13 @@ export function unitStats(
   const baseCycle = Math.max(def.cycleMin, def.cycleSeconds - cycleCut);
   const cycle = Math.max(1, baseCycle / speedMult);
   const cap = effPayout * (def.pendingCapCycles + extraCapCycles);
-  return { payout: effPayout, cycle, cap, ratePerSecond: effPayout / cycle };
+  return {
+    payout: effPayout,
+    cycle,
+    cap,
+    ratePerSecond: effPayout / cycle,
+    baseCapCycles: def.pendingCapCycles + extraCapCycles,
+  };
 }
 
 /** درآمدِ جمع‌شده در بافرِ واحد تا این لحظه (تا سقف) */
@@ -230,6 +294,7 @@ export function unitPending(
     speedMult,
     fanMult,
   );
-  const elapsed = Math.max(0, (nowMs - lastMs) / 1000);
+  const rawElapsed = Math.max(0, (nowMs - lastMs) / 1000);
+  const elapsed = Math.min(offlineCapSeconds(), rawElapsed);
   return Math.min(cap, Math.floor(elapsed * ratePerSecond));
 }

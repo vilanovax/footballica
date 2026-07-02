@@ -1,12 +1,14 @@
 "use client";
 
 import { faMoney } from "@/lib/format";
+import type { ClubFlowStep } from "@/lib/clubEconomy";
 
 interface ClubFlowBarProps {
   unitsPending: number;
   vaultBalance: number;
   budget: number;
   vaultFull?: boolean;
+  activeStep: ClubFlowStep;
 }
 
 export function ClubFlowBar({
@@ -14,55 +16,70 @@ export function ClubFlowBar({
   vaultBalance,
   budget,
   vaultFull,
+  activeStep,
 }: ClubFlowBarProps) {
   const steps: {
+    id: ClubFlowStep;
     emoji: string;
     label: string;
     value: number;
     alert?: boolean;
   }[] = [
-    { emoji: "🏪", label: "واحدها", value: unitsPending },
     {
+      id: "units",
+      emoji: "🏪",
+      label: "واحدها",
+      value: unitsPending,
+      alert: unitsPending > 0 && activeStep === "units",
+    },
+    {
+      id: "vault",
       emoji: "🔐",
       label: "گاوصندوق",
       value: vaultBalance,
-      alert: vaultFull,
+      alert: vaultFull || activeStep === "vault",
     },
-    { emoji: "💰", label: "بودجه", value: budget },
+    {
+      id: "budget",
+      emoji: "💰",
+      label: "بودجه",
+      value: budget,
+      alert: activeStep === "budget" && budget > 0,
+    },
   ];
 
   return (
-    <div className="mx-5 mt-3 rounded-2xl bg-black/25 px-3 py-3">
-      <p className="mb-2.5 text-center text-[11px] font-bold text-white/45">
-        مسیرِ پول: واحدها / جایزهٔ مسابقه → گاوصندوق → بودجه
-      </p>
-      <div className="flex items-center gap-1">
-        {steps.map((s, i) => (
-          <div key={s.label} className="flex flex-1 items-center gap-1 min-w-0">
-            <div
-              className={`flex-1 rounded-xl px-2 py-2 text-center min-w-0 ${
-                s.alert ? "ring-1 ring-gold-500/60 bg-gold-500/10" : "bg-white/5"
-              }`}
-            >
-              <p className="text-base leading-none">{s.emoji}</p>
-              <p className="mt-1 truncate text-[10px] font-bold text-white/55">
-                {s.label}
-              </p>
-              <p
-                className={`mt-0.5 text-xs font-extrabold truncate ${
-                  s.value > 0 ? "text-gold-400" : "text-white/35"
-                }`}
+    <div className="club-flow">
+      <div className="flex items-stretch gap-1">
+        {steps.map((s, i) => {
+          const active = activeStep === s.id;
+          const hasValue = s.value > 0;
+          return (
+            <div key={s.id} className="flex flex-1 items-center gap-0.5 min-w-0">
+              <div
+                className={`club-flow-step flex-1 min-w-0 ${active ? "club-flow-step--active" : ""} ${s.alert && !active ? "club-flow-step--alert" : ""}`}
               >
-                {faMoney(s.value)}
-              </p>
+                <span className="club-flow-step__num">{i + 1}</span>
+                <span className="text-lg leading-none">{s.emoji}</span>
+                <p className="mt-1 truncate text-[10px] font-bold text-white/55">
+                  {s.label}
+                </p>
+                <p
+                  className={`mt-0.5 text-xs font-extrabold truncate ${
+                    hasValue ? "text-gold-400" : "text-white/30"
+                  }`}
+                >
+                  {faMoney(s.value)}
+                </p>
+              </div>
+              {i < steps.length - 1 && (
+                <span className="club-flow-arrow shrink-0" aria-hidden>
+                  ‹
+                </span>
+              )}
             </div>
-            {i < steps.length - 1 && (
-              <span className="shrink-0 text-[10px] text-white/25" aria-hidden>
-                ←
-              </span>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

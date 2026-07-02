@@ -5,6 +5,7 @@ import confetti from "canvas-confetti";
 import { Avatar } from "@/components/ui/Avatar";
 import { faNum, faMoney } from "@/lib/format";
 import { useGame } from "@/lib/store";
+import { isBank } from "@/lib/vault";
 import type { MatchResult } from "@/lib/types";
 import { OPPONENT } from "@/lib/types";
 
@@ -12,9 +13,10 @@ interface ResultProps {
   result: MatchResult;
   onHome: () => void;
   onReplay: () => void;
+  onOpenClub: () => void;
 }
 
-export function Result({ result, onHome, onReplay }: ResultProps) {
+export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
   const won = result.youScore >= result.foeScore;
   const isDuel = result.mode === "duel";
   const applyActivityReward = useGame((s) => s.applyActivityReward);
@@ -22,10 +24,16 @@ export function Result({ result, onHome, onReplay }: ResultProps) {
   const recordDailyPlay = useGame((s) => s.recordDailyPlay);
   const recordWin = useGame((s) => s.recordWin);
   const club = useGame((s) => s.club);
+  const vaultLevel = useGame((s) => s.vaultLevel);
+  const vaultBalance = useGame((s) => s.vaultBalance);
+  const showVaultTutorial = useGame((s) => s.showVaultTutorial);
   const credited = useRef(false);
   const [vaultOverflow, setVaultOverflow] = useState(0);
 
   const correctCount = result.outcomes.filter((o) => o.youCorrect).length;
+  const bank = isBank(vaultLevel);
+  const showVaultCta =
+    showVaultTutorial && result.vaultEarned > 0 && !bank && vaultBalance > 0;
 
   useEffect(() => {
     if (credited.current) return;
@@ -93,12 +101,14 @@ export function Result({ result, onHome, onReplay }: ResultProps) {
         {result.vaultEarned > 0 && (
           <div className="glass rounded-2xl px-4 py-3 flex items-center justify-between ring-1 ring-gold-500/30">
             <span className="font-extrabold text-gold-400">
-              +{faMoney(result.vaultEarned)} 🔐
+              +{faMoney(result.vaultEarned)} {bank ? "💰" : "🔐"}
             </span>
             <span className="text-sm text-white/50 text-left leading-5">
               درآمد مسابقه
               <br />
-              <span className="text-gold-400/80">وارد گاوصندوق شد</span>
+              <span className="text-gold-400/80">
+                {bank ? "مستقیم به بودجه اضافه شد" : "وارد گاوصندوق شد"}
+              </span>
             </span>
           </div>
         )}
@@ -117,6 +127,24 @@ export function Result({ result, onHome, onReplay }: ResultProps) {
           </p>
         )}
       </div>
+
+      {showVaultCta && (
+        <div className="mt-4 w-full max-w-sm rounded-2xl border border-gold-500/50 bg-gold-500/10 p-4 text-right animate-pulse-soft">
+          <p className="text-sm font-extrabold text-gold-400">
+            🔐 قدم بعدی: گاوصندوق
+          </p>
+          <p className="mt-2 text-sm text-white/70 leading-6">
+            درآمد مسابقه در گاوصندوق است. برو برداشت کن تا بتوانی فروشگاه را
+            ارتقا بدهی.
+          </p>
+          <button
+            onClick={onOpenClub}
+            className="btn-gold mt-3 w-full rounded-xl py-3 text-sm font-extrabold"
+          >
+            🏟️ برو به باشگاه
+          </button>
+        </div>
+      )}
 
       {isDuel && (
         <p className="mt-3 text-sm text-white/55">
@@ -188,12 +216,22 @@ export function Result({ result, onHome, onReplay }: ResultProps) {
 
       {/* دکمه‌ها */}
       <div className="w-full mt-6 space-y-3">
-        <button
-          onClick={onReplay}
-          className="btn-gold w-full rounded-2xl py-4 text-lg font-extrabold"
-        >
-          ⚡ بازیِ دوباره
-        </button>
+        {!showVaultCta && (
+          <button
+            onClick={onReplay}
+            className="btn-gold w-full rounded-2xl py-4 text-lg font-extrabold"
+          >
+            ⚡ بازیِ دوباره
+          </button>
+        )}
+        {showVaultCta ? (
+          <button
+            onClick={onReplay}
+            className="w-full rounded-2xl bg-white/10 py-3.5 font-bold text-white/80"
+          >
+            ⚡ بازیِ دوباره
+          </button>
+        ) : null}
         <button
           onClick={onHome}
           className="w-full rounded-2xl bg-white/10 py-3.5 font-bold text-white/80"

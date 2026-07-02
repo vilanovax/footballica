@@ -63,3 +63,73 @@ export function unitIncomeSnapshot(state: {
 
   return { totalPending, readyCount, fullCount, vaultFree, vaultFull, vaultCap };
 }
+
+export type ClubFlowStep = "units" | "vault" | "budget";
+
+export interface ClubNextAction {
+  step: ClubFlowStep;
+  title: string;
+  detail: string;
+  emoji: string;
+}
+
+/** پیشنهادِ قدم بعدی برای UI باشگاه */
+export function clubNextAction(input: {
+  totalPending: number;
+  vaultBalance: number;
+  vaultFull: boolean;
+  vaultFree: number;
+  readyCount: number;
+  isBank: boolean;
+}): ClubNextAction {
+  const {
+    totalPending,
+    vaultBalance,
+    vaultFull,
+    vaultFree,
+    readyCount,
+    isBank,
+  } = input;
+
+  if (totalPending > 0 && vaultFree > 0 && !isBank) {
+    return {
+      step: "units",
+      emoji: "🏪",
+      title: "واریز از واحدها",
+      detail:
+        readyCount > 1
+          ? `${readyCount} واحد درآمد آماده — به گاوصندوق بفرست`
+          : "درآمد جمع شده — دکمهٔ واریز را بزن",
+    };
+  }
+  if (vaultFull && !isBank) {
+    return {
+      step: "vault",
+      emoji: "🔐",
+      title: "گاوصندوق پر است",
+      detail: "برداشت کن یا ظرفیت را ارتقا بده",
+    };
+  }
+  if (vaultBalance > 0 && !isBank) {
+    return {
+      step: "vault",
+      emoji: "💰",
+      title: "برداشت به بودجه",
+      detail: "پول در گاوصندوق است — برای ارتقا برداشت کن",
+    };
+  }
+  if (totalPending > 0 && vaultFree <= 0 && !isBank) {
+    return {
+      step: "vault",
+      emoji: "🔐",
+      title: "گاوصندوق پر است",
+      detail: "اول برداشت کن تا واحدها دوباره واریز کنند",
+    };
+  }
+  return {
+    step: "budget",
+    emoji: "⚽",
+    title: "درآمد در حال جمع شدن",
+    detail: "بازی کن یا صبر کن تا واحدها پر شوند",
+  };
+}

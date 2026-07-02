@@ -6,9 +6,14 @@ export const ECONOMY = {
   fans: { duelWin: 100 },
   upgrade: { costMultiplier: 1.6 },
   promotion: { fansNeeded: [1000, 3000, 8000, 20000] },
-  /** حداکثر ساعاتِ درآمدِ آفلاین (فاز بعد) */
+  /** حداکثر ساعاتِ درآمدِ آفلاین */
   offlineCapHours: 8,
 } as const;
+
+/** سقفِ ثانیه برای محاسبهٔ درآمدِ idle (جلوگیری از inflation بعد از غیبت طولانی) */
+export function offlineCapSeconds(): number {
+  return ECONOMY.offlineCapHours * 3600;
+}
 
 /** ضریبِ درآمدِ واحدهای تجاری بر اساس هوادار */
 export function fanIncomeMultiplier(fans: number): number {
