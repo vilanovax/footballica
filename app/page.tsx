@@ -15,6 +15,7 @@ import { BombMode } from "@/components/screens/BombMode";
 import { Duel } from "@/components/screens/Duel";
 import { Penalty } from "@/components/screens/Penalty";
 import { Survival } from "@/components/screens/Survival";
+import { Missions } from "@/components/screens/Missions";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { NoLivesModal } from "@/components/ui/NoLivesModal";
 import { isTab, type MatchResult, type Screen } from "@/lib/types";
@@ -22,6 +23,7 @@ import { isTab, type MatchResult, type Screen } from "@/lib/types";
 export default function Page() {
   const [screen, setScreen] = useState<Screen>("home");
   const [result, setResult] = useState<MatchResult | null>(null);
+  const [missionsFrom, setMissionsFrom] = useState<Screen>("home");
   const [clubFrom, setClubFrom] = useState<Screen>("home");
   const [mounted, setMounted] = useState(false);
   const [noLives, setNoLives] = useState(false);
@@ -34,6 +36,7 @@ export default function Page() {
     void Promise.resolve(useGame.persist.rehydrate()).then(() => {
       useGame.getState().syncLives();
       useGame.getState().syncClubEconomy();
+      useGame.getState().ensureDailyMissions();
       setMounted(true);
     });
   }, []);
@@ -41,6 +44,11 @@ export default function Page() {
   const openClub = (from: Screen) => {
     setClubFrom(from);
     setScreen("club");
+  };
+
+  const openMissions = (from: Screen) => {
+    setMissionsFrom(from);
+    setScreen("missions");
   };
 
   function startQuiz() {
@@ -68,6 +76,7 @@ export default function Page() {
         <Home
           onPlayQuick={startQuiz}
           onOpenClub={() => openClub("home")}
+          onOpenMissions={() => openMissions("home")}
           onPlayBomb={() => setScreen("bomb")}
           onOpenGames={() => setScreen("games")}
           onPlayDuel={startDuel}
@@ -91,7 +100,14 @@ export default function Page() {
       {screen === "shop" && <Shop />}
 
       {screen === "profile" && (
-        <Profile onOpenClub={() => openClub("profile")} />
+        <Profile
+          onOpenClub={() => openClub("profile")}
+          onOpenMissions={() => openMissions("profile")}
+        />
+      )}
+
+      {screen === "missions" && (
+        <Missions onBack={() => setScreen(missionsFrom)} />
       )}
 
       {screen === "club" && <Club onBack={() => setScreen(clubFrom)} />}

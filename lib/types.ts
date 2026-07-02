@@ -7,6 +7,7 @@ export type Screen =
   | "quiz"
   | "result"
   | "club"
+  | "missions"
   | "bomb"
   | "duel"
   | "penalty"

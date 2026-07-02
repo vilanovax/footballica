@@ -5,6 +5,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ReactionOverlay, type Reaction } from "@/components/ui/ReactionOverlay";
 import { ReportButton } from "@/components/ui/ReportButton";
 import { PowerUpBar } from "@/components/ui/PowerUpBar";
+import { QuizQuestionCard, QuizOptionButton } from "@/components/ui/QuizUi";
 import { drawRound, drawOneExcluding, type Question } from "@/lib/questions";
 import { scoreAnswer, SCORING, rewardQuickQuiz, rewardDuel } from "@/lib/economy";
 import {
@@ -103,7 +104,6 @@ export function Quiz({
   function lockAnswer(choice: number | null) {
     if (revealed || awaitingVar) return;
 
-    // دستکشِ طلایی — اولین اشتباهِ فعال
     if (
       choice !== null &&
       choice !== q.correct &&
@@ -147,7 +147,6 @@ export function Quiz({
     }
     setReaction(react);
 
-    // VAR — فرصتِ یک جوابِ دیگر
     if (!youCorrect && !varUsedMatch && powerUpCount(powerups, "var") > 0) {
       setAwaitingVar(true);
       setHint("📺 VAR فعال است — دوباره جواب بده");
@@ -262,12 +261,11 @@ export function Quiz({
   const danger = secondsLeft <= 3;
   const ringColor = danger ? "#e5473f" : secondsLeft <= 6 ? "#f5c542" : "#2f9e5f";
 
-  function optionClass(i: number) {
-    if (!revealed)
-      return "bg-pitch-600 border-pitch-500 active:scale-[0.98] hover:border-white/25";
-    if (i === q.correct) return "bg-grass-500/90 border-grass-400";
-    if (i === selected) return "bg-team-foe/80 border-team-foe animate-shake";
-    return "bg-pitch-700 border-pitch-600 opacity-60";
+  function optionState(i: number): "idle" | "correct" | "wrong" | "dim" {
+    if (!revealed) return "idle";
+    if (i === q.correct) return "correct";
+    if (i === selected) return "wrong";
+    return "dim";
   }
 
   const puDisabled: Partial<Record<string, boolean>> = {
@@ -282,42 +280,42 @@ export function Quiz({
   };
 
   return (
-    <div className="pitch-stripes min-h-dvh flex flex-col">
+    <div className="quiz-screen pitch-stripes min-h-dvh flex flex-col pb-8">
       {reaction && !awaitingVar && <ReactionOverlay reaction={reaction} onDone={() => {}} />}
 
-      <div className="flex justify-center gap-2 pt-5">
+      <div className="flex justify-center gap-2 pt-5 px-5">
         {mode === "duel" ? (
-          <span className="rounded-xl bg-team-you px-5 py-1.5 text-sm font-bold text-white">
-            ⚔️ دوئل · هوادار در خطر است
+          <span className="quiz-mode-badge quiz-mode-badge--duel rounded-xl px-4 py-1.5 text-sm font-bold">
+            ⚔️ دوئل · ۱ ❤️
           </span>
         ) : (
-          <span className="rounded-xl bg-gold-400 px-4 py-1.5 text-sm font-bold text-[#3a2600]">
-            حالت عادی
+          <span className="quiz-mode-badge rounded-xl px-4 py-1.5 text-sm font-bold">
+            ⚽ بازی سریع · رایگان
           </span>
         )}
       </div>
 
-      <div className="flex items-center justify-between px-6 pt-4">
-        <div className="flex items-center gap-2">
+      <div className="quiz-scoreboard mx-5 mt-4 rounded-2xl p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 min-w-0">
           <Avatar label="تو" color="you" size={44} />
           <div className="text-right leading-tight">
-            <p className="text-xs text-white/60">شما</p>
-            <p className="text-2xl font-extrabold">{faNum(youScore)}</p>
+            <p className="text-[11px] text-white/50">شما</p>
+            <p className="text-2xl font-extrabold text-gold-400">{faNum(youScore)}</p>
           </div>
         </div>
-        <span className="rounded-lg border border-gold-500/50 px-3 py-1 text-sm font-extrabold text-gold-400">
+        <span className="rounded-lg border border-gold-500/40 bg-black/20 px-3 py-1 text-sm font-extrabold text-gold-400">
           VS
         </span>
-        <div className="flex items-center gap-2 flex-row-reverse">
+        <div className="flex items-center gap-2.5 flex-row-reverse min-w-0">
           <Avatar label={opponent.short} color="foe" size={44} />
           <div className="text-left leading-tight">
-            <p className="text-xs text-white/60">{opponent.name}</p>
+            <p className="text-[11px] text-white/50 truncate max-w-[5rem]">{opponent.name}</p>
             <p className="text-2xl font-extrabold">{faNum(foeScore)}</p>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-2 pt-3 text-sm text-white/60">
+      <div className="flex items-center justify-center gap-2 pt-3 text-sm text-white/55">
         <span>
           سؤال {faNum(index + 1)} از {faNum(round.length)}
         </span>
@@ -325,36 +323,36 @@ export function Quiz({
           {round.map((_, i) => (
             <span
               key={i}
-              className={`h-2.5 w-2.5 rounded-full ${
+              className={`h-2 w-2 rounded-full ${
                 i < index
                   ? "bg-grass-400"
                   : i === index
-                    ? "bg-gold-400"
-                    : "bg-white/20"
+                    ? "bg-gold-400 ring-2 ring-gold-400/30"
+                    : "bg-white/15"
               }`}
             />
           ))}
         </div>
       </div>
 
-      <div className="flex justify-center py-4">
+      <div className="flex justify-center py-3">
         <div className={`relative ${danger ? "animate-danger rounded-full" : ""}`}>
-          <svg width="120" height="120" className="-rotate-90">
+          <svg width="108" height="108" className="-rotate-90">
             <circle
-              cx="60"
-              cy="60"
+              cx="54"
+              cy="54"
               r={R}
               fill="none"
               stroke="rgba(255,255,255,0.08)"
-              strokeWidth="10"
+              strokeWidth="9"
             />
             <circle
-              cx="60"
-              cy="60"
+              cx="54"
+              cy="54"
               r={R}
               fill="none"
               stroke={ringColor}
-              strokeWidth="10"
+              strokeWidth="9"
               strokeLinecap="round"
               strokeDasharray={C}
               strokeDashoffset={C * (1 - ratio)}
@@ -362,7 +360,7 @@ export function Quiz({
             />
           </svg>
           <span
-            className="absolute inset-0 grid place-items-center text-4xl font-extrabold"
+            className="absolute inset-0 grid place-items-center text-3xl font-extrabold"
             style={{ color: ringColor }}
           >
             {faNum(secondsLeft)}
@@ -385,40 +383,32 @@ export function Quiz({
         shakeId={shakePu}
       />
 
-      <div className="mx-5 rounded-3xl bg-[#eef3ee] text-pitch-900 p-5 shadow-xl animate-rise">
-        <div className="flex items-center justify-between">
-          <ReportButton questionId={q.id} />
-          <span className="rounded-lg bg-grass-500/15 px-2.5 py-1 text-xs font-bold text-grass-500">
-            ⚽ {q.league} · {q.difficulty}
-          </span>
-        </div>
-        <p className="mt-3 text-xl font-extrabold leading-8 text-right">{q.text}</p>
-      </div>
+      <QuizQuestionCard
+        meta={`⚽ ${q.league} · ${q.difficulty}`}
+        report={<ReportButton questionId={q.id} />}
+      >
+        <p className="text-xl font-extrabold leading-8 text-right text-pitch-900">{q.text}</p>
+      </QuizQuestionCard>
 
-      <div className="px-5 mt-4 space-y-3 pb-8">
+      <div className="px-5 mt-3 space-y-2.5">
         {q.options.map((opt, i) => {
           if (hiddenOptions.has(i)) return null;
           return (
-            <button
+            <QuizOptionButton
               key={i}
+              index={i}
+              label={opt}
+              state={optionState(i)}
               disabled={revealed && !awaitingVar}
               onClick={() => lockAnswer(i)}
-              className={`w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-right font-bold transition ${optionClass(i)}`}
-            >
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-black/25 text-sm">
-                {faNum(i + 1)}
-              </span>
-              <span className="flex-1">{opt}</span>
-              {revealed && i === q.correct && <span>✅</span>}
-              {revealed && i === selected && i !== q.correct && <span>❌</span>}
-            </button>
+            />
           );
         })}
 
         {awaitingVar && (
           <button
             onClick={activateVar}
-            className="w-full rounded-2xl border-2 border-gold-400 bg-gold-500/20 py-4 text-center font-extrabold text-gold-400 animate-pulse-soft"
+            className="w-full rounded-2xl border-2 border-gold-400 bg-gold-500/15 py-4 text-center font-extrabold text-gold-400 animate-pulse-soft"
           >
             📺 استفاده از VAR — یک جوابِ دیگر
           </button>

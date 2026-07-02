@@ -13,7 +13,15 @@ import {
 import { managerDef } from "./managers";
 import { levelForXp } from "./progress";
 import { ECONOMY, fanIncomeMultiplier, type ActivityReward } from "./economy";
-import { syncLivesState, nextStreak } from "./player";
+import { nextStreak, syncLivesState } from "./player";
+import { streakMilestoneReward } from "./home";
+import {
+  buildMissionSnapshot,
+  claimableMissionCount,
+  missionById,
+  missionStatus,
+} from "./missions";
+import { todayKey } from "./player";
 import type { PowerUpId, PowerUpInventory } from "./powerups";
 import { powerUpDef } from "./powerups";
 
@@ -64,6 +72,14 @@ interface GameState {
   reports: { questionId: string; reason: string; at: number }[];
   /** آموزشِ مسیر پول: تا اولین برداشت از گاوصندوق */
   showVaultTutorial: boolean;
+  // ماموریت‌ها
+  gamesPlayed: number;
+  unitCollectCount: number;
+  vaultWithdrawCount: number;
+  vaultFillCount: number;
+  dailyDate: string;
+  dailyProgress: Record<string, number>;
+  missionClaimed: Record<string, boolean>;
   // اکشن‌ها
   addCards: (n: number) => void;
   addFans: (n: number) => void;
@@ -101,6 +117,9 @@ interface GameState {
   /** همگام‌سازی اقتصاد باشگاه بعد از rehydrate (مدیران + بانک) */
   syncClubEconomy: () => void;
   completeVaultTutorial: () => void;
+  ensureDailyMissions: () => void;
+  claimMission: (id: string) => "ok" | "locked" | "claimed";
+  claimableMissions: () => number;
   resetSave: () => void;
 }
 
@@ -121,6 +140,42 @@ const DEFAULT_CLUB: ClubIdentity = {
   color: "#2f6fed",
   crest: CLUB.emoji,
 };
+
+function missionSnapFromState(s: GameState) {
+  return buildMissionSnapshot({
+    gamesPlayed: s.gamesPlayed,
+    totalCorrect: s.totalCorrect,
+    unitCollectCount: s.unitCollectCount,
+    vaultWithdrawCount: s.vaultWithdrawCount,
+    vaultFillCount: s.vaultFillCount,
+    matchesWon: s.matchesWon,
+    streakDays: s.streakDays,
+    bombBest: s.bombBest,
+    fans: s.fans,
+    setupDone: s.setupDone,
+    units: s.units,
+    hired: s.hired,
+    assign: s.assign,
+    vaultLevel: s.vaultLevel,
+    dailyProgress: s.dailyProgress,
+    dailyDate: s.dailyDate,
+    missionClaimed: s.missionClaimed,
+  });
+}
+
+function bumpDailyProgress(
+  dailyDate: string,
+  dailyProgress: Record<string, number>,
+  key: string,
+  amount = 1,
+) {
+  const today = todayKey();
+  const base = dailyDate === today ? dailyProgress : {};
+  return {
+    dailyDate: today,
+    dailyProgress: { ...base, [key]: (base[key] ?? 0) + amount },
+  };
+}
 
 const initialState = {
   cards: 2,
@@ -151,6 +206,13 @@ const initialState = {
   powerups: {} as PowerUpInventory,
   reports: [] as { questionId: string; reason: string; at: number }[],
   showVaultTutorial: true,
+  gamesPlayed: 0,
+  unitCollectCount: 0,
+  vaultWithdrawCount: 0,
+  vaultFillCount: 0,
+  dailyDate: "",
+  dailyProgress: {} as Record<string, number>,
+  missionClaimed: {} as Record<string, boolean>,
 };
 
 export const useGame = create<GameState>()(
@@ -180,6 +242,10 @@ export const useGame = create<GameState>()(
         const overflow = amount - deposited;
         if (deposited > 0) {
           set((s) => ({ vaultBalance: s.vaultBalance + deposited }));
+        }
+        const after = get();
+        if (after.vaultBalance >= cap && deposited > 0) {
+          set((s) => ({ vaultFillCount: s.vaultFillCount + 1 }));
         }
         return { deposited, overflow };
       },
@@ -257,11 +323,15 @@ export const useGame = create<GameState>()(
           set((s) => ({
             budget: s.budget + deposit,
             units: { ...s.units, [id]: { ...s.units[id], lastCollect: newLast } },
+            unitCollectCount: s.unitCollectCount + 1,
+            ...bumpDailyProgress(s.dailyDate, s.dailyProgress, "daily_collect"),
           }));
         } else {
           set((s) => ({
             vaultBalance: s.vaultBalance + deposit,
             units: { ...s.units, [id]: { ...s.units[id], lastCollect: newLast } },
+            unitCollectCount: s.unitCollectCount + 1,
+            ...bumpDailyProgress(s.dailyDate, s.dailyProgress, "daily_collect"),
           }));
         }
         return deposit;
@@ -353,7 +423,11 @@ export const useGame = create<GameState>()(
       withdrawVault: () => {
         const { vaultLevel, vaultBalance } = get();
         if (isBank(vaultLevel) || vaultBalance <= 0) return 0;
-        set((s) => ({ budget: s.budget + vaultBalance, vaultBalance: 0 }));
+        set((s) => ({
+          budget: s.budget + vaultBalance,
+          vaultBalance: 0,
+          vaultWithdrawCount: s.vaultWithdrawCount + 1,
+        }));
         get().completeVaultTutorial();
         return vaultBalance;
       },
@@ -431,13 +505,28 @@ export const useGame = create<GameState>()(
       },
 
       recordDailyPlay: () => {
-        const { lastPlayDate, streakDays } = get();
-        const next = nextStreak(lastPlayDate, streakDays);
-        set(next);
+        set((s) => {
+          const next = nextStreak(s.lastPlayDate, s.streakDays);
+          const reward = streakMilestoneReward(next.streakDays);
+          const daily = bumpDailyProgress(
+            s.dailyDate,
+            s.dailyProgress,
+            "daily_play",
+          );
+          return {
+            ...next,
+            gamesPlayed: s.gamesPlayed + 1,
+            ...daily,
+            ...(reward ? { cards: s.cards + reward.cards } : {}),
+          };
+        });
       },
 
       addTotalCorrect: (n) =>
-        set((s) => ({ totalCorrect: s.totalCorrect + n })),
+        set((s) => ({
+          totalCorrect: s.totalCorrect + n,
+          ...bumpDailyProgress(s.dailyDate, s.dailyProgress, "daily_correct", n),
+        })),
 
       buyPowerUp: (id) => {
         const def = powerUpDef(id);
@@ -479,11 +568,36 @@ export const useGame = create<GameState>()(
         set({ showVaultTutorial: false });
       },
 
+      ensureDailyMissions: () => {
+        const today = todayKey();
+        if (get().dailyDate !== today) {
+          set({ dailyDate: today, dailyProgress: {} });
+        }
+      },
+
+      claimMission: (id) => {
+        get().ensureDailyMissions();
+        const def = missionById(id);
+        if (!def) return "locked";
+        const snap = missionSnapFromState(get());
+        const status = missionStatus(def, snap);
+        if (status.claimed) return "claimed";
+        if (!status.complete) return "locked";
+        get().applyActivityReward(def.reward);
+        set((s) => ({
+          missionClaimed: { ...s.missionClaimed, [id]: true },
+        }));
+        return "ok";
+      },
+
+      claimableMissions: () =>
+        claimableMissionCount(missionSnapFromState(get())),
+
       resetSave: () => set({ ...initialState }),
     }),
     {
       name: "footballica-save",
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => {
         const s = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -497,6 +611,24 @@ export const useGame = create<GameState>()(
           const matchesWon = typeof s.matchesWon === "number" ? s.matchesWon : 0;
           const budget = typeof s.budget === "number" ? s.budget : 0;
           s.showVaultTutorial = matchesWon === 0 && budget === 0;
+        }
+        if (version < 4) {
+          s.gamesPlayed = typeof s.gamesPlayed === "number" ? s.gamesPlayed : 0;
+          s.unitCollectCount =
+            typeof s.unitCollectCount === "number" ? s.unitCollectCount : 0;
+          s.vaultWithdrawCount =
+            typeof s.vaultWithdrawCount === "number" ? s.vaultWithdrawCount : 0;
+          s.vaultFillCount =
+            typeof s.vaultFillCount === "number" ? s.vaultFillCount : 0;
+          s.dailyDate = typeof s.dailyDate === "string" ? s.dailyDate : "";
+          s.dailyProgress =
+            typeof s.dailyProgress === "object" && s.dailyProgress
+              ? s.dailyProgress
+              : {};
+          s.missionClaimed =
+            typeof s.missionClaimed === "object" && s.missionClaimed
+              ? s.missionClaimed
+              : {};
         }
         return persisted;
       },
@@ -530,6 +662,13 @@ export const useGame = create<GameState>()(
         powerups: s.powerups,
         reports: s.reports,
         showVaultTutorial: s.showVaultTutorial,
+        gamesPlayed: s.gamesPlayed,
+        unitCollectCount: s.unitCollectCount,
+        vaultWithdrawCount: s.vaultWithdrawCount,
+        vaultFillCount: s.vaultFillCount,
+        dailyDate: s.dailyDate,
+        dailyProgress: s.dailyProgress,
+        missionClaimed: s.missionClaimed,
       }),
     },
   ),
