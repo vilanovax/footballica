@@ -6,7 +6,7 @@ import { ReactionOverlay, type Reaction } from "@/components/ui/ReactionOverlay"
 import { ReportButton } from "@/components/ui/ReportButton";
 import { PowerUpBar } from "@/components/ui/PowerUpBar";
 import { drawRound, drawOneExcluding, type Question } from "@/lib/questions";
-import { scoreAnswer, SCORING, ECONOMY } from "@/lib/economy";
+import { scoreAnswer, SCORING, rewardQuickQuiz, rewardDuel } from "@/lib/economy";
 import {
   powerUpsForMode,
   powerUpCount,
@@ -235,21 +235,19 @@ export function Quiz({
       const foe = foeRef.current;
       const won = you >= foe;
       const correctCount = outcomes.current.filter((o) => o.youCorrect).length;
+      const rewards =
+        mode === "duel"
+          ? rewardDuel(won, correctCount)
+          : rewardQuickQuiz(won, correctCount);
       onFinish({
         mode,
         youScore: you,
         foeScore: foe,
         outcomes: outcomes.current,
-        coinsEarned:
-          (won ? ECONOMY.coins.winQuick : ECONOMY.coins.loseQuick) +
-          correctCount * ECONOMY.coins.perCorrect,
-        fansEarned:
-          mode === "duel"
-            ? won
-              ? ECONOMY.fans.winDuel
-              : ECONOMY.fans.loseDuel
-            : 0,
-        budgetEarned: won ? (mode === "duel" ? 5_000_000 : 2_000_000) : 0,
+        xpEarned: rewards.xp,
+        fansEarned: rewards.fans,
+        vaultEarned: rewards.vaultMoney,
+        cardsEarned: rewards.cards,
       });
       return;
     }

@@ -17,10 +17,8 @@ export const CLUB = {
   division: "دستهٔ سه",
   rank: 4,
   badgeLevel: 7,
-  coins: 840,
-  fans: 2100,
-  cards: 6,
-  idleIncome: 120, // درآمدِ آمادهٔ استادیوم
+  cards: 2,
+  fans: 0,
   promotion: {
     target: "دستهٔ دو",
     need: ECONOMY.promotion.fansNeeded[1], // ۳۰۰۰ هوادار برای صعود از دستهٔ سه

@@ -34,7 +34,7 @@ export function ClubFlowBar({
   return (
     <div className="mx-5 mt-3 rounded-2xl bg-black/25 px-3 py-3">
       <p className="mb-2.5 text-center text-[11px] font-bold text-white/45">
-        مسیرِ پول: واحد → گاوصندوق → بودجه
+        مسیرِ پول: واحدها / جایزهٔ مسابقه → گاوصندوق → بودجه
       </p>
       <div className="flex items-center gap-1">
         {steps.map((s, i) => (

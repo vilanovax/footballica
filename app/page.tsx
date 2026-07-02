@@ -16,6 +16,7 @@ import { Duel } from "@/components/screens/Duel";
 import { Penalty } from "@/components/screens/Penalty";
 import { Survival } from "@/components/screens/Survival";
 import { BottomNav } from "@/components/ui/BottomNav";
+import { NoLivesModal } from "@/components/ui/NoLivesModal";
 import { isTab, type MatchResult, type Screen } from "@/lib/types";
 
 export default function Page() {
@@ -23,18 +24,36 @@ export default function Page() {
   const [result, setResult] = useState<MatchResult | null>(null);
   const [clubFrom, setClubFrom] = useState<Screen>("home");
   const [mounted, setMounted] = useState(false);
+  const [noLives, setNoLives] = useState(false);
   const setupDone = useGame((s) => s.setupDone);
+  const lives = useGame((s) => s.lives);
+  const livesUpdatedAt = useGame((s) => s.livesUpdatedAt);
+  const syncLives = useGame((s) => s.syncLives);
 
-  // localStorage فقط سمتِ کلاینت است — بعد از rehydrate صفحه را نشان بده
   useEffect(() => {
-    useGame.persist.rehydrate();
-    setMounted(true);
+    void Promise.resolve(useGame.persist.rehydrate()).then(() => {
+      useGame.getState().syncLives();
+      setMounted(true);
+    });
   }, []);
 
   const openClub = (from: Screen) => {
     setClubFrom(from);
     setScreen("club");
   };
+
+  function startQuiz() {
+    setScreen("quiz");
+  }
+
+  function startDuel() {
+    syncLives();
+    if (!useGame.getState().spendLife()) {
+      setNoLives(true);
+      return;
+    }
+    setScreen("duel");
+  }
 
   if (!mounted) return <div className="pitch-stripes min-h-dvh" />;
 
@@ -46,11 +65,11 @@ export default function Page() {
     <>
       {screen === "home" && (
         <Home
-          onPlayQuick={() => setScreen("quiz")}
+          onPlayQuick={startQuiz}
           onOpenClub={() => openClub("home")}
           onPlayBomb={() => setScreen("bomb")}
           onOpenGames={() => setScreen("games")}
-          onPlayDuel={() => setScreen("duel")}
+          onPlayDuel={startDuel}
           onPlayPenalty={() => setScreen("penalty")}
           onPlaySurvival={() => setScreen("survival")}
         />
@@ -58,9 +77,9 @@ export default function Page() {
 
       {screen === "games" && (
         <Games
-          onPlayQuick={() => setScreen("quiz")}
+          onPlayQuick={startQuiz}
           onPlayBomb={() => setScreen("bomb")}
-          onPlayDuel={() => setScreen("duel")}
+          onPlayDuel={startDuel}
           onPlayPenalty={() => setScreen("penalty")}
           onPlaySurvival={() => setScreen("survival")}
         />
@@ -105,11 +124,24 @@ export default function Page() {
         <Result
           result={result}
           onHome={() => setScreen("home")}
-          onReplay={() => setScreen(result.mode === "duel" ? "duel" : "quiz")}
+          onReplay={() => {
+            if (result.mode === "duel") startDuel();
+            else startQuiz();
+          }}
         />
       )}
 
-      {/* نوارِ پایین فقط روی تب‌ها، نه در جریانِ بازی */}
+      {noLives && (
+        <NoLivesModal
+          lives={lives}
+          livesUpdatedAt={livesUpdatedAt}
+          onClose={() => {
+            syncLives();
+            setNoLives(false);
+          }}
+        />
+      )}
+
       {isTab(screen) && <BottomNav active={screen} onNavigate={setScreen} />}
     </>
   );

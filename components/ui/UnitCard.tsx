@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/store";
 import { faNum, faMoney } from "@/lib/format";
+import { fanIncomeMultiplier } from "@/lib/economy";
 import { unitDef, unitStats, unitPending, unitUpgradeCost } from "@/lib/units";
 import { isUnitUnlocked } from "@/lib/clubEconomy";
 import { managerDef, RARITY_COLOR } from "@/lib/managers";
@@ -16,6 +17,7 @@ export function UnitCard({ id }: { id: string }) {
   const itemLevels = useGame((s) => s.itemLevels[id]);
   const managerId = useGame((s) => s.assign[id]);
   const xp = useGame((s) => s.xp);
+  const fans = useGame((s) => s.fans);
   const budget = useGame((s) => s.budget);
   const ensureUnitClock = useGame((s) => s.ensureUnitClock);
   const collectUnit = useGame((s) => s.collectUnit);
@@ -66,8 +68,11 @@ export function UnitCard({ id }: { id: string }) {
 
   const level = unit?.level ?? 1;
   const last = unit?.lastCollect || now || 0;
-  const stats = unitStats(def, level, items, income, speed);
-  const pending = now ? unitPending(def, level, items, last, now, income, speed) : 0;
+  const fanMult = fanIncomeMultiplier(fans);
+  const stats = unitStats(def, level, items, income, speed, fanMult);
+  const pending = now
+    ? unitPending(def, level, items, last, now, income, speed, fanMult)
+    : 0;
   const pct = Math.min(100, (pending / stats.cap) * 100);
   const full = pending >= stats.cap;
 

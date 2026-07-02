@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { UPGRADES, costFor, MAX_LEVEL, CLUB } from "./club";
+import { UPGRADES, CLUB } from "./club";
 import { vaultCapacity, vaultUpgradeCost, VAULT_MAX } from "./vault";
 import {
   UNITS,
@@ -12,10 +12,17 @@ import {
 } from "./units";
 import { managerDef } from "./managers";
 import { levelForXp } from "./progress";
+import { ECONOMY, fanIncomeMultiplier, type ActivityReward } from "./economy";
+import { syncLivesState, nextStreak } from "./player";
 import type { PowerUpId, PowerUpInventory } from "./powerups";
 import { powerUpDef } from "./powerups";
 
 export type UpgradeResult = "ok" | "poor" | "locked" | "max";
+
+export interface VaultDepositResult {
+  deposited: number;
+  overflow: number;
+}
 
 /** هویتِ باشگاهِ ساختهٔ کاربر (کپی‌رایت-امن: خیالی و شخصی‌سازی‌شده) */
 export interface ClubIdentity {
@@ -26,13 +33,11 @@ export interface ClubIdentity {
 
 interface GameState {
   // پیشرفت
-  coins: number;
   cards: number;
   fans: number;
   budget: number; // بودجهٔ باشگاه (تومانِ درون‌بازی)
   xp: number; // تجربه (خرج نمی‌شود؛ فقط سطح را بالا می‌برد)
-  reputation: number; // اعتبارِ باشگاه (اسپانسر/مدیرِ بهتر)
-  incomeAvailable: number;
+  reputation: number; // اعتبارِ باشگاه (محاسباتی — فاز بعد)
   levels: Record<string, number>;
   // اقتصادِ باشگاه: واحدها درآمد می‌سازند → تپ/مدیر → گاوصندوق → برداشت → بودجه
   units: Record<string, { level: number; lastCollect: number }>;
@@ -45,21 +50,27 @@ interface GameState {
   // سناریو / هویت
   setupDone: boolean;
   club: ClubIdentity;
-  // رکوردها
+  // رکوردها و آمارِ بازیکن
   survivalBest: number;
+  bombBest: number;
+  totalCorrect: number;
+  lives: number;
+  livesUpdatedAt: number;
+  streakDays: number;
+  lastPlayDate: string;
   // موجودیِ سوپرپاورها
   powerups: PowerUpInventory;
   // گزارشِ سؤال‌ها (فعلاً محلی؛ در فاز سرور به API می‌رود)
   reports: { questionId: string; reason: string; at: number }[];
   // اکشن‌ها
-  addCoins: (n: number) => void;
   addCards: (n: number) => void;
   addFans: (n: number) => void;
-  addBudget: (n: number) => void;
   addXp: (n: number) => void;
   addReputation: (n: number) => void;
-  collectIncome: () => void;
-  tryUpgrade: (id: string) => UpgradeResult;
+  /** واریزِ درآمد (مسابقه یا واحد) به گاوصندوق — تا سقفِ ظرفیت */
+  depositVault: (amount: number) => VaultDepositResult;
+  /** اعمالِ جایزهٔ یک فعالیت (XP، هوادار، کارت، پول→گاوصندوق) */
+  applyActivityReward: (reward: ActivityReward) => VaultDepositResult;
   // اقتصادِ باشگاه (واحدها + گاوصندوق)
   ensureUnitClock: (id: string) => void;
   collectUnit: (id: string) => number; // درآمدِ واحد → گاوصندوق
@@ -76,6 +87,11 @@ interface GameState {
   reportQuestion: (questionId: string, reason: string) => void;
   /** رکوردِ بقا را ذخیره کن؛ اگر رکوردِ جدید بود true برمی‌گرداند */
   saveSurvival: (score: number) => boolean;
+  saveBomb: (score: number) => boolean;
+  syncLives: () => void;
+  spendLife: () => boolean;
+  recordDailyPlay: () => void;
+  addTotalCorrect: (n: number) => void;
   /** خریدِ سوپرپاور از فروشگاه */
   buyPowerUp: (id: PowerUpId) => UpgradeResult;
   /** مصرفِ یک عدد از موجودی؛ false اگر نداشت */
@@ -84,7 +100,7 @@ interface GameState {
 }
 
 const initialLevels = Object.fromEntries(
-  UPGRADES.map((u) => [u.id, u.level]),
+  UPGRADES.map((u) => [u.id, 1]),
 ) as Record<string, number>;
 
 const initialUnits = Object.fromEntries(
@@ -102,13 +118,11 @@ const DEFAULT_CLUB: ClubIdentity = {
 };
 
 const initialState = {
-  coins: CLUB.coins,
-  cards: CLUB.cards,
-  fans: CLUB.fans,
+  cards: 2,
+  fans: 0,
   budget: 0,
   xp: 0,
   reputation: 0,
-  incomeAvailable: CLUB.idleIncome,
   levels: initialLevels,
   units: initialUnits,
   itemLevels: initialItemLevels,
@@ -123,6 +137,12 @@ const initialState = {
   setupDone: false,
   club: DEFAULT_CLUB,
   survivalBest: 0,
+  bombBest: 0,
+  totalCorrect: 0,
+  lives: ECONOMY.lives.max,
+  livesUpdatedAt: Date.now(),
+  streakDays: 0,
+  lastPlayDate: "",
   powerups: {} as PowerUpInventory,
   reports: [] as { questionId: string; reason: string; at: number }[],
 };
@@ -132,12 +152,32 @@ export const useGame = create<GameState>()(
     (set, get) => ({
       ...initialState,
 
-      addCoins: (n) => set((s) => ({ coins: s.coins + n })),
       addCards: (n) => set((s) => ({ cards: s.cards + n })),
       addFans: (n) => set((s) => ({ fans: s.fans + n })),
-      addBudget: (n) => set((s) => ({ budget: s.budget + n })),
       addXp: (n) => set((s) => ({ xp: s.xp + n })),
       addReputation: (n) => set((s) => ({ reputation: s.reputation + n })),
+
+      depositVault: (amount) => {
+        if (amount <= 0) return { deposited: 0, overflow: 0 };
+        const { vaultLevel, vaultBalance } = get();
+        const cap = vaultCapacity(vaultLevel);
+        const free = Math.max(0, cap - vaultBalance);
+        const deposited = Math.min(amount, free);
+        const overflow = amount - deposited;
+        if (deposited > 0) {
+          set((s) => ({ vaultBalance: s.vaultBalance + deposited }));
+        }
+        return { deposited, overflow };
+      },
+
+      applyActivityReward: (reward) => {
+        set((s) => ({
+          xp: s.xp + reward.xp,
+          fans: s.fans + reward.fans,
+          cards: s.cards + reward.cards,
+        }));
+        return get().depositVault(reward.vaultMoney);
+      },
 
       // ساعتِ یک واحد را روی «الان» بگذار اگر شروع نشده
       ensureUnitClock: (id) => {
@@ -161,17 +201,33 @@ export const useGame = create<GameState>()(
         const speed = m?.speedMult ?? 1;
         const items = get().itemLevels[id] ?? {};
 
+        const fanMult = fanIncomeMultiplier(get().fans);
         const now = Date.now();
         const last = u.lastCollect || now;
-        const pending = unitPending(def, u.level, items, last, now, income, speed);
+        const pending = unitPending(
+          def,
+          u.level,
+          items,
+          last,
+          now,
+          income,
+          speed,
+          fanMult,
+        );
         if (pending <= 0) return 0;
 
         const free = Math.max(0, vaultCapacity(vaultLevel) - vaultBalance);
         const deposit = Math.min(pending, free);
-        if (deposit <= 0) return 0; // گاوصندوق پر است؛ pending دست‌نخورده می‌ماند
+        if (deposit <= 0) return 0;
 
-        // باقی‌ماندهٔ pending حفظ می‌شود (ساعت را به‌اندازهٔ برداشت جلو می‌بریم)
-        const rate = unitStats(def, u.level, items, income, speed).ratePerSecond;
+        const rate = unitStats(
+          def,
+          u.level,
+          items,
+          income,
+          speed,
+          fanMult,
+        ).ratePerSecond;
         const remainder = pending - deposit;
         const newLast = now - (rate > 0 ? remainder / rate : 0) * 1000;
 
@@ -284,31 +340,6 @@ export const useGame = create<GameState>()(
 
       recordWin: () => set((s) => ({ matchesWon: s.matchesWon + 1 })),
 
-      collectIncome: () =>
-        set((s) => ({
-          coins: s.coins + s.incomeAvailable,
-          incomeAvailable: 0,
-        })),
-
-      tryUpgrade: (id) => {
-        const meta = UPGRADES.find((u) => u.id === id);
-        if (!meta) return "max";
-        if (meta.lockedUntil) return "locked";
-
-        const { coins, levels } = get();
-        const level = levels[id];
-        if (level >= MAX_LEVEL) return "max";
-
-        const cost = costFor(meta.baseCost, level);
-        if (coins < cost) return "poor";
-
-        set({
-          coins: coins - cost,
-          levels: { ...levels, [id]: level + 1 },
-        });
-        return "ok";
-      },
-
       completeSetup: (club) => {
         const now = Date.now();
         const units = Object.fromEntries(
@@ -334,14 +365,50 @@ export const useGame = create<GameState>()(
         return false;
       },
 
+      saveBomb: (score) => {
+        const prev = get().bombBest;
+        if (score > prev) {
+          set({ bombBest: score });
+          return true;
+        }
+        return false;
+      },
+
+      syncLives: () => {
+        const { lives, livesUpdatedAt } = get();
+        const next = syncLivesState(lives, livesUpdatedAt);
+        if (next.lives !== lives || next.livesUpdatedAt !== livesUpdatedAt) {
+          set(next);
+        }
+      },
+
+      spendLife: () => {
+        get().syncLives();
+        const { lives, livesUpdatedAt } = get();
+        if (lives <= 0) return false;
+        set({
+          lives: lives - 1,
+          livesUpdatedAt:
+            lives === ECONOMY.lives.max ? Date.now() : livesUpdatedAt,
+        });
+        return true;
+      },
+
+      recordDailyPlay: () => {
+        const { lastPlayDate, streakDays } = get();
+        const next = nextStreak(lastPlayDate, streakDays);
+        set(next);
+      },
+
+      addTotalCorrect: (n) =>
+        set((s) => ({ totalCorrect: s.totalCorrect + n })),
+
       buyPowerUp: (id) => {
         const def = powerUpDef(id);
-        const { coins, cards } = get();
-        if (def.currency === "coin" && coins < def.price) return "poor";
-        if (def.currency === "card" && cards < def.price) return "poor";
+        const { cards } = get();
+        if (cards < def.price) return "poor";
         set((s) => ({
-          coins: def.currency === "coin" ? s.coins - def.price : s.coins,
-          cards: def.currency === "card" ? s.cards - def.price : s.cards,
+          cards: s.cards - def.price,
           powerups: {
             ...s.powerups,
             [id]: (s.powerups[id] ?? 0) + 1,
@@ -363,18 +430,28 @@ export const useGame = create<GameState>()(
     }),
     {
       name: "footballica-save",
+      version: 2,
+      migrate: (persisted, version) => {
+        const s = persisted as Record<string, unknown>;
+        if (version < 2) {
+          const coins = typeof s.coins === "number" ? s.coins : 0;
+          const cards = typeof s.cards === "number" ? s.cards : 2;
+          s.cards = cards + Math.max(0, Math.floor(coins / 30));
+          delete s.coins;
+          delete s.incomeAvailable;
+        }
+        return persisted;
+      },
       storage: createJSONStorage(() => localStorage),
       // سمتِ سرور localStorage نیست؛ rehydrate را دستی در page انجام می‌دهیم
       skipHydration: true,
       // فقط داده را ذخیره کن، نه اکشن‌ها
       partialize: (s) => ({
-        coins: s.coins,
         cards: s.cards,
         fans: s.fans,
         budget: s.budget,
         xp: s.xp,
         reputation: s.reputation,
-        incomeAvailable: s.incomeAvailable,
         levels: s.levels,
         units: s.units,
         itemLevels: s.itemLevels,
@@ -386,6 +463,12 @@ export const useGame = create<GameState>()(
         setupDone: s.setupDone,
         club: s.club,
         survivalBest: s.survivalBest,
+        bombBest: s.bombBest,
+        totalCorrect: s.totalCorrect,
+        lives: s.lives,
+        livesUpdatedAt: s.livesUpdatedAt,
+        streakDays: s.streakDays,
+        lastPlayDate: s.lastPlayDate,
         powerups: s.powerups,
         reports: s.reports,
       }),

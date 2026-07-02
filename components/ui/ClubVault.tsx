@@ -100,8 +100,8 @@ export function ClubVault() {
         />
       </div>
       {full && !bank && (
-        <p className="mt-2 text-center text-xs text-gold-400">
-          گاوصندوق پر است — برداشت کن تا واحدها دوباره واریز کنند
+        <p className="mt-2 text-center text-xs text-gold-400 leading-5">
+          گاوصندوق پر شده؛ برای ادامه درآمدزایی آن را برداشت یا ارتقا بده.
         </p>
       )}
 

@@ -10,6 +10,7 @@ export function ClubCollectBar() {
   const itemLevels = useGame((s) => s.itemLevels);
   const assign = useGame((s) => s.assign);
   const xp = useGame((s) => s.xp);
+  const fans = useGame((s) => s.fans);
   const vaultLevel = useGame((s) => s.vaultLevel);
   const vaultBalance = useGame((s) => s.vaultBalance);
   const collectAllUnits = useGame((s) => s.collectAllUnits);
@@ -22,6 +23,7 @@ export function ClubCollectBar() {
     itemLevels,
     assign,
     xp,
+    fans,
     vaultLevel,
     vaultBalance,
   });
@@ -40,7 +42,7 @@ export function ClubCollectBar() {
 
   const label =
     snap.vaultFree <= 0
-      ? "گاوصندوق پر است — اول برداشت کن"
+      ? "گاوصندوق پر شده؛ برای ادامه درآمدزایی آن را برداشت یا ارتقا بده."
       : snap.fullCount > 0
         ? `${faNum(snap.fullCount)} واحد پر شده`
         : `${faNum(snap.readyCount)} واحد آماده`;

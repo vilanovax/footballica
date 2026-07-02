@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { useGame } from "@/lib/store";
 import { POWERUPS, powerUpCount } from "@/lib/powerups";
-import { faNum, faCount } from "@/lib/format";
+import { faNum } from "@/lib/format";
 
 export function Shop() {
-  const coins = useGame((s) => s.coins);
   const cards = useGame((s) => s.cards);
   const powerups = useGame((s) => s.powerups);
   const buyPowerUp = useGame((s) => s.buyPowerUp);
@@ -29,16 +28,16 @@ export function Shop() {
   return (
     <div className="pitch-stripes min-h-dvh pb-32">
       <header className="px-5 pt-6 flex items-center justify-between">
-        <div className="flex gap-2">
-          <span className="glass rounded-2xl px-3 py-2 text-sm font-extrabold">
-            {faCount(coins)} 🪙
-          </span>
-          <span className="glass rounded-2xl px-3 py-2 text-sm font-extrabold">
-            {faNum(cards)} ⚡
-          </span>
-        </div>
+        <span className="glass rounded-2xl px-3 py-2 text-sm font-extrabold">
+          {faNum(cards)} ⚡ کارت تاکتیکی
+        </span>
         <h1 className="text-2xl font-extrabold">فروشگاه</h1>
       </header>
+
+      <p className="px-5 mt-4 text-sm text-white/55 text-right leading-6">
+        پاورآپ‌ها با <b className="text-gold-400">کارت تاکتیکی ⚡</b> خریده
+        می‌شوند — از پنالتی، بمب و مسابقات به دست بیاور.
+      </p>
 
       <h3 className="px-5 mt-6 mb-3 text-xl font-extrabold text-right">
         سوپرپاورها
@@ -46,8 +45,7 @@ export function Shop() {
       <div className="px-5 grid grid-cols-2 gap-3">
         {POWERUPS.map((p) => {
           const owned = powerUpCount(powerups, p.id);
-          const enough =
-            p.currency === "coin" ? coins >= p.price : cards >= p.price;
+          const enough = cards >= p.price;
           return (
             <button
               key={p.id}
@@ -73,7 +71,7 @@ export function Shop() {
                     : "bg-white/10 text-white/40"
                 }`}
               >
-                {faNum(p.price)} {p.currency === "coin" ? "🪙" : "⚡"}
+                {faNum(p.price)} ⚡
               </span>
             </button>
           );
@@ -85,12 +83,18 @@ export function Shop() {
       </h3>
       <div className="px-5 space-y-3">
         {[
-          { id: "c1", title: "۵۰۰ سکه", sub: "شروعِ خوب", emoji: "🪙", toman: 9000 },
+          {
+            id: "c1",
+            title: "۵ کارت تاکتیکی",
+            sub: "شروعِ خوب",
+            emoji: "⚡",
+            toman: 9000,
+          },
           {
             id: "c2",
-            title: "۳٬۰۰۰ سکه",
+            title: "۲۰ کارت تاکتیکی",
             sub: "پرطرفدار",
-            emoji: "💰",
+            emoji: "⚡",
             toman: 49000,
             highlight: true,
           },
@@ -119,7 +123,7 @@ export function Shop() {
             }`}
           >
             <button className="btn-gold rounded-xl px-4 py-2.5 text-sm font-extrabold">
-              {faCount(p.toman)} تومان
+              {faNum(p.toman)} تومان
             </button>
             <div className="flex-1 text-right">
               <p className="font-extrabold">

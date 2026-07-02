@@ -32,19 +32,11 @@ export interface MatchResult {
   youScore: number;
   foeScore: number;
   outcomes: AnswerOutcome[];
-  coinsEarned: number;
-  fansEarned: number; // فقط در دوئل > ۰
-  budgetEarned: number; // بودجهٔ تزریق‌شده به باشگاه در صورتِ برد
+  xpEarned: number;
+  fansEarned: number;
+  vaultEarned: number;
+  cardsEarned: number;
 }
-
-export const PLAYER = {
-  name: "امیر",
-  level: 12,
-  league: "لیگ طلایی",
-  coins: 840,
-  lives: 5,
-  streakDays: 4,
-} as const;
 
 export const OPPONENT = {
   name: "رضا حریف",

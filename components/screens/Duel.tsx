@@ -4,8 +4,10 @@ import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Quiz } from "@/components/screens/Quiz";
 import { faNum } from "@/lib/format";
-import { OPPONENT, PLAYER, type MatchResult } from "@/lib/types";
+import { OPPONENT, type MatchResult } from "@/lib/types";
 import { ECONOMY } from "@/lib/economy";
+import { useGame } from "@/lib/store";
+import { levelInfo } from "@/lib/player";
 
 interface DuelProps {
   onFinish: (result: MatchResult) => void;
@@ -14,6 +16,9 @@ interface DuelProps {
 
 export function Duel({ onFinish, onExit }: DuelProps) {
   const [started, setStarted] = useState(false);
+  const club = useGame((s) => s.club);
+  const xp = useGame((s) => s.xp);
+  const { level } = levelInfo(xp);
 
   if (started) {
     return <Quiz mode="duel" opponent={OPPONENT} onFinish={onFinish} />;
@@ -33,9 +38,9 @@ export function Duel({ onFinish, onExit }: DuelProps) {
 
       <div className="mt-8 flex items-center gap-4">
         <div className="flex flex-col items-center gap-2 animate-rise">
-          <Avatar label="تو" color="you" size={92} />
-          <p className="font-extrabold">{PLAYER.name}</p>
-          <p className="text-xs text-white/50">سطح {faNum(PLAYER.level)}</p>
+          <Avatar label={club.crest} color={club.color} size={92} />
+          <p className="font-extrabold">{club.name}</p>
+          <p className="text-xs text-white/50">سطح {faNum(level)}</p>
         </div>
         <span className="text-4xl font-extrabold text-gold-400 animate-pop">
           VS
@@ -53,7 +58,7 @@ export function Duel({ onFinish, onExit }: DuelProps) {
       <div className="glass mt-10 rounded-2xl px-5 py-4 text-sm leading-7 text-white/70">
         ۵ سؤال · فقط <b className="text-white">دانش و سرعت</b> تعیین‌کننده است
         <br />
-        برد: <b className="text-grass-400">+{faNum(ECONOMY.fans.winDuel)} هوادار</b>{" "}
+        برد: <b className="text-grass-400">+{faNum(ECONOMY.fans.duelWin)} هوادار</b>{" "}
         برای صعود
       </div>
 

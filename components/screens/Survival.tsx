@@ -2,37 +2,58 @@
 
 import { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
-import { makeDeck } from "@/lib/questions";
+import { makeDeck, drawOneExcluding } from "@/lib/questions";
+import { rewardSurvival } from "@/lib/economy";
 import { useGame } from "@/lib/store";
 import { faNum } from "@/lib/format";
 import { ReportButton } from "@/components/ui/ReportButton";
+import { PowerUpBar } from "@/components/ui/PowerUpBar";
+import {
+  powerUpsForMode,
+  powerUpCount,
+  POWERUP_CONFIG,
+  type PowerUpId,
+} from "@/lib/powerups";
 
 interface SurvivalProps {
   onExit: () => void;
 }
 
 const START_LIVES = 3;
-const COINS_PER_CORRECT = 10;
 
-// زمانِ هر سؤال با پیشرفت کم می‌شود (سخت‌تر): ۱۰ → کفِ ۴ ثانیه
+const SURVIVAL_PU = powerUpsForMode("survival").filter((p) => p.id !== "glove");
+
 function timeForScore(score: number): number {
   return Math.max(4, 10 - Math.floor(score / 3));
 }
 
-
 export function Survival({ onExit }: SurvivalProps) {
-  const addCoins = useGame((s) => s.addCoins);
+  const applyActivityReward = useGame((s) => s.applyActivityReward);
   const saveSurvival = useGame((s) => s.saveSurvival);
+  const addTotalCorrect = useGame((s) => s.addTotalCorrect);
+  const recordDailyPlay = useGame((s) => s.recordDailyPlay);
   const best = useGame((s) => s.survivalBest);
+  const powerups = useGame((s) => s.powerups);
+  const usePowerUp = useGame((s) => s.usePowerUp);
 
-  const [deck] = useState(() => makeDeck());
+  const [deck, setDeck] = useState(() => makeDeck());
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(START_LIVES);
+  const [timeLimit, setTimeLimit] = useState(timeForScore(0));
   const [secondsLeft, setSecondsLeft] = useState<number>(timeForScore(0));
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [phase, setPhase] = useState<"play" | "over">("play");
+  const [hiddenOptions, setHiddenOptions] = useState<Set<number>>(() => new Set());
+  const [usedOnQuestion, setUsedOnQuestion] = useState({
+    half: false,
+    time: false,
+    swap: false,
+  });
+  const [gloveUsedMatch, setGloveUsedMatch] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
+  const [shakePu, setShakePu] = useState<string | null>(null);
 
   const scoreRef = useRef(0);
   const livesRef = useRef(START_LIVES);
@@ -40,9 +61,7 @@ export function Survival({ onExit }: SurvivalProps) {
   const isRecordRef = useRef(false);
 
   const q = deck[step % deck.length];
-  const totalTime = timeForScore(score);
 
-  // تایمر
   useEffect(() => {
     if (phase !== "play" || revealed) return;
     if (secondsLeft <= 0) {
@@ -54,8 +73,33 @@ export function Survival({ onExit }: SurvivalProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secondsLeft, revealed, phase]);
 
+  function resetQuestionState(nextScore: number) {
+    const base = timeForScore(nextScore);
+    setHiddenOptions(new Set());
+    setUsedOnQuestion({ half: false, time: false, swap: false });
+    setTimeLimit(base);
+    setSecondsLeft(base);
+    setSelected(null);
+    setRevealed(false);
+    setHint(null);
+  }
+
   function answer(choice: number | null) {
     if (revealed || phase !== "play") return;
+
+    if (
+      choice !== null &&
+      choice !== q.correct &&
+      !gloveUsedMatch &&
+      powerUpCount(powerups, "glove") > 0 &&
+      usePowerUp("glove")
+    ) {
+      setGloveUsedMatch(true);
+      setHint("🥅 دستکش طلایی! دوباره تلاش کن");
+      setTimeout(() => setHint(null), 1400);
+      return;
+    }
+
     const correct = choice === q.correct;
     setSelected(choice);
     setRevealed(true);
@@ -73,18 +117,57 @@ export function Survival({ onExit }: SurvivalProps) {
         finish();
       } else {
         setStep((s) => s + 1);
-        setSelected(null);
-        setRevealed(false);
-        setSecondsLeft(timeForScore(scoreRef.current));
+        resetQuestionState(scoreRef.current);
       }
     }, 850);
+  }
+
+  function handlePowerUp(id: string) {
+    if (revealed || phase !== "play") return;
+    const pid = id as PowerUpId;
+
+    if (usedOnQuestion[pid as keyof typeof usedOnQuestion]) {
+      setShakePu(id);
+      setTimeout(() => setShakePu(null), 400);
+      return;
+    }
+    if (!usePowerUp(pid)) {
+      setShakePu(id);
+      setTimeout(() => setShakePu(null), 400);
+      return;
+    }
+
+    if (pid === "half") {
+      const wrong = ([0, 1, 2, 3] as const).filter((i) => i !== q.correct);
+      const pick = wrong[Math.floor(Math.random() * wrong.length)];
+      setHiddenOptions((prev) => new Set(prev).add(pick));
+      setUsedOnQuestion((u) => ({ ...u, half: true }));
+      setHint("🧤 یک گزینهٔ غلط حذف شد");
+    } else if (pid === "time") {
+      const bonus = POWERUP_CONFIG.timeBonusSeconds;
+      setSecondsLeft((s) => s + bonus);
+      setTimeLimit((t) => t + bonus);
+      setUsedOnQuestion((u) => ({ ...u, time: true }));
+      setHint(`⏱️ +${faNum(bonus)} ثانیه`);
+    } else if (pid === "swap") {
+      const ids = deck.map((d) => d.id);
+      const replacement = drawOneExcluding(ids);
+      const idx = step % deck.length;
+      setDeck((d) => d.map((item, i) => (i === idx ? replacement : item)));
+      resetQuestionState(scoreRef.current);
+      setUsedOnQuestion({ half: false, time: false, swap: true });
+      setHint("🔄 سؤال عوض شد");
+    }
+    setTimeout(() => setHint(null), 1200);
   }
 
   function finish() {
     if (finalized.current) return;
     finalized.current = true;
     const s = scoreRef.current;
-    addCoins(s * COINS_PER_CORRECT);
+    applyActivityReward(rewardSurvival(s));
+    addTotalCorrect(s);
+    recordDailyPlay();
     isRecordRef.current = saveSurvival(s);
     if (isRecordRef.current && s > 0) {
       confetti({
@@ -129,7 +212,7 @@ export function Survival({ onExit }: SurvivalProps) {
           </div>
           <div className="flex items-center justify-between border-t border-white/10 pt-3">
             <span className="font-extrabold text-gold-400">
-              +{faNum(s * COINS_PER_CORRECT)} 🪙
+              +{faNum(s * 5)} ⭐ XP
             </span>
             <span className="text-white/70">جایزه</span>
           </div>
@@ -150,15 +233,14 @@ export function Survival({ onExit }: SurvivalProps) {
   const danger = secondsLeft <= 3;
 
   return (
-    <div className="pitch-stripes min-h-dvh flex flex-col">
-      {/* هدر: جان‌ها + امتیاز + رکورد */}
+    <div className="pitch-stripes min-h-dvh flex flex-col pb-8">
       <div className="flex items-center justify-between px-5 pt-6">
         <button
           onClick={onExit}
-          className="glass grid h-10 w-10 place-items-center rounded-2xl text-xl"
+          className="glass grid h-10 w-10 place-items-center rounded-2xl text-xl font-bold"
           aria-label="خروج"
         >
-          ›
+          ‹
         </button>
         <div className="flex gap-1 text-2xl">
           {Array.from({ length: START_LIVES }).map((_, i) => (
@@ -177,12 +259,11 @@ export function Survival({ onExit }: SurvivalProps) {
         ❤️ بقا · تا آخرین جانت جواب بده
       </p>
 
-      {/* نوارِ تایمر */}
       <div className="mx-5 mt-4 h-2.5 overflow-hidden rounded-full bg-black/30">
         <div
           className="h-full rounded-full transition-[width] duration-1000 ease-linear"
           style={{
-            width: `${(secondsLeft / totalTime) * 100}%`,
+            width: `${Math.min(100, (secondsLeft / timeLimit) * 100)}%`,
             background: danger
               ? "linear-gradient(90deg,#e5473f,#ff8a3d)"
               : "linear-gradient(90deg,#2f9e5f,#5ee08a)",
@@ -190,36 +271,53 @@ export function Survival({ onExit }: SurvivalProps) {
         />
       </div>
 
-      {/* کارتِ سؤال */}
-      <div className="mx-5 mt-5 rounded-3xl bg-[#eef3ee] text-pitch-900 p-5 shadow-xl">
+      {hint && (
+        <p className="mx-5 mt-3 text-center text-sm font-bold text-gold-400 animate-pop">
+          {hint}
+        </p>
+      )}
+
+      <PowerUpBar
+        defs={SURVIVAL_PU}
+        inventory={powerups}
+        disabled={{
+          half: usedOnQuestion.half,
+          time: usedOnQuestion.time,
+          swap: usedOnQuestion.swap,
+        }}
+        onUse={handlePowerUp}
+        shakeId={shakePu}
+      />
+
+      <div className="mx-5 mt-4 rounded-3xl bg-[#eef3ee] text-pitch-900 p-5 shadow-xl">
         <div className="flex items-center justify-between">
           <ReportButton questionId={q.id} />
           <span className="rounded-lg bg-grass-500/15 px-2.5 py-1 text-xs font-bold text-grass-500">
             ⏱ {faNum(secondsLeft)} ثانیه · {q.difficulty}
           </span>
         </div>
-        <p className="mt-3 text-xl font-extrabold leading-8 text-right">
-          {q.text}
-        </p>
+        <p className="mt-3 text-xl font-extrabold leading-8 text-right">{q.text}</p>
       </div>
 
-      {/* گزینه‌ها */}
       <div className="px-5 mt-4 space-y-3">
-        {q.options.map((opt, i) => (
-          <button
-            key={`${step}-${i}`}
-            disabled={revealed}
-            onClick={() => answer(i)}
-            className={`w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-right font-bold transition ${optionClass(i)}`}
-          >
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-black/25 text-sm">
-              {faNum(i + 1)}
-            </span>
-            <span className="flex-1">{opt}</span>
-            {revealed && i === q.correct && <span>✅</span>}
-            {revealed && i === selected && i !== q.correct && <span>❌</span>}
-          </button>
-        ))}
+        {q.options.map((opt, i) => {
+          if (hiddenOptions.has(i)) return null;
+          return (
+            <button
+              key={`${step}-${i}`}
+              disabled={revealed}
+              onClick={() => answer(i)}
+              className={`w-full flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-right font-bold transition ${optionClass(i)}`}
+            >
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-black/25 text-sm">
+                {faNum(i + 1)}
+              </span>
+              <span className="flex-1">{opt}</span>
+              {revealed && i === q.correct && <span>✅</span>}
+              {revealed && i === selected && i !== q.correct && <span>❌</span>}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

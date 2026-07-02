@@ -62,7 +62,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
             </p>
           </div>
           <span className="rounded-xl bg-gold-400 px-3 py-2 text-sm font-extrabold text-[#3a2600]">
-            ۸۴۰ 🪙
+            ۲ ⚡
           </span>
         </div>
 

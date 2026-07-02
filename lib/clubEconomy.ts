@@ -1,4 +1,5 @@
 import { managerDef } from "./managers";
+import { fanIncomeMultiplier } from "./economy";
 import { levelForXp } from "./progress";
 import { UNITS, unitDef, unitPending, unitStats } from "./units";
 import { vaultCapacity } from "./vault";
@@ -18,11 +19,13 @@ export function unitIncomeSnapshot(state: {
   itemLevels: Record<string, Record<string, number>>;
   assign: Record<string, string | null>;
   xp: number;
+  fans: number;
   vaultLevel: number;
   vaultBalance: number;
   now?: number;
 }) {
   const now = state.now ?? Date.now();
+  const fanMult = fanIncomeMultiplier(state.fans);
   let totalPending = 0;
   let readyCount = 0;
   let fullCount = 0;
@@ -37,8 +40,17 @@ export function unitIncomeSnapshot(state: {
     const speed = m?.speedMult ?? 1;
     const items = state.itemLevels[u.id] ?? {};
     const last = unit.lastCollect || now;
-    const pending = unitPending(u, unit.level, items, last, now, income, speed);
-    const { cap } = unitStats(u, unit.level, items, income, speed);
+    const pending = unitPending(
+      u,
+      unit.level,
+      items,
+      last,
+      now,
+      income,
+      speed,
+      fanMult,
+    );
+    const { cap } = unitStats(u, unit.level, items, income, speed, fanMult);
 
     totalPending += pending;
     if (pending > 0) readyCount += 1;

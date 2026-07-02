@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
 import { makeDeck } from "@/lib/questions";
 import { useGame } from "@/lib/store";
-import { faNum } from "@/lib/format";
+import { rewardPenalty } from "@/lib/economy";
+import { faNum, faMoney } from "@/lib/format";
 import { ReportButton } from "@/components/ui/ReportButton";
 
 interface PenaltyProps {
@@ -18,8 +19,15 @@ type KickResult = "goal" | "save";
 type Phase = "aim" | "reveal" | "done";
 
 export function Penalty({ onExit }: PenaltyProps) {
-  const addCoins = useGame((s) => s.addCoins);
-  const addCards = useGame((s) => s.addCards);
+  const applyActivityReward = useGame((s) => s.applyActivityReward);
+  const addTotalCorrect = useGame((s) => s.addTotalCorrect);
+  const recordDailyPlay = useGame((s) => s.recordDailyPlay);
+  const [rewardSummary, setRewardSummary] = useState<{
+    xp: number;
+    fans: number;
+    vault: number;
+    cards: number;
+  } | null>(null);
 
   const [deck] = useState(() => makeDeck());
   const [index, setIndex] = useState(0);
@@ -82,8 +90,16 @@ export function Penalty({ onExit }: PenaltyProps) {
       if (!rewarded.current) {
         rewarded.current = true;
         const g = goalsRef.current;
-        addCoins(g * 20);
-        if (g === KICKS) addCards(1);
+        const rewards = rewardPenalty(g, KICKS);
+        applyActivityReward(rewards);
+        setRewardSummary({
+          xp: rewards.xp,
+          fans: rewards.fans,
+          vault: rewards.vaultMoney,
+          cards: rewards.cards,
+        });
+        addTotalCorrect(g);
+        recordDailyPlay();
       }
       setPhase("done");
       return;
@@ -229,12 +245,28 @@ export function Penalty({ onExit }: PenaltyProps) {
           <h2 className="mt-3 text-3xl font-extrabold">
             {faNum(finalGoals)} از {faNum(KICKS)} گل
           </h2>
-          <div className="glass mt-5 rounded-2xl px-6 py-4">
-            <span className="font-extrabold text-gold-400">
-              +{faNum(finalGoals * 20)} 🪙
-            </span>
-            {finalGoals === KICKS && (
-              <span className="mr-3 font-extrabold text-gold-400">+۱ ⚡</span>
+          <div className="glass mt-5 rounded-2xl px-6 py-4 space-y-2 text-right w-full max-w-xs">
+            {rewardSummary && (
+              <>
+                {rewardSummary.xp > 0 && (
+                  <p className="font-extrabold">+{faNum(rewardSummary.xp)} ⭐ XP</p>
+                )}
+                {rewardSummary.fans > 0 && (
+                  <p className="font-extrabold text-grass-400">
+                    +{faNum(rewardSummary.fans)} 🎽 هوادار
+                  </p>
+                )}
+                {rewardSummary.vault > 0 && (
+                  <p className="font-extrabold text-gold-400">
+                    +{faMoney(rewardSummary.vault)} 🔐 وارد گاوصندوق شد
+                  </p>
+                )}
+                {rewardSummary.cards > 0 && (
+                  <p className="font-extrabold text-gold-400">
+                    +{faNum(rewardSummary.cards)} ⚡ کارت
+                  </p>
+                )}
+              </>
             )}
           </div>
           <div className="mt-6 w-full max-w-xs space-y-3">

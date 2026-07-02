@@ -183,13 +183,14 @@ export interface UnitStats {
   ratePerSecond: number;
 }
 
-/** آمارِ مؤثرِ واحد از سطحِ واحد + آیتم‌های داخلی + ضریبِ مدیر */
+/** آمارِ مؤثرِ واحد از سطحِ واحد + آیتم‌های داخلی + ضریبِ مدیر + هوادار */
 export function unitStats(
   def: UnitDef,
   level: number,
   itemLevels: Record<string, number>,
   incomeMult = 1,
   speedMult = 1,
+  fanMult = 1,
 ): UnitStats {
   let payout = unitPayout(def, level);
   let cycleCut = 0;
@@ -203,7 +204,7 @@ export function unitStats(
     else if (it.effect === "capacity") extraCapCycles += it.base * lvl;
   }
 
-  const effPayout = Math.round(payout * incomeMult);
+  const effPayout = Math.round(payout * incomeMult * fanMult);
   const baseCycle = Math.max(def.cycleMin, def.cycleSeconds - cycleCut);
   const cycle = Math.max(1, baseCycle / speedMult);
   const cap = effPayout * (def.pendingCapCycles + extraCapCycles);
@@ -219,8 +220,16 @@ export function unitPending(
   nowMs: number,
   incomeMult = 1,
   speedMult = 1,
+  fanMult = 1,
 ): number {
-  const { cap, ratePerSecond } = unitStats(def, level, itemLevels, incomeMult, speedMult);
+  const { cap, ratePerSecond } = unitStats(
+    def,
+    level,
+    itemLevels,
+    incomeMult,
+    speedMult,
+    fanMult,
+  );
   const elapsed = Math.max(0, (nowMs - lastMs) / 1000);
   return Math.min(cap, Math.floor(elapsed * ratePerSecond));
 }
