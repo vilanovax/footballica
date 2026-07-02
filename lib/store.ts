@@ -1,0 +1,394 @@
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { UPGRADES, costFor, MAX_LEVEL, CLUB } from "./club";
+import { vaultCapacity, vaultUpgradeCost, VAULT_MAX } from "./vault";
+import {
+  UNITS,
+  unitDef,
+  unitPending,
+  unitStats,
+  unitUpgradeCost,
+  itemUpgradeCost,
+} from "./units";
+import { managerDef } from "./managers";
+import { levelForXp } from "./progress";
+import type { PowerUpId, PowerUpInventory, PowerUpCurrency } from "./powerups";
+import { powerUpDef } from "./powerups";
+
+export type UpgradeResult = "ok" | "poor" | "locked" | "max";
+
+/** هویتِ باشگاهِ ساختهٔ کاربر (کپی‌رایت-امن: خیالی و شخصی‌سازی‌شده) */
+export interface ClubIdentity {
+  name: string;
+  color: string; // hex
+  crest: string; // ایموجیِ لوگو
+}
+
+interface GameState {
+  // پیشرفت
+  coins: number;
+  cards: number;
+  fans: number;
+  budget: number; // بودجهٔ باشگاه (تومانِ درون‌بازی)
+  xp: number; // تجربه (خرج نمی‌شود؛ فقط سطح را بالا می‌برد)
+  reputation: number; // اعتبارِ باشگاه (اسپانسر/مدیرِ بهتر)
+  incomeAvailable: number;
+  levels: Record<string, number>;
+  // اقتصادِ باشگاه: واحدها درآمد می‌سازند → تپ/مدیر → گاوصندوق → برداشت → بودجه
+  units: Record<string, { level: number; lastCollect: number }>;
+  itemLevels: Record<string, Record<string, number>>; // unitId → itemId → level
+  hired: Record<string, boolean>; // مدیرانِ استخدام‌شده (managerId)
+  assign: Record<string, string | null>; // unitId → managerId منصوب‌شده
+  vaultLevel: number; // ظرفیتِ گاوصندوق
+  vaultBalance: number; // موجودیِ فعلیِ گاوصندوق
+  matchesWon: number; // برای بازشدنِ واحدهایی مثلِ بلیت‌فروشی
+  // سناریو / هویت
+  setupDone: boolean;
+  club: ClubIdentity;
+  // رکوردها
+  survivalBest: number;
+  // موجودیِ سوپرپاورها
+  powerups: PowerUpInventory;
+  // گزارشِ سؤال‌ها (فعلاً محلی؛ در فاز سرور به API می‌رود)
+  reports: { questionId: string; reason: string; at: number }[];
+  // اکشن‌ها
+  addCoins: (n: number) => void;
+  addCards: (n: number) => void;
+  addFans: (n: number) => void;
+  addBudget: (n: number) => void;
+  addXp: (n: number) => void;
+  addReputation: (n: number) => void;
+  collectIncome: () => void;
+  tryUpgrade: (id: string) => UpgradeResult;
+  // اقتصادِ باشگاه (واحدها + گاوصندوق)
+  ensureUnitClock: (id: string) => void;
+  collectUnit: (id: string) => number; // درآمدِ واحد → گاوصندوق
+  collectAllUnits: () => number; // همهٔ واحدهای آماده → گاوصندوق
+  upgradeUnit: (id: string) => UpgradeResult;
+  upgradeItem: (unitId: string, itemId: string) => UpgradeResult;
+  hireManager: (managerId: string) => UpgradeResult; // استخدام (باز کردن)
+  assignManager: (unitId: string, managerId: string) => UpgradeResult; // انتصاب
+  unassignUnit: (unitId: string) => void;
+  withdrawVault: () => number; // گاوصندوق → بودجه
+  upgradeVault: () => UpgradeResult;
+  recordWin: () => void;
+  completeSetup: (club: ClubIdentity) => void;
+  reportQuestion: (questionId: string, reason: string) => void;
+  /** رکوردِ بقا را ذخیره کن؛ اگر رکوردِ جدید بود true برمی‌گرداند */
+  saveSurvival: (score: number) => boolean;
+  /** خریدِ سوپرپاور از فروشگاه */
+  buyPowerUp: (id: PowerUpId) => UpgradeResult;
+  /** مصرفِ یک عدد از موجودی؛ false اگر نداشت */
+  usePowerUp: (id: PowerUpId) => boolean;
+  resetSave: () => void;
+}
+
+const initialLevels = Object.fromEntries(
+  UPGRADES.map((u) => [u.id, u.level]),
+) as Record<string, number>;
+
+const initialUnits = Object.fromEntries(
+  UNITS.map((u) => [u.id, { level: 1, lastCollect: 0 }]),
+) as Record<string, { level: number; lastCollect: number }>;
+
+const initialItemLevels = Object.fromEntries(
+  UNITS.map((u) => [u.id, {} as Record<string, number>]),
+) as Record<string, Record<string, number>>;
+
+const DEFAULT_CLUB: ClubIdentity = {
+  name: CLUB.name,
+  color: "#2f6fed",
+  crest: CLUB.emoji,
+};
+
+const initialState = {
+  coins: CLUB.coins,
+  cards: CLUB.cards,
+  fans: CLUB.fans,
+  budget: 0,
+  xp: 0,
+  reputation: 0,
+  incomeAvailable: CLUB.idleIncome,
+  levels: initialLevels,
+  units: initialUnits,
+  itemLevels: initialItemLevels,
+  hired: {} as Record<string, boolean>,
+  assign: Object.fromEntries(UNITS.map((u) => [u.id, null])) as Record<
+    string,
+    string | null
+  >,
+  vaultLevel: 1,
+  vaultBalance: 0,
+  matchesWon: 0,
+  setupDone: false,
+  club: DEFAULT_CLUB,
+  survivalBest: 0,
+  powerups: {} as PowerUpInventory,
+  reports: [] as { questionId: string; reason: string; at: number }[],
+};
+
+export const useGame = create<GameState>()(
+  persist(
+    (set, get) => ({
+      ...initialState,
+
+      addCoins: (n) => set((s) => ({ coins: s.coins + n })),
+      addCards: (n) => set((s) => ({ cards: s.cards + n })),
+      addFans: (n) => set((s) => ({ fans: s.fans + n })),
+      addBudget: (n) => set((s) => ({ budget: s.budget + n })),
+      addXp: (n) => set((s) => ({ xp: s.xp + n })),
+      addReputation: (n) => set((s) => ({ reputation: s.reputation + n })),
+
+      // ساعتِ یک واحد را روی «الان» بگذار اگر شروع نشده
+      ensureUnitClock: (id) => {
+        const u = get().units[id];
+        if (u && !u.lastCollect) {
+          set((s) => ({
+            units: { ...s.units, [id]: { ...s.units[id], lastCollect: Date.now() } },
+          }));
+        }
+      },
+
+      // برداشتِ درآمدِ یک واحد → گاوصندوق (تا جای خالیِ گاوصندوق)
+      collectUnit: (id) => {
+        const def = unitDef(id);
+        const { units, assign, vaultLevel, vaultBalance } = get();
+        const u = units[id];
+        if (!u) return 0;
+
+        const m = assign[id] ? managerDef(assign[id]!) : null;
+        const income = m?.incomeMult ?? 1;
+        const speed = m?.speedMult ?? 1;
+        const items = get().itemLevels[id] ?? {};
+
+        const now = Date.now();
+        const last = u.lastCollect || now;
+        const pending = unitPending(def, u.level, items, last, now, income, speed);
+        if (pending <= 0) return 0;
+
+        const free = Math.max(0, vaultCapacity(vaultLevel) - vaultBalance);
+        const deposit = Math.min(pending, free);
+        if (deposit <= 0) return 0; // گاوصندوق پر است؛ pending دست‌نخورده می‌ماند
+
+        // باقی‌ماندهٔ pending حفظ می‌شود (ساعت را به‌اندازهٔ برداشت جلو می‌بریم)
+        const rate = unitStats(def, u.level, items, income, speed).ratePerSecond;
+        const remainder = pending - deposit;
+        const newLast = now - (rate > 0 ? remainder / rate : 0) * 1000;
+
+        set((s) => ({
+          vaultBalance: s.vaultBalance + deposit,
+          units: { ...s.units, [id]: { ...s.units[id], lastCollect: newLast } },
+        }));
+        return deposit;
+      },
+
+      collectAllUnits: () => {
+        let total = 0;
+        const xp = get().xp;
+        for (const u of UNITS) {
+          if (levelForXp(xp) < unitDef(u.id).requiresLevel) continue;
+          total += get().collectUnit(u.id);
+        }
+        return total;
+      },
+
+      // ارتقای یک واحد (نرخِ درآمد ↑) — با بودجه
+      upgradeUnit: (id) => {
+        const def = unitDef(id);
+        const { units, budget } = get();
+        const u = units[id];
+        if (!u) return "max";
+        if (u.level >= def.maxLevel) return "max";
+        const cost = unitUpgradeCost(def, u.level);
+        if (budget < cost) return "poor";
+        set((s) => ({
+          budget: s.budget - cost,
+          units: { ...s.units, [id]: { ...s.units[id], level: u.level + 1 } },
+        }));
+        return "ok";
+      },
+
+      // ارتقای یک آیتمِ داخلیِ واحد — با بودجه
+      upgradeItem: (unitId, itemId) => {
+        const def = unitDef(unitId);
+        const item = def.items.find((it) => it.id === itemId);
+        if (!item) return "max";
+        const { units, itemLevels, budget } = get();
+        const unitLevel = units[unitId]?.level ?? 1;
+        if (unitLevel < item.unlockLevel) return "locked";
+        const lvl = itemLevels[unitId]?.[itemId] ?? 0;
+        if (lvl >= item.maxLevel) return "max";
+        const cost = itemUpgradeCost(item, lvl);
+        if (budget < cost) return "poor";
+        set((s) => ({
+          budget: s.budget - cost,
+          itemLevels: {
+            ...s.itemLevels,
+            [unitId]: { ...(s.itemLevels[unitId] ?? {}), [itemId]: lvl + 1 },
+          },
+        }));
+        return "ok";
+      },
+
+      // استخدامِ مدیر (باز کردن) — با بودجه
+      hireManager: (managerId) => {
+        const def = managerDef(managerId);
+        if (!def) return "max";
+        const { hired, budget } = get();
+        if (hired[managerId]) return "max";
+        if (budget < def.cost) return "poor";
+        set((s) => ({
+          budget: s.budget - def.cost,
+          hired: { ...s.hired, [managerId]: true },
+        }));
+        return "ok";
+      },
+
+      // انتصابِ مدیرِ استخدام‌شده به یک واحد (هر مدیر فقط روی یک واحد)
+      assignManager: (unitId, managerId) => {
+        const def = managerDef(managerId);
+        if (!def) return "max";
+        const { hired, assign } = get();
+        if (!hired[managerId]) return "poor"; // اول باید استخدام شود
+        if (def.target !== "all" && def.target !== unitId) return "locked";
+        // اگر این مدیر روی واحدِ دیگری است، از آن‌جا بردار
+        const next: Record<string, string | null> = { ...assign };
+        for (const uid of Object.keys(next)) {
+          if (next[uid] === managerId) next[uid] = null;
+        }
+        next[unitId] = managerId;
+        set({ assign: next });
+        return "ok";
+      },
+
+      unassignUnit: (unitId) =>
+        set((s) => ({ assign: { ...s.assign, [unitId]: null } })),
+
+      // برداشت از گاوصندوق → بودجهٔ باشگاه
+      withdrawVault: () => {
+        const amt = get().vaultBalance;
+        if (amt <= 0) return 0;
+        set((s) => ({ budget: s.budget + amt, vaultBalance: 0 }));
+        return amt;
+      },
+
+      // ارتقای گاوصندوق (ظرفیت ↑ / تبدیل به بانک) — با بودجه
+      upgradeVault: () => {
+        const { vaultLevel, budget } = get();
+        if (vaultLevel >= VAULT_MAX) return "max";
+        const cost = vaultUpgradeCost(vaultLevel);
+        if (budget < cost) return "poor";
+        set({ budget: budget - cost, vaultLevel: vaultLevel + 1 });
+        return "ok";
+      },
+
+      recordWin: () => set((s) => ({ matchesWon: s.matchesWon + 1 })),
+
+      collectIncome: () =>
+        set((s) => ({
+          coins: s.coins + s.incomeAvailable,
+          incomeAvailable: 0,
+        })),
+
+      tryUpgrade: (id) => {
+        const meta = UPGRADES.find((u) => u.id === id);
+        if (!meta) return "max";
+        if (meta.lockedUntil) return "locked";
+
+        const { coins, levels } = get();
+        const level = levels[id];
+        if (level >= MAX_LEVEL) return "max";
+
+        const cost = costFor(meta.baseCost, level);
+        if (coins < cost) return "poor";
+
+        set({
+          coins: coins - cost,
+          levels: { ...levels, [id]: level + 1 },
+        });
+        return "ok";
+      },
+
+      completeSetup: (club) => {
+        const now = Date.now();
+        const units = Object.fromEntries(
+          Object.entries(get().units).map(([id, u]) => [id, { ...u, lastCollect: now }]),
+        );
+        set({ club, setupDone: true, units });
+      },
+
+      reportQuestion: (questionId, reason) =>
+        set((s) => ({
+          reports: [
+            ...s.reports.slice(-49), // سقفِ ۵۰ گزارشِ اخیر
+            { questionId, reason, at: Date.now() },
+          ],
+        })),
+
+      saveSurvival: (score) => {
+        const prev = get().survivalBest;
+        if (score > prev) {
+          set({ survivalBest: score });
+          return true;
+        }
+        return false;
+      },
+
+      buyPowerUp: (id) => {
+        const def = powerUpDef(id);
+        const { coins, cards } = get();
+        if (def.currency === "coin" && coins < def.price) return "poor";
+        if (def.currency === "card" && cards < def.price) return "poor";
+        set((s) => ({
+          coins: def.currency === "coin" ? s.coins - def.price : s.coins,
+          cards: def.currency === "card" ? s.cards - def.price : s.cards,
+          powerups: {
+            ...s.powerups,
+            [id]: (s.powerups[id] ?? 0) + 1,
+          },
+        }));
+        return "ok";
+      },
+
+      usePowerUp: (id) => {
+        const count = get().powerups[id] ?? 0;
+        if (count <= 0) return false;
+        set((s) => ({
+          powerups: { ...s.powerups, [id]: count - 1 },
+        }));
+        return true;
+      },
+
+      resetSave: () => set({ ...initialState }),
+    }),
+    {
+      name: "footballica-save",
+      storage: createJSONStorage(() => localStorage),
+      // سمتِ سرور localStorage نیست؛ rehydrate را دستی در page انجام می‌دهیم
+      skipHydration: true,
+      // فقط داده را ذخیره کن، نه اکشن‌ها
+      partialize: (s) => ({
+        coins: s.coins,
+        cards: s.cards,
+        fans: s.fans,
+        budget: s.budget,
+        xp: s.xp,
+        reputation: s.reputation,
+        incomeAvailable: s.incomeAvailable,
+        levels: s.levels,
+        units: s.units,
+        itemLevels: s.itemLevels,
+        hired: s.hired,
+        assign: s.assign,
+        vaultLevel: s.vaultLevel,
+        vaultBalance: s.vaultBalance,
+        matchesWon: s.matchesWon,
+        setupDone: s.setupDone,
+        club: s.club,
+        survivalBest: s.survivalBest,
+        powerups: s.powerups,
+        reports: s.reports,
+      }),
+    },
+  ),
+);

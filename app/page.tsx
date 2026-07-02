@@ -1,65 +1,116 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import { Onboarding } from "@/components/screens/Onboarding";
+import { useGame } from "@/lib/store";
+import { Home } from "@/components/screens/Home";
+import { Games } from "@/components/screens/Games";
+import { Leaderboard } from "@/components/screens/Leaderboard";
+import { Shop } from "@/components/screens/Shop";
+import { Profile } from "@/components/screens/Profile";
+import { Quiz } from "@/components/screens/Quiz";
+import { Result } from "@/components/screens/Result";
+import { Club } from "@/components/screens/Club";
+import { BombMode } from "@/components/screens/BombMode";
+import { Duel } from "@/components/screens/Duel";
+import { Penalty } from "@/components/screens/Penalty";
+import { Survival } from "@/components/screens/Survival";
+import { BottomNav } from "@/components/ui/BottomNav";
+import { isTab, type MatchResult, type Screen } from "@/lib/types";
+
+export default function Page() {
+  const [screen, setScreen] = useState<Screen>("home");
+  const [result, setResult] = useState<MatchResult | null>(null);
+  const [clubFrom, setClubFrom] = useState<Screen>("home");
+  const [mounted, setMounted] = useState(false);
+  const setupDone = useGame((s) => s.setupDone);
+
+  // localStorage فقط سمتِ کلاینت است — بعد از rehydrate صفحه را نشان بده
+  useEffect(() => {
+    useGame.persist.rehydrate();
+    setMounted(true);
+  }, []);
+
+  const openClub = (from: Screen) => {
+    setClubFrom(from);
+    setScreen("club");
+  };
+
+  if (!mounted) return <div className="pitch-stripes min-h-dvh" />;
+
+  if (!setupDone) {
+    return <Onboarding onDone={() => setScreen("home")} />;
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <>
+      {screen === "home" && (
+        <Home
+          onPlayQuick={() => setScreen("quiz")}
+          onOpenClub={() => openClub("home")}
+          onPlayBomb={() => setScreen("bomb")}
+          onOpenGames={() => setScreen("games")}
+          onPlayDuel={() => setScreen("duel")}
+          onPlayPenalty={() => setScreen("penalty")}
+          onPlaySurvival={() => setScreen("survival")}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+
+      {screen === "games" && (
+        <Games
+          onPlayQuick={() => setScreen("quiz")}
+          onPlayBomb={() => setScreen("bomb")}
+          onPlayDuel={() => setScreen("duel")}
+          onPlayPenalty={() => setScreen("penalty")}
+          onPlaySurvival={() => setScreen("survival")}
+        />
+      )}
+
+      {screen === "leaderboard" && <Leaderboard />}
+
+      {screen === "shop" && <Shop />}
+
+      {screen === "profile" && (
+        <Profile onOpenClub={() => openClub("profile")} />
+      )}
+
+      {screen === "club" && <Club onBack={() => setScreen(clubFrom)} />}
+
+      {screen === "bomb" && <BombMode onExit={() => setScreen("home")} />}
+
+      {screen === "penalty" && <Penalty onExit={() => setScreen("home")} />}
+
+      {screen === "survival" && <Survival onExit={() => setScreen("home")} />}
+
+      {screen === "duel" && (
+        <Duel
+          onFinish={(r) => {
+            setResult(r);
+            setScreen("result");
+          }}
+          onExit={() => setScreen("home")}
+        />
+      )}
+
+      {screen === "quiz" && (
+        <Quiz
+          onFinish={(r) => {
+            setResult(r);
+            setScreen("result");
+          }}
+        />
+      )}
+
+      {screen === "result" && result && (
+        <Result
+          result={result}
+          onHome={() => setScreen("home")}
+          onReplay={() => setScreen(result.mode === "duel" ? "duel" : "quiz")}
+        />
+      )}
+
+      {/* نوارِ پایین فقط روی تب‌ها، نه در جریانِ بازی */}
+      {isTab(screen) && <BottomNav active={screen} onNavigate={setScreen} />}
+    </>
   );
 }
