@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { useGame, type ClubIdentity } from "@/lib/store";
+import { CITIES, HEART_TEAMS, type IdentityOption } from "@/lib/playerIdentity";
 
 interface OnboardingProps {
   onDone: () => void;
@@ -12,6 +13,106 @@ const COLORS = ["#2f6fed", "#e5473f", "#2f9e5f", "#8b3fe0", "#e08a2f", "#111827"
 const CRESTS = ["🦅", "🦁", "🐺", "🐉", "⚽", "🛡️", "⭐", "🔥"];
 
 const STORY_BEATS = 3;
+
+function PrefsChipGrid({
+  options,
+  value,
+  onChange,
+}: {
+  options: IdentityOption[];
+  value?: string;
+  onChange: (id: string | undefined) => void;
+}) {
+  return (
+    <div className="identity-chip-grid identity-chip-grid--compact">
+      {options.map((o) => {
+        const active = value === o.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => onChange(active ? undefined : o.id)}
+            className={`identity-chip ${active ? "identity-chip--active" : ""}`}
+          >
+            {o.emoji && <span aria-hidden>{o.emoji}</span>}
+            <span>{o.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function OnboardingPrefs({
+  heartTeam,
+  city,
+  onHeartTeam,
+  onCity,
+  onSkip,
+  onContinue,
+}: {
+  heartTeam?: string;
+  city?: string;
+  onHeartTeam: (id: string | undefined) => void;
+  onCity: (id: string | undefined) => void;
+  onSkip: () => void;
+  onContinue: () => void;
+}) {
+  return (
+    <div className="onboarding-setup pitch-stripes min-h-dvh flex flex-col px-5 py-8">
+      <p className="text-center text-[11px] font-bold text-gold-400/80">
+        فصل ۱ · شخصی‌سازی
+      </p>
+      <h1 className="mt-2 text-2xl font-extrabold text-center text-white">
+        باشگاهت کجاست؟
+      </h1>
+      <p className="mt-1 text-center text-sm text-white/55 leading-6">
+        اختیاری — برای رویدادها و رقابت شهری
+      </p>
+
+      <div className="mt-6 space-y-5 flex-1 overflow-y-auto">
+        <div>
+          <p className="text-right text-sm font-bold text-white/70 mb-2">
+            تیم قلبی تو
+          </p>
+          <PrefsChipGrid
+            options={HEART_TEAMS.filter((t) => t.id !== "none_iran")}
+            value={heartTeam}
+            onChange={onHeartTeam}
+          />
+        </div>
+
+        <div>
+          <p className="text-right text-sm font-bold text-white/70 mb-2">
+            شهر باشگاه
+          </p>
+          <PrefsChipGrid
+            options={CITIES.filter((c) => c.id !== "other")}
+            value={city}
+            onChange={onCity}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2.5">
+        <button
+          type="button"
+          onClick={onContinue}
+          className="btn-gold w-full rounded-2xl py-4 text-lg font-extrabold active:scale-[0.98] transition-transform"
+        >
+          ادامه → اولین بازی
+        </button>
+        <button
+          type="button"
+          onClick={onSkip}
+          className="w-full rounded-2xl py-3 text-sm font-bold text-white/50"
+        >
+          بعداً تکمیل می‌کنم
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function StoryDots({ beat }: { beat: number }) {
   return (
@@ -261,17 +362,21 @@ function faBeatHint(beat: number): string {
 export function Onboarding({ onDone }: OnboardingProps) {
   const completeSetup = useGame((s) => s.completeSetup);
 
-  const [step, setStep] = useState<"story" | "setup">("story");
+  const [step, setStep] = useState<"story" | "setup" | "prefs">("story");
   const [storyBeat, setStoryBeat] = useState(0);
   const [name, setName] = useState("");
   const [color, setColor] = useState(COLORS[0]);
   const [crest, setCrest] = useState(CRESTS[0]);
+  const [heartTeam, setHeartTeam] = useState<string | undefined>();
+  const [city, setCity] = useState<string | undefined>();
 
-  function finish() {
+  function finish(prefs?: { heartTeam?: string; city?: string }) {
     const club: ClubIdentity = {
       name: name.trim() || "باشگاهِ من",
       color,
       crest,
+      city: prefs?.city ?? city,
+      heartTeam: prefs?.heartTeam ?? heartTeam,
     };
     completeSetup(club);
     onDone();
@@ -287,6 +392,19 @@ export function Onboarding({ onDone }: OnboardingProps) {
 
   if (step === "story") {
     return <StoryIntro beat={storyBeat} onNext={advanceStory} />;
+  }
+
+  if (step === "prefs") {
+    return (
+      <OnboardingPrefs
+        heartTeam={heartTeam}
+        city={city}
+        onHeartTeam={setHeartTeam}
+        onCity={setCity}
+        onSkip={() => finish({ heartTeam: undefined, city: undefined })}
+        onContinue={() => finish()}
+      />
+    );
   }
 
   return (
@@ -356,10 +474,10 @@ export function Onboarding({ onDone }: OnboardingProps) {
       <div className="flex-1" />
 
       <button
-        onClick={finish}
+        onClick={() => setStep("prefs")}
         className="btn-gold w-full rounded-2xl py-4 text-xl font-extrabold mt-6 active:scale-[0.98] transition-transform"
       >
-        شروعِ مسیرِ قهرمانی 🏆
+        ادامه ←
       </button>
     </div>
   );

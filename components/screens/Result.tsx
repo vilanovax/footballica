@@ -26,13 +26,14 @@ function OutcomeBadge({
 }) {
   return (
     <span
-      className={`result-outcome-badge grid h-9 w-9 place-items-center rounded-xl text-sm font-extrabold ${
+      className={`result-outcome-badge grid h-10 w-10 place-items-center rounded-xl text-base font-extrabold ${
         correct
           ? variant === "you"
             ? "result-outcome-badge--you-ok"
             : "result-outcome-badge--foe-ok"
           : "result-outcome-badge--miss"
       }`}
+      aria-label={correct ? "درست" : "غلط"}
     >
       {correct ? "✓" : "✕"}
     </span>
@@ -106,8 +107,11 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
     tick();
   }, [won]);
 
+  const lossMargin = !won && scoreDiff < 0 ? Math.abs(scoreDiff) : 0;
+  const winMargin = won && scoreDiff > 0 ? scoreDiff : 0;
+
   return (
-    <div className="quiz-screen pitch-stripes min-h-dvh flex flex-col pb-32">
+    <div className="quiz-screen pitch-stripes min-h-dvh flex flex-col pb-36">
       <div className="flex-1 px-5 pt-6 space-y-5 max-w-sm mx-auto w-full">
         {/* hero + score */}
         <div
@@ -119,93 +123,115 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
           <h1 className="mt-2 text-2xl font-extrabold text-white">
             {won ? (isDuel ? "دوئل را بردی!" : "بردی!") : "این‌بار نشد"}
           </h1>
-          <p className="mt-1 text-sm text-white/55">
+          <p className="mt-1.5 text-sm font-medium text-white/72 leading-6">
             {won
               ? `${faNum(correctCount)} از ${faNum(total)} درست — عالی بود`
-              : `${faNum(correctCount)} از ${faNum(total)} درست — دوباره بزن`}
+              : correctCount === 0
+                ? `${faNum(correctCount)} از ${faNum(total)} درست — یک بار دیگر امتحان کن`
+                : `${faNum(correctCount)} از ${faNum(total)} درست — نزدیک بود، دوباره بزن`}
           </p>
 
-          <div className="result-accuracy mt-4 mx-auto max-w-[200px]">
-            <div className="flex justify-between text-[10px] font-bold text-white/45 mb-1">
+          <div className="result-accuracy mt-4 mx-auto max-w-[220px]">
+            <div className="flex justify-between text-[11px] font-bold text-white/65 mb-1.5">
               <span>دقت</span>
-              <span>{faNum(accuracyPct)}٪</span>
+              <span className={accuracyPct >= 60 ? "text-grass-400" : accuracyPct > 0 ? "text-gold-400" : "text-white/55"}>
+                {faNum(accuracyPct)}٪
+              </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-black/30">
+            <div className="result-accuracy-track h-2.5 overflow-hidden rounded-full">
               <div
-                className={`h-full rounded-full transition-all ${
+                className={`h-full rounded-full transition-all duration-500 ${
                   accuracyPct >= 60
                     ? "bg-gradient-to-l from-grass-400 to-grass-500"
                     : accuracyPct >= 40
                       ? "bg-gradient-to-l from-gold-400 to-gold-500"
-                      : "bg-gradient-to-l from-team-foe to-red-600"
+                      : accuracyPct > 0
+                        ? "bg-gradient-to-l from-team-foe to-red-600"
+                        : "bg-white/8"
                 }`}
-                style={{ width: `${accuracyPct}%` }}
+                style={{ width: `${Math.max(accuracyPct, accuracyPct === 0 ? 0 : 4)}%` }}
               />
             </div>
           </div>
 
-          <div
-            className="quiz-scoreboard mt-5 rounded-2xl p-4 flex items-center justify-between gap-2"
-            dir="rtl"
-          >
-            <div className="flex flex-col items-center gap-1.5 min-w-0 flex-1">
-              <Avatar label={club.crest} color={club.color} size={52} crown={won} />
-              <p className="text-[10px] font-bold text-gold-400/80">تو</p>
-              <p className="text-xs text-white/55 truncate max-w-full">{club.name}</p>
-              <p
-                className={`text-2xl font-extrabold leading-none ${
-                  won ? "text-gold-400" : "text-white/90"
+          <div className="result-scoreboard mt-5 rounded-2xl p-4" dir="rtl">
+            <div className="flex items-stretch justify-between gap-1">
+              <div
+                className={`result-scoreboard-side flex flex-col items-center gap-1.5 min-w-0 flex-1 rounded-xl px-2 py-2 ${
+                  won ? "result-scoreboard-side--win" : "result-scoreboard-side--dim"
                 }`}
               >
-                {faNum(result.youScore)}
-              </p>
-            </div>
-            <div className="flex flex-col items-center gap-1 shrink-0 px-1">
-              <span className="rounded-lg border border-gold-500/40 bg-black/20 px-2.5 py-1 text-xs font-extrabold text-gold-400">
-                VS
-              </span>
-              {!won && scoreDiff < 0 && (
-                <span className="text-[10px] font-bold text-team-foe">
-                  −{faNum(Math.abs(scoreDiff))}
-                </span>
-              )}
-              {won && scoreDiff > 0 && (
-                <span className="text-[10px] font-bold text-grass-400">
-                  +{faNum(scoreDiff)}
-                </span>
-              )}
-            </div>
-            <div className="flex flex-col items-center gap-1.5 min-w-0 flex-1">
-              <Avatar label={OPPONENT.short} color="foe" size={52} />
-              <p className="text-[10px] font-bold text-white/40">حریف</p>
-              <p className="text-xs text-white/55 truncate max-w-full">{OPPONENT.name}</p>
-              <p className="text-2xl font-extrabold leading-none text-white/85">
-                {faNum(result.foeScore)}
-              </p>
+                <Avatar label={club.crest} color={club.color} size={56} crown={won} />
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-gold-400">تو</p>
+                <p className="text-xs text-white/65 truncate max-w-full">{club.name}</p>
+                <p
+                  className={`text-3xl font-extrabold leading-none tabular-nums ${
+                    won ? "text-gold-400" : "text-white/90"
+                  }`}
+                >
+                  {faNum(result.youScore)}
+                </p>
+              </div>
+
+              <div className="result-vs-hub flex flex-col items-center justify-center gap-2 shrink-0 px-2">
+                <span className="result-vs-badge">VS</span>
+                {lossMargin > 0 && (
+                  <span className="result-diff-pill result-diff-pill--loss">
+                    −{faNum(lossMargin)}
+                  </span>
+                )}
+                {winMargin > 0 && (
+                  <span className="result-diff-pill result-diff-pill--win">
+                    +{faNum(winMargin)}
+                  </span>
+                )}
+                {scoreDiff === 0 && (
+                  <span className="result-diff-pill result-diff-pill--draw">مساوی</span>
+                )}
+              </div>
+
+              <div
+                className={`result-scoreboard-side flex flex-col items-center gap-1.5 min-w-0 flex-1 rounded-xl px-2 py-2 ${
+                  !won ? "result-scoreboard-side--win" : "result-scoreboard-side--dim"
+                }`}
+              >
+                <Avatar label={OPPONENT.short} color="foe" size={56} />
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-white/50">حریف</p>
+                <p className="text-xs text-white/65 truncate max-w-full">{OPPONENT.name}</p>
+                <p
+                  className={`text-3xl font-extrabold leading-none tabular-nums ${
+                    !won ? "text-white" : "text-white/70"
+                  }`}
+                >
+                  {faNum(result.foeScore)}
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* rewards */}
-        <div>
-          <p className="mb-2 text-right text-xs font-bold text-white/45">پاداش</p>
+        <div className="result-rewards-block">
+          <p className="mb-2 text-right text-xs font-bold text-white/55">پاداش</p>
           {hasRewards ? (
-            <RewardBreakdown
-              compact
-              xp={result.xpEarned}
-              fans={result.fansEarned}
-              vault={result.vaultEarned}
-              cards={result.cardsEarned}
-              vaultNote={
-                result.vaultEarned > 0
-                  ? bank
-                    ? "مستقیم به بودجه"
-                    : "وارد گاوصندوق شد"
-                  : undefined
-              }
-            />
+            <div className="result-rewards-card rounded-2xl p-1">
+              <RewardBreakdown
+                compact
+                xp={result.xpEarned}
+                fans={result.fansEarned}
+                vault={result.vaultEarned}
+                cards={result.cardsEarned}
+                vaultNote={
+                  result.vaultEarned > 0
+                    ? bank
+                      ? "مستقیم به بودجه"
+                      : "وارد گاوصندوق شد"
+                    : undefined
+                }
+              />
+            </div>
           ) : (
-            <div className="quiz-reward-row text-sm text-white/45 justify-center">
+            <div className="result-rewards-card rounded-2xl px-4 py-3.5 text-sm text-white/55 text-center">
               بدون پاداش — تمرینِ خوب بود
             </div>
           )}
@@ -232,42 +258,49 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
         )}
 
         {/* question review */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex gap-3 text-[10px] font-bold text-white/40">
-              <span className="flex items-center gap-1">
-                <span className="result-legend-dot result-legend-dot--you" /> تو
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="result-legend-dot result-legend-dot--foe" /> حریف
-              </span>
+        <div className="result-review">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex gap-2.5 text-[10px] font-bold text-white/50">
+              <span className="result-legend-chip result-legend-chip--ok">✓ درست</span>
+              <span className="result-legend-chip result-legend-chip--miss">✕ غلط</span>
             </div>
-            <p className="text-sm font-extrabold text-white/70">
+            <p className="text-sm font-extrabold text-white/85">
               مرور سؤال‌ها ({faNum(total)})
             </p>
+          </div>
+
+          <div
+            className="result-review-cols mb-2 grid items-center gap-x-2.5 px-3.5 text-[10px] font-extrabold text-white/45"
+            style={{ gridTemplateColumns: "2rem 1fr 2.5rem 2.5rem" }}
+          >
+            <span />
+            <span className="text-right">سؤال</span>
+            <span className="text-center text-gold-400/80">تو</span>
+            <span className="text-center">حریف</span>
           </div>
 
           <div className="space-y-2">
             {result.outcomes.map((o, i) => (
               <div
                 key={i}
-                className={`result-outcome-row rounded-2xl p-3.5 ${
+                className={`result-outcome-row rounded-2xl px-3.5 py-3 ${
                   o.youCorrect ? "result-outcome-row--ok" : "result-outcome-row--miss"
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <span className="result-outcome-num grid h-8 w-8 shrink-0 place-items-center rounded-xl text-sm font-extrabold">
+                <div
+                  className="grid items-center gap-x-2.5"
+                  style={{ gridTemplateColumns: "2rem 1fr 2.5rem 2.5rem" }}
+                >
+                  <span className="result-outcome-num grid h-8 w-8 place-items-center rounded-xl text-sm font-extrabold">
                     {faNum(i + 1)}
                   </span>
-                  <p className="flex-1 min-w-0 text-right font-bold text-sm text-white/88 leading-6 line-clamp-2">
+                  <p className="min-w-0 text-right font-bold text-sm text-white/90 leading-6 line-clamp-2">
                     {o.label}
                   </p>
-                  <div className="flex flex-col items-center gap-1 shrink-0">
-                    <span className="text-[9px] font-bold text-gold-400/70">تو</span>
+                  <div className="flex justify-center">
                     <OutcomeBadge correct={o.youCorrect} variant="you" />
                   </div>
-                  <div className="flex flex-col items-center gap-1 shrink-0">
-                    <span className="text-[9px] font-bold text-white/35">حریف</span>
+                  <div className="flex justify-center">
                     <OutcomeBadge correct={o.foeCorrect} variant="foe" />
                   </div>
                 </div>
@@ -278,13 +311,16 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
       </div>
 
       {/* sticky actions */}
-      <div className="result-actions sticky bottom-0 inset-x-0 px-5 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] max-w-sm mx-auto w-full space-y-2.5">
+      <div className="result-actions sticky bottom-0 inset-x-0 px-5 pt-4 pb-[calc(14px+env(safe-area-inset-bottom))] max-w-sm mx-auto w-full space-y-2.5">
         {!showVaultCta ? (
           <button
             onClick={onReplay}
-            className="btn-gold w-full rounded-2xl py-4 text-lg font-extrabold active:scale-[0.98] transition-transform"
+            className="btn-gold w-full rounded-2xl py-4 text-lg font-extrabold active:scale-[0.98] transition-transform flex flex-col items-center gap-0.5"
           >
-            ⚽ بازیِ دوباره
+            <span>⚽ بازیِ دوباره</span>
+            {!won && (
+              <span className="text-[11px] font-bold opacity-75">فرصت جبران داری</span>
+            )}
           </button>
         ) : (
           <button
@@ -296,7 +332,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
         )}
         <button
           onClick={onHome}
-          className="w-full rounded-2xl quiz-header-btn py-3.5 font-bold text-white/85"
+          className="w-full rounded-2xl result-home-btn py-3.5 font-bold text-white/88"
         >
           بازگشت به خانه
         </button>

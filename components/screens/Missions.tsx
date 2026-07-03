@@ -13,13 +13,24 @@ import {
 } from "@/lib/missions";
 import type { ActivityReward as EconomyReward } from "@/lib/economy";
 
-function formatReward(r: EconomyReward): string {
-  const parts: string[] = [];
-  if (r.xp > 0) parts.push(`${faNum(r.xp)} XP`);
-  if (r.fans > 0) parts.push(`${faNum(r.fans)} هوادار`);
-  if (r.vaultMoney > 0) parts.push(faMoney(r.vaultMoney));
-  if (r.cards > 0) parts.push(`${faNum(r.cards)} 🃏`);
-  return parts.join(" · ") || "—";
+function RewardLoot({ reward }: { reward: EconomyReward }) {
+  const chips: { label: string; kind: "xp" | "fans" | "vault" | "cards" }[] = [];
+  if (reward.xp > 0) chips.push({ label: `${faNum(reward.xp)} XP`, kind: "xp" });
+  if (reward.fans > 0) chips.push({ label: `${faNum(reward.fans)} هوادار`, kind: "fans" });
+  if (reward.vaultMoney > 0) chips.push({ label: faMoney(reward.vaultMoney), kind: "vault" });
+  if (reward.cards > 0) chips.push({ label: `${faNum(reward.cards)} 🃏`, kind: "cards" });
+
+  if (chips.length === 0) return null;
+
+  return (
+    <div className="mission-loot">
+      {chips.map((c) => (
+        <span key={c.label} className={`mission-loot__chip mission-loot__chip--${c.kind}`}>
+          {c.label}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function MissionCard({
@@ -34,86 +45,101 @@ function MissionCard({
   const { def, progress, complete, claimed, claimable, pct } = status;
 
   return (
-    <div
-      className={`mission-card rounded-2xl p-4 ${
-        claimable ? "mission-card--ready" : ""
-      } ${claimed ? "mission-card--done" : ""} ${shake ? "animate-shake" : ""}`}
+    <article
+      className={`mission-card ${claimable ? "mission-card--ready" : ""} ${
+        claimed ? "mission-card--done" : ""
+      } ${complete && !claimed ? "mission-card--complete" : ""} ${
+        shake ? "animate-shake" : ""
+      }`}
     >
+      {claimable && <div className="mission-card__shine" aria-hidden />}
+
       <div className="flex items-start gap-3">
-        <span
-          className={`text-3xl shrink-0 ${claimed ? "opacity-50 grayscale" : ""}`}
+        <div
+          className={`mission-icon-well ${claimed ? "mission-icon-well--done" : ""}`}
+          aria-hidden
         >
           {def.emoji}
-        </span>
+        </div>
+
         <div className="flex-1 min-w-0 text-right">
-          <div className="flex items-center justify-end gap-2 flex-wrap">
-            {claimed && (
-              <span className="mission-badge mission-badge--done text-[10px] font-bold px-2 py-0.5 rounded-md">
-                ✓ گرفتی
-              </span>
-            )}
-            {claimable && (
-              <span className="mission-badge mission-badge--ready text-[10px] font-bold px-2 py-0.5 rounded-md">
-                آماده
-              </span>
-            )}
-            <p className="font-extrabold text-white">{def.title}</p>
+          <div className="flex items-start justify-end gap-2 flex-wrap">
+            <h4 className="mission-card__title">{def.title}</h4>
+            {claimed && <span className="mission-badge mission-badge--done">✓ گرفتی</span>}
+            {claimable && <span className="mission-badge mission-badge--ready">آماده</span>}
           </div>
-          <p className="mt-1 text-xs text-white/55 leading-5">{def.detail}</p>
-          <p className="mt-1.5 text-[11px] font-bold text-gold-400/90">
-            جایزه: {formatReward(def.reward)}
-          </p>
+
+          <p className="mission-card__detail">{def.detail}</p>
+          <RewardLoot reward={def.reward} />
+
           {!claimed && (
-            <>
-              <div className="mt-2.5 flex items-center justify-between text-[10px] text-white/45">
-                <span>{faNum(Math.round(pct))}٪</span>
-                <span>
+            <div className="mission-progress mt-3">
+              <div className="mission-progress__labels">
+                <span className="mission-progress__pct">{faNum(Math.round(pct))}٪</span>
+                <span className="mission-progress__count">
                   {faNum(progress)} / {faNum(def.target)}
                 </span>
               </div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/30">
+              <div className="mission-progress__track">
                 <div
-                  className={`h-full rounded-full transition-all ${
-                    complete ? "bg-gold-400" : "bg-grass-400"
+                  className={`mission-progress__fill ${
+                    complete ? "mission-progress__fill--done" : ""
                   }`}
-                  style={{ width: `${pct}%` }}
+                  style={{ width: `${Math.max(pct, pct > 0 ? 3 : 0)}%` }}
                 />
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
+
       {claimable && (
         <button
+          type="button"
           onClick={onClaim}
-          className="btn-gold mt-3 w-full rounded-xl py-2.5 text-sm font-extrabold active:scale-[0.98] transition-transform"
+          className="btn-gold mission-claim-btn mt-3 w-full"
         >
           دریافت جایزه
         </button>
       )}
-    </div>
+    </article>
   );
 }
 
 function MissionSection({
   title,
   sub,
+  icon,
   items,
   onClaim,
   shakeId,
 }: {
   title: string;
   sub?: string;
+  icon: string;
   items: MissionStatus[];
   onClaim: (id: string) => void;
   shakeId: string | null;
 }) {
   if (items.length === 0) return null;
+
+  const ready = items.filter((s) => s.claimable).length;
+
   return (
-    <section>
-      <h3 className="text-lg font-extrabold text-white text-right">{title}</h3>
-      {sub && <p className="mt-0.5 text-xs text-white/45 text-right">{sub}</p>}
-      <div className="mt-3 space-y-2.5">
+    <section className="mission-section">
+      <div className="mission-section__head">
+        <div className="text-right">
+          <h3 className="mission-section__title">{title}</h3>
+          {sub && <p className="mission-section__sub">{sub}</p>}
+        </div>
+        <div className="mission-section__icon" aria-hidden>
+          {icon}
+        </div>
+        {ready > 0 && (
+          <span className="mission-section__ready">{faNum(ready)}</span>
+        )}
+      </div>
+      <div className="mt-3 space-y-3">
         {items.map((s) => (
           <MissionCard
             key={s.def.id}
@@ -213,7 +239,7 @@ export function Missions({ onBack }: MissionsProps) {
     const res = claimMission(id);
     if (res === "ok") {
       setToast("جایزه دریافت شد ✓");
-      setTimeout(() => setToast(null), 1500);
+      setTimeout(() => setToast(null), 1800);
     } else {
       setShakeId(id);
       setTimeout(() => setShakeId(null), 400);
@@ -222,51 +248,58 @@ export function Missions({ onBack }: MissionsProps) {
 
   const onboardingDone = onboarding.filter((s) => s.claimed).length;
   const onboardingTotal = onboarding.length;
+  const pathPct =
+    onboardingTotal > 0 ? (onboardingDone / onboardingTotal) * 100 : 0;
 
   return (
     <div className="quiz-screen pitch-stripes min-h-dvh pb-10">
-      <header className="sticky top-0 z-10 mission-header px-5 pt-6 pb-4">
-        <div className="flex items-center justify-between">
+      <header className="mission-header sticky top-0 z-10 px-5 pt-5 pb-4">
+        <div className="flex items-center justify-between gap-3">
           <button
+            type="button"
             onClick={onBack}
-            className="quiz-header-btn grid h-10 w-10 place-items-center rounded-2xl text-xl font-bold"
+            className="mission-back-btn"
             aria-label="بازگشت"
           >
             ›
           </button>
-          <div className="text-right flex-1 px-3">
-            <h1 className="text-xl font-extrabold text-white">ماموریت‌ها</h1>
-            <p className="text-xs text-white/50 mt-0.5">
-              راهنمای بازی + افتخارات
-            </p>
+          <div className="flex-1 text-center">
+            <h1 className="mission-header__title">ماموریت‌ها</h1>
+            <p className="mission-header__sub">راهنمای بازی + افتخارات</p>
           </div>
-          {claimable > 0 && (
-            <span className="mission-header-badge rounded-xl px-3 py-1.5 text-sm font-extrabold">
-              {faNum(claimable)}
-            </span>
+          {claimable > 0 ? (
+            <span className="mission-header-badge">{faNum(claimable)}</span>
+          ) : (
+            <span className="w-10" aria-hidden />
           )}
         </div>
 
-        <div className="mission-progress-summary mt-4 rounded-2xl p-3 flex items-center justify-between">
-          <span className="text-xs text-white/50">
-            {faNum(onboardingDone)}/{faNum(onboardingTotal)} آموزشی
-          </span>
-          <span className="text-sm font-bold text-white/80">
-            🎯 مسیر یادگیری باشگاه
-          </span>
+        <div className="mission-path mt-4 rounded-2xl p-3.5">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="mission-path__count">
+              {faNum(onboardingDone)}/{faNum(onboardingTotal)}
+            </span>
+            <span className="mission-path__label">🎯 مسیر یادگیری باشگاه</span>
+          </div>
+          <div className="mission-path__track">
+            <div
+              className="mission-path__fill"
+              style={{ width: `${Math.max(pathPct, pathPct > 0 ? 4 : 0)}%` }}
+            />
+          </div>
+          <p className="mission-path__hint mt-2">
+            {onboardingDone >= onboardingTotal
+              ? "مسیر آموزشی تکمیل شد — افتخارات را ادامه بده"
+              : `${faNum(onboardingTotal - onboardingDone)} ماموریت آموزشی باقی‌مانده`}
+          </p>
         </div>
       </header>
 
-      {toast && (
-        <p className="mx-5 mt-2 text-center text-sm font-bold text-grass-400 animate-pop">
-          {toast}
-        </p>
-      )}
-
-      <div className="px-5 mt-4 space-y-7">
+      <div className="px-5 mt-5 space-y-7">
         <MissionSection
           title="ماموریت‌های امروز"
           sub="هر شب reset می‌شوند"
+          icon="📅"
           items={daily}
           onClaim={claim}
           shakeId={shakeId}
@@ -274,6 +307,7 @@ export function Missions({ onBack }: MissionsProps) {
         <MissionSection
           title="شروع بازی"
           sub="یک‌بار — کل loop را یاد بگیر"
+          icon="🚀"
           items={onboarding.filter((s) => !s.claimed)}
           onClaim={claim}
           shakeId={shakeId}
@@ -281,6 +315,7 @@ export function Missions({ onBack }: MissionsProps) {
         {onboarding.some((s) => s.claimed) && (
           <MissionSection
             title="تکمیل‌شده"
+            icon="✅"
             items={onboarding.filter((s) => s.claimed)}
             onClaim={claim}
             shakeId={shakeId}
@@ -289,11 +324,14 @@ export function Missions({ onBack }: MissionsProps) {
         <MissionSection
           title="افتخارات"
           sub="کلکسیون بلندمدت"
+          icon="🏅"
           items={achievements}
           onClaim={claim}
           shakeId={shakeId}
         />
       </div>
+
+      {toast && <div className="mission-toast animate-pop">{toast}</div>}
     </div>
   );
 }

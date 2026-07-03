@@ -44,12 +44,76 @@ const MOCK_POINTS = [4820, 4510, 4180, 0, 3720, 3400, 3120, 2890, 2610, 2350];
 
 const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-function Zone({ label, color }: { label: string; color: string }) {
+type ZoneKind = "promo" | "safe" | "relegate";
+
+function Zone({ label, kind }: { label: string; kind: ZoneKind }) {
   return (
-    <div className="flex items-center gap-2 py-1 text-xs font-bold" style={{ color }}>
-      <span className="h-px flex-1" style={{ background: color, opacity: 0.4 }} />
-      {label}
-      <span className="h-px flex-1" style={{ background: color, opacity: 0.4 }} />
+    <div className={`lb-zone lb-zone--${kind}`} role="separator">
+      <span className="lb-zone__line" aria-hidden />
+      <span className="lb-zone__label">{label}</span>
+      <span className="lb-zone__line" aria-hidden />
+    </div>
+  );
+}
+
+function rowVariant(rank: number, you?: boolean): string {
+  if (you) return "lb-row--you";
+  if (rank === 1) return "lb-row--gold";
+  if (rank === 2) return "lb-row--silver";
+  if (rank === 3) return "lb-row--bronze";
+  return "";
+}
+
+function LeaderboardRow({
+  row,
+  crest,
+  crestColor,
+}: {
+  row: Row;
+  crest: string;
+  crestColor: string;
+}) {
+  const variant = rowVariant(row.rank, row.you);
+  const isPodium = row.rank <= 3 && !row.you;
+
+  return (
+    <div
+      className={`lb-row ${variant}`}
+      aria-current={row.you ? "true" : undefined}
+    >
+      <span
+        className={`lb-rank ${MEDALS[row.rank] ? "lb-rank--medal" : ""}`}
+        aria-label={`رتبه ${faNum(row.rank)}`}
+      >
+        {MEDALS[row.rank] ?? faNum(row.rank)}
+      </span>
+
+      <Avatar
+        label={row.you ? crest : row.short}
+        color={row.you ? crestColor : row.color}
+        size={isPodium ? 50 : 46}
+        crown={row.rank === 1}
+        className="shrink-0"
+      />
+
+      <div className="lb-row__info min-w-0 flex-1">
+        <p className="lb-row__name truncate">
+          {row.name}
+          {row.you && <span className="lb-you-badge">تو</span>}
+        </p>
+        {isPodium && (
+          <p className="lb-row__sub">
+            {row.rank === 1 ? "صدر جدول" : row.rank === 2 ? "نزدیک به قهرمانی" : "پلهٔ سوم"}
+          </p>
+        )}
+      </div>
+
+      <div className="lb-xp shrink-0 text-left">
+        <span className={`lb-xp__value tabular-nums ${row.you ? "lb-xp__value--you" : ""}`}>
+          {faCount(row.points)}
+        </span>
+        <span className="lb-xp__unit">XP</span>
+      </div>
     </div>
   );
 }
@@ -66,44 +130,44 @@ export function Leaderboard() {
     you: i === 3,
   }));
 
+  const youRow = rows.find((r) => r.you);
+  const promoCutoff = rows[2]?.points ?? 0;
+  const xpToPromo =
+    youRow && youRow.rank > 3 ? Math.max(0, promoCutoff - youRow.points + 1) : 0;
+
   return (
     <div className="pitch-stripes min-h-dvh pb-32">
-      <header className="px-5 pt-6 text-right">
-        <h1 className="text-2xl font-extrabold">رده‌بندی هفتگی</h1>
-        <div className="mt-2 flex items-center justify-between">
-          <span className="rounded-lg bg-white/10 px-3 py-1 text-sm font-bold text-white/70">
-            ⏳ ۳ روز تا پایان فصل
+      <header className="lb-header px-5 pt-6 text-center">
+        <h1 className="text-2xl font-extrabold text-white">رده‌بندی هفتگی</h1>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <span className="lb-season-pill">
+            <span aria-hidden>⏳</span>
+            ۳ روز تا پایان فصل
           </span>
-          <span className="rounded-lg border border-gold-500/40 bg-gold-500/10 px-3 py-1 text-sm font-bold text-gold-400">
-            🏆 {league}
+          <span className="lb-league-pill">
+            <span aria-hidden>🏆</span>
+            {league}
           </span>
         </div>
       </header>
 
-      <div className="px-5 mt-5 space-y-2">
-        <Zone label="منطقهٔ صعود ⬆" color="#5ee08a" />
+      {youRow && xpToPromo > 0 && (
+        <div className="mx-5 mt-4 lb-hint rounded-2xl px-4 py-3 text-right text-sm leading-6">
+          <span className="font-extrabold text-gold-400">رتبهٔ {faNum(youRow.rank)}</span>
+          <span className="text-white/65"> — </span>
+          <span className="text-white/70">
+            {faCount(xpToPromo)} XP تا منطقهٔ صعود
+          </span>
+        </div>
+      )}
+
+      <div className="px-5 mt-5 space-y-2.5">
+        <Zone label="⬆ منطقهٔ صعود" kind="promo" />
         {rows.map((r, i) => (
           <div key={r.rank}>
-            <div
-              className={`flex items-center gap-3 rounded-2xl p-3 ${
-                r.you ? "bg-team-you/20 ring-2 ring-team-you/60" : "glass"
-              }`}
-            >
-              <span className="w-7 text-center text-lg font-extrabold text-white/70">
-                {MEDALS[r.rank] ?? faNum(r.rank)}
-              </span>
-              <Avatar label={r.short} color={r.color} size={44} crown={r.rank === 1} />
-              <p className="flex-1 text-right font-bold">
-                {r.name}
-                {r.you && <span className="text-gold-400"> (تو)</span>}
-              </p>
-              <span className="font-extrabold text-gold-400">
-                {faCount(r.points)}
-                <span className="mr-1 text-xs text-white/50">XP</span>
-              </span>
-            </div>
-            {i === 2 && <Zone label="منطقهٔ امن" color="rgba(255,255,255,0.35)" />}
-            {i === 7 && <Zone label="منطقهٔ سقوط ⬇" color="#e5473f" />}
+            <LeaderboardRow row={r} crest={club.crest} crestColor={club.color} />
+            {i === 2 && <Zone label="منطقهٔ امن" kind="safe" />}
+            {i === 7 && <Zone label="⬇ منطقهٔ سقوط" kind="relegate" />}
           </div>
         ))}
       </div>

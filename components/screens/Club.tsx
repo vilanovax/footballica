@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { ClubVault } from "@/components/ui/ClubVault";
-import { UnitCard, LockedUnitRow } from "@/components/ui/UnitCard";
 import { ClubFlowBar } from "@/components/ui/ClubFlowBar";
 import { ClubCollectBar } from "@/components/ui/ClubCollectBar";
+import { ClubBankSheet } from "@/components/ui/ClubBankSheet";
+import { UnitCard, LockedUnitRow } from "@/components/ui/UnitCard";
 import { UNITS } from "@/lib/units";
 import { CLUB } from "@/lib/club";
 import { fanIncomeMultiplier } from "@/lib/economy";
@@ -15,9 +15,9 @@ import {
   unitIncomeSnapshot,
 } from "@/lib/clubEconomy";
 import { levelInfo, leagueForXp } from "@/lib/player";
-import { isBank } from "@/lib/vault";
+import { vaultCapacity, isBank } from "@/lib/vault";
 import { useGame } from "@/lib/store";
-import { faNum, faShort, faCount } from "@/lib/format";
+import { faNum, faShort, faCount, faClubMoney, faVaultM } from "@/lib/format";
 
 interface ClubProps {
   onBack: () => void;
@@ -56,6 +56,7 @@ function PromotionBar() {
 
 export function Club({ onBack }: ClubProps) {
   const [now, setNow] = useState(() => Date.now());
+  const [bankOpen, setBankOpen] = useState(false);
 
   const cards = useGame((s) => s.cards);
   const fans = useGame((s) => s.fans);
@@ -99,6 +100,8 @@ export function Club({ onBack }: ClubProps) {
     isBank: bank,
   });
 
+  const budgetFmt = faClubMoney(budget);
+  const vaultCap = vaultCapacity(vaultLevel);
   const unlockedUnits = UNITS.filter((u) => isUnitUnlocked(u.id, xp));
   const lockedUnits = UNITS.filter((u) => !isUnitUnlocked(u.id, xp));
 
@@ -144,13 +147,41 @@ export function Club({ onBack }: ClubProps) {
               </div>
             )}
           </div>
-          <div className="text-right min-w-0">
+          <button
+            type="button"
+            onClick={() => setBankOpen(true)}
+            className="club-budget-btn text-right min-w-0 flex-1 active:scale-[0.98] transition-transform"
+          >
             <p className="text-[10px] text-white/45">بودجهٔ قابلِ خرج</p>
-            <p className="text-2xl font-extrabold text-gold-400 leading-tight truncate">
-              {faCount(budget)}
-              <span className="text-xs text-white/45 mr-1">تومان</span>
+            <p className="text-2xl font-extrabold text-gold-400 leading-tight">
+              {budgetFmt.value}
+              <span className="text-base text-gold-400/85 mr-1">
+                {budgetFmt.unit}
+              </span>
+              <span className="text-xs text-white/45">تومان</span>
             </p>
-          </div>
+            {!bank && (
+              <p className="mt-1 text-[11px] font-bold text-white/50">
+                گاوصندوق{" "}
+                <span className="text-white/70 tabular-nums">
+                  {faVaultM(vaultBalance)} / {faVaultM(vaultCap)}
+                </span>
+              </p>
+            )}
+            {bank && (
+              <p className="mt-1 text-[11px] font-bold text-grass-400">
+                🏦 بانکِ اسپانسر فعال
+              </p>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setBankOpen(true)}
+            className="club-bank-icon-btn shrink-0"
+            aria-label="جزئیات خزانه"
+          >
+            {bank ? "🏦" : "🔐"}
+          </button>
         </div>
 
         <div className="mt-4 pt-3 border-t border-white/8">
@@ -161,8 +192,10 @@ export function Club({ onBack }: ClubProps) {
             unitsPending={snap.totalPending}
             vaultBalance={vaultBalance}
             budget={budget}
+            vaultCap={vaultCap}
             vaultFull={snap.vaultFull}
             activeStep={next.step}
+            onOpenBank={() => setBankOpen(true)}
           />
         </div>
 
@@ -174,29 +207,25 @@ export function Club({ onBack }: ClubProps) {
               {next.detail}
             </p>
           </div>
+          {showVaultTutorial && vaultBalance > 0 && next.step === "vault" && (
+            <button
+              type="button"
+              onClick={() => setBankOpen(true)}
+              className="shrink-0 rounded-lg bg-gold-400 px-2.5 py-1 text-[10px] font-extrabold text-[#3a2600]"
+            >
+              برداشت
+            </button>
+          )}
         </div>
       </div>
 
-      <ClubCollectBar />
+      <ClubBankSheet
+        open={bankOpen}
+        onClose={() => setBankOpen(false)}
+        unitsPending={snap.totalPending}
+      />
 
-      {/* گاوصندوق */}
-      <div className="px-5 mt-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-bold text-white/35">مرحله ۲</span>
-          <h2 className="text-base font-extrabold">گاوصندوق</h2>
-        </div>
-        {showVaultTutorial && vaultBalance > 0 && (
-          <div className="mb-2 rounded-xl border border-gold-500/40 bg-gold-500/10 px-3 py-2 text-right">
-            <p className="text-xs font-extrabold text-gold-400">
-              👇 برداشت کن
-            </p>
-          </div>
-        )}
-        <ClubVault
-          highlight={showVaultTutorial && vaultBalance > 0}
-          unitsPending={snap.totalPending}
-        />
-      </div>
+      <ClubCollectBar onOpenBank={() => setBankOpen(true)} />
 
       {/* واحدهای فعال */}
       <div className="mt-6">

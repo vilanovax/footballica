@@ -26,8 +26,11 @@ export function RewardBreakdown({
     <div className={`w-full space-y-2 ${compact ? "" : "max-w-sm"}`}>
       {xp > 0 && (
         <div className="quiz-reward-row">
-          <span className="text-sm text-white/50">تجربه</span>
-          <span className="font-extrabold text-white/90">+{faNum(xp)} ⭐ XP</span>
+          <span className="text-sm font-medium text-white/60">تجربه</span>
+          <span className="flex items-center gap-1.5 font-extrabold text-gold-400">
+            <span className="result-xp-star" aria-hidden>⭐</span>
+            +{faNum(xp)} XP
+          </span>
         </div>
       )}
       {fans > 0 && (

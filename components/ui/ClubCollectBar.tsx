@@ -4,9 +4,13 @@ import { useState } from "react";
 import { useGame } from "@/lib/store";
 import { unitIncomeSnapshot } from "@/lib/clubEconomy";
 import { isBank } from "@/lib/vault";
-import { faMoney, faNum } from "@/lib/format";
+import { faNum, faClubMoneyLabel } from "@/lib/format";
 
-export function ClubCollectBar() {
+interface ClubCollectBarProps {
+  onOpenBank?: () => void;
+}
+
+export function ClubCollectBar({ onOpenBank }: ClubCollectBarProps) {
   const units = useGame((s) => s.units);
   const itemLevels = useGame((s) => s.itemLevels);
   const assign = useGame((s) => s.assign);
@@ -53,9 +57,18 @@ export function ClubCollectBar() {
           ⚠️ واحدها منتظرند — گاوصندوق پر است
         </p>
         <p className="mt-1 text-xs text-white/60 leading-5">
-          {faMoney(snap.totalPending)} در واحدها جمع شده. اول گاوصندوق را
+          {faClubMoneyLabel(snap.totalPending)} در واحدها جمع شده. گاوصندوق را
           برداشت یا ارتقا بده.
         </p>
+        {onOpenBank && (
+          <button
+            type="button"
+            onClick={onOpenBank}
+            className="mt-2 w-full rounded-xl bg-team-foe/20 py-2 text-xs font-extrabold text-team-foe"
+          >
+            باز کردن خزانه
+          </button>
+        )}
       </div>
     );
   }
@@ -79,14 +92,14 @@ export function ClubCollectBar() {
           </p>
           <p className="mt-0.5 text-xs text-white/55">
             {canCollect
-              ? `${faMoney(snap.totalPending)} → گاوصندوق`
+              ? `${faClubMoneyLabel(snap.totalPending)} → گاوصندوق`
               : "در حال جمع شدن…"}
           </p>
         </div>
         <div className="relative shrink-0">
           {floatAmt !== null && (
             <span className="float-up pointer-events-none absolute -top-4 left-1/2 text-xs font-extrabold text-gold-400">
-              +{faMoney(floatAmt)}
+              +{faClubMoneyLabel(floatAmt)}
             </span>
           )}
           <button

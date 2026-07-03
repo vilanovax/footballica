@@ -37,6 +37,12 @@ export interface ClubIdentity {
   name: string;
   color: string; // hex
   crest: string; // ایموجیِ لوگو
+  /** شهر باشگاه — اختیاری، برای رقابت شهری */
+  city?: string;
+  /** تیم قلبی واقعی — اختیاری */
+  heartTeam?: string;
+  /** تیم بین‌المللی محبوب — اختیاری، اغلب بعداً تکمیل می‌شود */
+  internationalTeam?: string;
 }
 
 interface GameState {
@@ -102,6 +108,9 @@ interface GameState {
   upgradeVault: () => UpgradeResult;
   recordWin: () => void;
   completeSetup: (club: ClubIdentity) => void;
+  updateClubProfile: (
+    patch: Partial<Pick<ClubIdentity, "city" | "heartTeam" | "internationalTeam">>,
+  ) => void;
   reportQuestion: (questionId: string, reason: string) => void;
   /** رکوردِ بقا را ذخیره کن؛ اگر رکوردِ جدید بود true برمی‌گرداند */
   saveSurvival: (score: number) => boolean;
@@ -458,6 +467,11 @@ export const useGame = create<GameState>()(
         set({ club, setupDone: true, units });
       },
 
+      updateClubProfile: (patch) =>
+        set((s) => ({
+          club: { ...s.club, ...patch },
+        })),
+
       reportQuestion: (questionId, reason) =>
         set((s) => ({
           reports: [
@@ -597,7 +611,7 @@ export const useGame = create<GameState>()(
     }),
     {
       name: "footballica-save",
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => {
         const s = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -629,6 +643,14 @@ export const useGame = create<GameState>()(
             typeof s.missionClaimed === "object" && s.missionClaimed
               ? s.missionClaimed
               : {};
+        }
+        if (version < 5) {
+          const club = s.club as Record<string, unknown> | undefined;
+          if (club && typeof club === "object") {
+            if (club.city === undefined) club.city = undefined;
+            if (club.heartTeam === undefined) club.heartTeam = undefined;
+            if (club.internationalTeam === undefined) club.internationalTeam = undefined;
+          }
         }
         return persisted;
       },

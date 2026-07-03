@@ -30,3 +30,30 @@ export function faMoney(n: number): string {
   }
   return faNum(n);
 }
+
+/** نمایش اصلی اقتصاد باشگاه — ۶٬۱۸۴٬۱۶۶ → ۶٬۱۸۴ میلیون تومان */
+export function faClubMoney(n: number): { value: string; unit: "میلیون" | "میلیارد" } {
+  n = Math.max(0, Math.floor(n));
+  if (n >= 1_000_000_000) {
+    const billions = n / 1_000_000_000;
+    if (billions >= 10) {
+      return { value: faCount(Math.round(billions)), unit: "میلیارد" };
+    }
+    const rounded = Math.round(billions * 10) / 10;
+    return {
+      value: faNum(String(rounded).replace(".", "٫")),
+      unit: "میلیارد",
+    };
+  }
+  return { value: faCount(Math.floor(n / 1000)), unit: "میلیون" };
+}
+
+export function faClubMoneyLabel(n: number): string {
+  const { value, unit } = faClubMoney(n);
+  return `${value} ${unit} تومان`;
+}
+
+/** گاوصندوق به میلیون واقعی — ۵٬۰۰۰٬۰۰۰ → ۵ */
+export function faVaultM(n: number): string {
+  return faNum(Math.max(0, Math.floor(n / 1_000_000)));
+}
