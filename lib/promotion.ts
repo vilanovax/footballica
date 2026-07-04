@@ -81,7 +81,12 @@ export interface SeasonAdvisorInput {
   canCollect: boolean;
   vaultFull: boolean;
   showVaultTutorial: boolean;
-  upgradeCosts: Partial<Record<"shop" | "food" | "parking" | "vault", number>>;
+  upgradeCosts: Partial<
+    Record<
+      "shop" | "food" | "parking" | "tickets" | "academy" | "sponsor" | "vault",
+      number
+    >
+  >;
 }
 
 export interface AdvisorMessage {
@@ -212,6 +217,62 @@ const PROMOTION_TIERS: PromotionTierDef[] = [
         hint: "برای جا افتادن در دسته دو، نتیجه هم لازم است.",
       },
     ],
+    reward: { xp: 300, fans: 50, vaultMoney: 2_500_000, cards: 1 },
+    claimLabel: "ورود به فصل ۳",
+  },
+  {
+    id: "division_one",
+    title: "صعود به دسته یک",
+    seasonTitle: "فصل ۳: برند و آینده",
+    narrative:
+      "اقتصاد روز مسابقه راه افتاده؛ حالا باید برند باشگاه، قراردادهای بزرگ و آینده‌سازی را هم حرفه‌ای کنی تا به آستانهٔ دسته یک برسی.",
+    requirements: [
+      {
+        id: "fans_2500",
+        label: "هوادار",
+        type: "fans",
+        target: 2500,
+        hint: "برای تیمی که می‌خواهد بالا برود، شهر باید واقعاً پشتش باشد.",
+      },
+      {
+        id: "academy_lv2",
+        label: "آکادمی",
+        type: "unitLevel",
+        unitId: "academy",
+        target: 2,
+        hint: "آیندهٔ باشگاه باید روی استعدادهای خودش هم بایستد.",
+      },
+      {
+        id: "sponsor_lv2",
+        label: "اسپانسر",
+        type: "unitLevel",
+        unitId: "sponsor",
+        target: 2,
+        hint: "قراردادهای بزرگ، باشگاه را از دخل روز مسابقه جلوتر می‌برند.",
+      },
+      {
+        id: "tickets_lv3",
+        label: "بلیت‌فروشی",
+        type: "unitLevel",
+        unitId: "tickets",
+        target: 3,
+        hint: "گیشه باید از حالت ابتدایی عبور کند و جمعیت بزرگ‌تری را پوشش بدهد.",
+      },
+      {
+        id: "vault_lv4",
+        label: "خزانه",
+        type: "vaultLevel",
+        target: 4,
+        hint: "قراردادهای بزرگ و رشد باشگاه به خزانهٔ قوی‌تری نیاز دارند.",
+      },
+      {
+        id: "wins_20",
+        label: "برد",
+        type: "matchesWon",
+        target: 20,
+        hint: "در این مرحله، فقط زیرساخت کافی نیست؛ باید تیم واقعاً نتیجه هم بگیرد.",
+      },
+    ],
     terminal: true,
   },
 ];
@@ -236,7 +297,9 @@ export function buildPromotionSnapshot(state: PromotionSourceState): PromotionSn
 }
 
 export function currentDivisionLabel(seasonStep: number): string {
-  return seasonStep >= 2 ? "دستهٔ دو" : "دستهٔ سه";
+  if (seasonStep >= 3) return "دستهٔ یک";
+  if (seasonStep >= 2) return "دستهٔ دو";
+  return "دستهٔ سه";
 }
 
 function activeTier(seasonStep: number): PromotionTierDef {
@@ -257,7 +320,7 @@ function promotionValue(snapshot: PromotionSnapshot, def: PromotionRequirementDe
     case "matchesWon":
       return snapshot.matchesWon;
     case "unitLevel":
-      return snapshot.unitLevels[def.unitId!] ?? 1;
+      return snapshot.unitUnlocked[def.unitId!] ? (snapshot.unitLevels[def.unitId!] ?? 1) : 0;
     case "unitUnlocked":
       return snapshot.unitUnlocked[def.unitId!] ? 1 : 0;
   }
@@ -265,7 +328,13 @@ function promotionValue(snapshot: PromotionSnapshot, def: PromotionRequirementDe
 
 function progressLabel(def: PromotionRequirementDef, progress: number): string {
   if (def.type === "fans") return `${faCount(progress)} / ${faCount(def.target)}`;
-  if (def.type === "vaultLevel" || def.type === "unitLevel") {
+  if (def.type === "vaultLevel") {
+    return `سطح ${faNum(progress)} / ${faNum(def.target)}`;
+  }
+  if (def.type === "unitLevel") {
+    if (progress <= 0 && def.unitId) {
+      return `قفل تا سطح ${faNum(unitDef(def.unitId).requiresLevel)}`;
+    }
     return `سطح ${faNum(progress)} / ${faNum(def.target)}`;
   }
   if (def.type === "unitUnlocked") {
@@ -362,6 +431,22 @@ export function promotionCelebrationForTier(tierId: string): PromotionCelebratio
         { emoji: "🎟️", label: "بلیت‌فروشی", hint: "گیشهٔ اصلی روز بازی" },
         { emoji: "🌭", label: "غرفه خوراکی", hint: "درآمد سریع روز مسابقه" },
         { emoji: "🅿️", label: "پارکینگ", hint: "پول پایدار خدماتی" },
+      ],
+    };
+  }
+  if (tierId === "matchday_business") {
+    return {
+      eyebrow: "صعود رسمی",
+      title: "به دسته یک خوش آمدی",
+      detail:
+        "باشگاه حالا فقط از روز مسابقه پول نمی‌سازد؛ وقت آن است که برند، آکادمی و قراردادهای بزرگ آیندهٔ تیم را شکل بدهند.",
+      nextSeasonTitle: "فصل ۳: برند و آینده",
+      divisionFrom: "دستهٔ دو",
+      divisionTo: "دستهٔ یک",
+      unlocks: [
+        { emoji: "🎓", label: "آکادمی فوتبال", hint: "سرمایه‌گذاری روی آینده" },
+        { emoji: "🤝", label: "اسپانسر پیراهن", hint: "قراردادهای بزرگ‌تر باشگاه" },
+        { emoji: "🎟️", label: "گیشهٔ قوی‌تر", hint: "جمعیت بیشتر و فروش بهتر" },
       ],
     };
   }
@@ -514,103 +599,236 @@ export function seasonAdvisorMessage(input: SeasonAdvisorInput): AdvisorMessage 
     };
   }
 
-  if (!snapshot.unitUnlocked.tickets) {
+  if (seasonStep === 2) {
+    if (!snapshot.unitUnlocked.tickets) {
+      return {
+        eyebrow: "فصل ۲: روز مسابقه",
+        title: "گیشهٔ روز بازی هنوز قفل است",
+        detail: `برای باز شدن بلیت‌فروشی باید به سطح ${faNum(unitDef("tickets").requiresLevel)} برسی و مسیر باشگاه را جلو ببری.`,
+        action: "play",
+        focus: "باز شدن بلیت‌فروشی",
+      };
+    }
+
+    if (snapshot.unitLevels.food < 2) {
+      return budget >= (input.upgradeCosts.food ?? Number.MAX_SAFE_INTEGER)
+        ? {
+            eyebrow: "فصل ۲: روز مسابقه",
+            title: "غرفهٔ خوراکی را تقویت کن",
+            detail:
+              "روز مسابقه بدون خوراکی، پول سریع از دست می‌رود. این ساختمان را به سطح ۲ برسان.",
+            action: "club",
+            focus: "غرفه خوراکی",
+          }
+        : {
+            eyebrow: "فصل ۲: روز مسابقه",
+            title: "برای خوراکی، بودجهٔ بیشتری لازم است",
+            detail:
+              "چند بازی و collect دیگر لازم است تا درآمد روز مسابقه جان بگیرد.",
+            action: "play",
+            focus: "بودجهٔ خوراکی",
+          };
+    }
+
+    if (snapshot.unitLevels.parking < 2) {
+      return budget >= (input.upgradeCosts.parking ?? Number.MAX_SAFE_INTEGER)
+        ? {
+            eyebrow: "فصل ۲: روز مسابقه",
+            title: "پارکینگ را هم وارد بازی کن",
+            detail:
+              "پارکینگ پایدارترین پول خدماتی روز بازی است؛ این‌جا را هم به سطح ۲ برسان.",
+            action: "club",
+            focus: "پارکینگ",
+          }
+        : {
+            eyebrow: "فصل ۲: روز مسابقه",
+            title: "پارکینگ هنوز خرج می‌خواهد",
+            detail:
+              "قبل از شلوغ شدن روز مسابقه، باید بودجهٔ این ارتقا را جور کنیم.",
+            action: "play",
+            focus: "بودجهٔ پارکینگ",
+          };
+    }
+
+    if (snapshot.vaultLevel < 3) {
+      return budget >= (input.upgradeCosts.vault ?? Number.MAX_SAFE_INTEGER)
+        ? {
+            eyebrow: "فصل ۲: روز مسابقه",
+            title: "خزانه باید یک پله دیگر بزرگ شود",
+            detail:
+              "وقتی بلیت و خوراکی و پارکینگ فعال شوند، خزانهٔ کوچک جواب نمی‌دهد. آن را به سطح ۳ برسان.",
+            action: "club",
+            focus: "خزانهٔ سطح ۳",
+          }
+        : {
+            eyebrow: "فصل ۲: روز مسابقه",
+            title: "فشار روز مسابقه روی خزانه زیاد می‌شود",
+            detail: "کمی درآمد دیگر لازم است تا ظرفیت فصل دوم را باز کنیم.",
+            action: "play",
+            focus: "بودجهٔ خزانه",
+          };
+    }
+
+    if (snapshot.matchesWon < 10) {
+      return {
+        eyebrow: "فصل ۲: روز مسابقه",
+        title: "وقت جا افتادن در دسته دو است",
+        detail:
+          "زیرساخت آماده‌تر شده؛ حالا با چند برد دیگر باشگاه را در این سطح تثبیت کن.",
+        action: "play",
+        focus: "بردهای بیشتر",
+      };
+    }
+
+    if (snapshot.fans < 1000) {
+      return {
+        eyebrow: "فصل ۲: روز مسابقه",
+        title: "جمعیت بیشتری لازم داریم",
+        detail:
+          "وقتی مردم بیشتری بیایند، بلیت‌فروشی و خدمات روز مسابقه واقعاً پول‌ساز می‌شوند.",
+        action: "play",
+        focus: "هوادار بیشتر",
+      };
+    }
+
     return {
-      eyebrow: "فصل ۲: روز مسابقه",
-      title: "گیشهٔ روز بازی هنوز قفل است",
-      detail: `برای باز شدن بلیت‌فروشی باید به سطح ${faNum(unitDef("tickets").requiresLevel)} برسی و مسیر باشگاه را جلو ببری.`,
-      action: "play",
-      focus: "باز شدن بلیت‌فروشی",
+      eyebrow: "پایان فصل ۲",
+      title: "باشگاه آمادهٔ صعود بعدی است",
+      detail:
+        "اقتصاد روز مسابقه جا افتاده و حالا می‌توانی فصل ۳، یعنی برند و آیندهٔ باشگاه را باز کنی.",
+      action: "club",
+      focus: "صعود",
     };
   }
 
-  if (snapshot.unitLevels.food < 2) {
-    return budget >= (input.upgradeCosts.food ?? Number.MAX_SAFE_INTEGER)
+  if (!snapshot.unitUnlocked.academy) {
+    return {
+      eyebrow: "فصل ۳: برند و آینده",
+      title: "آکادمی هنوز قفل است",
+      detail: `برای باز شدن آکادمی باید به سطح ${faNum(unitDef("academy").requiresLevel)} برسی تا رشد باشگاه فقط به امروز وابسته نباشد.`,
+      action: "play",
+      focus: "باز شدن آکادمی",
+    };
+  }
+
+  if (snapshot.unitLevels.academy < 2) {
+    return budget >= (input.upgradeCosts.academy ?? Number.MAX_SAFE_INTEGER)
       ? {
-          eyebrow: "فصل ۲: روز مسابقه",
-          title: "غرفهٔ خوراکی را تقویت کن",
+          eyebrow: "فصل ۳: برند و آینده",
+          title: "آکادمی را جان بده",
           detail:
-            "روز مسابقه بدون خوراکی، پول سریع از دست می‌رود. این ساختمان را به سطح ۲ برسان.",
+            "باشگاه بزرگ فقط با فروش روز مسابقه نمی‌ماند؛ آکادمی را به سطح ۲ برسان تا آینده‌سازی شروع شود.",
           action: "club",
-          focus: "غرفه خوراکی",
+          focus: "آکادمی",
         }
       : {
-          eyebrow: "فصل ۲: روز مسابقه",
-          title: "برای خوراکی، بودجهٔ بیشتری لازم است",
+          eyebrow: "فصل ۳: برند و آینده",
+          title: "برای آکادمی هنوز بودجه کم است",
           detail:
-            "چند بازی و collect دیگر لازم است تا درآمد روز مسابقه جان بگیرد.",
+            "چند بازی و درآمد دیگر لازم است تا روی آیندهٔ باشگاه سرمایه‌گذاری کنی.",
           action: "play",
-          focus: "بودجهٔ خوراکی",
+          focus: "بودجهٔ آکادمی",
         };
   }
 
-  if (snapshot.unitLevels.parking < 2) {
-    return budget >= (input.upgradeCosts.parking ?? Number.MAX_SAFE_INTEGER)
+  if (!snapshot.unitUnlocked.sponsor) {
+    return {
+      eyebrow: "فصل ۳: برند و آینده",
+      title: "هنوز به قراردادهای بزرگ نرسیده‌ای",
+      detail: `برای باز شدن اسپانسر باید به سطح ${faNum(unitDef("sponsor").requiresLevel)} برسی و باشگاه را به ویترین جذاب‌تری تبدیل کنی.`,
+      action: "play",
+      focus: "باز شدن اسپانسر",
+    };
+  }
+
+  if (snapshot.unitLevels.sponsor < 2) {
+    return budget >= (input.upgradeCosts.sponsor ?? Number.MAX_SAFE_INTEGER)
       ? {
-          eyebrow: "فصل ۲: روز مسابقه",
-          title: "پارکینگ را هم وارد بازی کن",
+          eyebrow: "فصل ۳: برند و آینده",
+          title: "اولین قرارداد بزرگ را جدی کن",
           detail:
-            "پارکینگ پایدارترین پول خدماتی روز بازی است؛ این‌جا را هم به سطح ۲ برسان.",
+            "اسپانسرِ پیراهن را به سطح ۲ برسان تا برند باشگاه وارد چرخهٔ درآمدهای سنگین‌تر شود.",
           action: "club",
-          focus: "پارکینگ",
+          focus: "اسپانسر",
         }
       : {
-          eyebrow: "فصل ۲: روز مسابقه",
-          title: "پارکینگ هنوز خرج می‌خواهد",
+          eyebrow: "فصل ۳: برند و آینده",
+          title: "برای قرارداد بزرگ، باید کمی دیگر رشد کنیم",
           detail:
-            "قبل از شلوغ شدن روز مسابقه، باید بودجهٔ این ارتقا را جور کنیم.",
+            "برند قوی بدون پشتوانهٔ مالی جلو نمی‌رود؛ چند برد و collect دیگر لازم است.",
           action: "play",
-          focus: "بودجهٔ پارکینگ",
+          focus: "بودجهٔ اسپانسر",
         };
   }
 
-  if (snapshot.vaultLevel < 3) {
+  if (snapshot.unitLevels.tickets < 3) {
+    return budget >= (input.upgradeCosts.tickets ?? Number.MAX_SAFE_INTEGER)
+      ? {
+          eyebrow: "فصل ۳: برند و آینده",
+          title: "گیشه را یک پله دیگر بالا ببر",
+          detail:
+            "وقتی جمعیت بیشتر می‌شود، بلیت‌فروشی هم باید در مقیاس بزرگ‌تر کار کند. آن را به سطح ۳ برسان.",
+          action: "club",
+          focus: "بلیت‌فروشی",
+        }
+      : {
+          eyebrow: "فصل ۳: برند و آینده",
+          title: "برای گیشهٔ بزرگ‌تر، پول بیشتری لازم داریم",
+          detail:
+            "قبل از موج هوادار بعدی، باید بودجهٔ ارتقای بلیت‌فروشی را جور کنیم.",
+          action: "play",
+          focus: "بودجهٔ بلیت",
+        };
+  }
+
+  if (snapshot.vaultLevel < 4) {
     return budget >= (input.upgradeCosts.vault ?? Number.MAX_SAFE_INTEGER)
       ? {
-          eyebrow: "فصل ۲: روز مسابقه",
-          title: "خزانه باید یک پله دیگر بزرگ شود",
+          eyebrow: "فصل ۳: برند و آینده",
+          title: "خزانه باید در حد قراردادهای بزرگ شود",
           detail:
-            "وقتی بلیت و خوراکی و پارکینگ فعال شوند، خزانهٔ کوچک جواب نمی‌دهد. آن را به سطح ۳ برسان.",
+            "آکادمی، اسپانسر و گیشهٔ قوی‌تر، خزانهٔ کوچک را خفه می‌کنند. آن را به سطح ۴ برسان.",
           action: "club",
-          focus: "خزانهٔ سطح ۳",
+          focus: "خزانهٔ سطح ۴",
         }
       : {
-          eyebrow: "فصل ۲: روز مسابقه",
-          title: "فشار روز مسابقه روی خزانه زیاد می‌شود",
-          detail: "کمی درآمد دیگر لازم است تا ظرفیت فصل دوم را باز کنیم.",
+          eyebrow: "فصل ۳: برند و آینده",
+          title: "قبل از جهش بعدی، خزانه بودجه می‌خواهد",
+          detail:
+            "کمی درآمد دیگر لازم است تا زیرساخت مالی باشگاه در حد دسته یک شود.",
           action: "play",
           focus: "بودجهٔ خزانه",
         };
   }
 
-  if (snapshot.matchesWon < 10) {
+  if (snapshot.matchesWon < 20) {
     return {
-      eyebrow: "فصل ۲: روز مسابقه",
-      title: "وقت جا افتادن در دسته دو است",
+      eyebrow: "فصل ۳: برند و آینده",
+      title: "اعتبار این سطح را باید در زمین ثابت کنی",
       detail:
-        "زیرساخت آماده‌تر شده؛ حالا با چند برد دیگر باشگاه را در این سطح تثبیت کن.",
+        "باشگاه بزرگ‌تر شده، اما برای تثبیت جایگاهش در دسته یک به بردهای بیشتری نیاز دارد.",
       action: "play",
       focus: "بردهای بیشتر",
     };
   }
 
-  if (snapshot.fans < 1000) {
+  if (snapshot.fans < 2500) {
     return {
-      eyebrow: "فصل ۲: روز مسابقه",
-      title: "جمعیت بیشتری لازم داریم",
+      eyebrow: "فصل ۳: برند و آینده",
+      title: "برند باشگاه هنوز جمعیت بیشتری می‌خواهد",
       detail:
-        "وقتی مردم بیشتری بیایند، بلیت‌فروشی و خدمات روز مسابقه واقعاً پول‌ساز می‌شوند.",
+        "وقتی هوادارها از چند هزار نفر عبور کنند، آکادمی و اسپانسر واقعاً اثرشان را نشان می‌دهند.",
       action: "play",
       focus: "هوادار بیشتر",
     };
   }
 
   return {
-    eyebrow: "فصل ۲ کامل شد",
-    title: "اقتصاد روز مسابقه جا افتاده است",
+    eyebrow: "پایان فصل ۳",
+    title: "برند باشگاه جا افتاده است",
     detail:
-      "باشگاه حالا از بازی، جمعیت و خدمات روز مسابقه باهم پول درمی‌آورد. فصل بعدی را می‌توان بعداً اضافه کرد.",
+      "باشگاه حالا هم از امروز پول درمی‌آورد، هم برای فردایش برنامه دارد. لایهٔ بعدی را می‌توان بعداً روی همین پایه ساخت.",
     action: "club",
-    focus: "پایان فصل ۲",
+    focus: "پایان فصل ۳",
   };
 }

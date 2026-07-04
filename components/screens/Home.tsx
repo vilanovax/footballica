@@ -182,6 +182,9 @@ export function Home({
   const shopUpgradeCost = unitUpgradeCost(unitDef("shop"), shopLevel);
   const foodUpgradeCost = unitUpgradeCost(unitDef("food"), units.food?.level ?? 1);
   const parkingUpgradeCost = unitUpgradeCost(unitDef("parking"), units.parking?.level ?? 1);
+  const ticketsUpgradeCost = unitUpgradeCost(unitDef("tickets"), units.tickets?.level ?? 1);
+  const academyUpgradeCost = unitUpgradeCost(unitDef("academy"), units.academy?.level ?? 1);
+  const sponsorUpgradeCost = unitUpgradeCost(unitDef("sponsor"), units.sponsor?.level ?? 1);
   const nextVaultUpgradeCost = vaultUpgradeCost(vaultLevel);
   const clubSnap = unitIncomeSnapshot({
     units,
@@ -263,6 +266,9 @@ export function Home({
           shop: shopUpgradeCost,
           food: foodUpgradeCost,
           parking: parkingUpgradeCost,
+          tickets: ticketsUpgradeCost,
+          academy: academyUpgradeCost,
+          sponsor: sponsorUpgradeCost,
           vault: nextVaultUpgradeCost,
         },
       }),
@@ -277,6 +283,9 @@ export function Home({
       shopUpgradeCost,
       foodUpgradeCost,
       parkingUpgradeCost,
+      ticketsUpgradeCost,
+      academyUpgradeCost,
+      sponsorUpgradeCost,
       nextVaultUpgradeCost,
     ],
   );

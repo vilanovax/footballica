@@ -20,6 +20,13 @@ import {
   type MissionStatus,
 } from "@/lib/missions";
 import type { ActivityReward as EconomyReward } from "@/lib/economy";
+import {
+  buildPromotionSnapshot,
+  currentDivisionLabel,
+  promotionGateStatus,
+  type PromotionGateStatus,
+  type PromotionRequirementStatus,
+} from "@/lib/promotion";
 
 function RewardLoot({
   reward,
@@ -47,17 +54,23 @@ function RewardLoot({
   );
 }
 
-function ClubPathOverview({ items }: { items: MissionStatus[] }) {
-  const done = items.filter((s) => s.claimed).length;
-  const total = items.length;
-  const currentIdx = items.findIndex((s) => !s.claimed);
+function SeasonPathOverview({
+  gate,
+  divisionLabel,
+}: {
+  gate: PromotionGateStatus;
+  divisionLabel: string;
+}) {
+  const done = gate.completeCount;
+  const total = gate.totalCount;
+  const currentIdx = gate.requirements.findIndex((s) => !s.complete);
 
   return (
     <GameCard variant="hero" className="club-path-overview mt-4 rounded-2xl p-3.5">
       <div className="club-path-overview__head">
         <div className="club-path-overview__copy">
-          <p className="club-path-overview__eyebrow">فصل ۱</p>
-          <p className="club-path-overview__title">ساخت باشگاه</p>
+          <p className="club-path-overview__eyebrow">{gate.seasonTitle}</p>
+          <p className="club-path-overview__title">{gate.title}</p>
         </div>
         <span className="club-path-overview__count">
           {faNum(done)} از {faNum(total)}
@@ -65,8 +78,8 @@ function ClubPathOverview({ items }: { items: MissionStatus[] }) {
       </div>
 
       <div className="club-path-steps" aria-hidden>
-        {items.map((s, i) => {
-          const state = s.claimed
+        {gate.requirements.map((s, i) => {
+          const state = s.complete
             ? "done"
             : i === currentIdx
               ? "current"
@@ -76,7 +89,7 @@ function ClubPathOverview({ items }: { items: MissionStatus[] }) {
           return (
             <div key={s.def.id} className={`club-path-step club-path-step--${state}`}>
               <span className="club-path-step__node">
-                {state === "done" ? "✓" : s.def.emoji}
+                {state === "done" ? "✓" : faNum(i + 1)}
               </span>
             </div>
           );
@@ -84,12 +97,42 @@ function ClubPathOverview({ items }: { items: MissionStatus[] }) {
       </div>
 
       <p className="club-path-overview__hint">
-        {done >= total
-          ? "مسیر شروع تکمیل شد — تالار افتخارات را ادامه بده"
-          : currentIdx >= 0
-            ? `مرحلهٔ بعد: ${items[currentIdx]!.def.title}`
+        {gate.complete
+          ? gate.terminal
+            ? `${divisionLabel} تثبیت شده است — حالا افتخارات را ادامه بده`
+            : "همه شرط‌ها کامل‌اند — صعود را claim کن"
+          : gate.nextRequirement
+            ? `مرحلهٔ بعد: ${gate.nextRequirement.def.label}`
             : `${faNum(total - done)} مرحله باقی‌مانده`}
       </p>
+    </GameCard>
+  );
+}
+
+function SeasonRequirementCard({
+  status,
+}: {
+  status: PromotionRequirementStatus;
+}) {
+  const stateLabel =
+    status.complete ? "تکمیل شد" : status.state === "near" ? "نزدیک است" : "مانده";
+
+  return (
+    <GameCard
+      variant="asset"
+      highlight={status.state === "near" && !status.complete}
+      className="rounded-2xl p-4 text-right"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className={`club-season-gate__chip club-season-gate__chip--${status.state}`}>
+          {stateLabel}
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="club-season-gate__item-title">{status.def.label}</p>
+          <p className="club-season-gate__item-progress">{status.progressLabel}</p>
+          <p className="club-season-gate__item-hint">{status.def.hint}</p>
+        </div>
+      </div>
     </GameCard>
   );
 }
@@ -393,6 +436,8 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
   const missionClaimed = useGame((s) => s.missionClaimed);
   const claimMission = useGame((s) => s.claimMission);
   const ensureDailyMissions = useGame((s) => s.ensureDailyMissions);
+  const seasonStep = useGame((s) => s.seasonStep);
+  const xp = useGame((s) => s.xp);
 
   const [shakeId, setShakeId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -439,6 +484,25 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
       dailyDate,
       missionClaimed,
     ],
+  );
+
+  const promotionSnapshot = useMemo(
+    () =>
+      buildPromotionSnapshot({
+        fans,
+        vaultLevel,
+        matchesWon,
+        xp,
+        units,
+        hired,
+        assign,
+      }),
+    [fans, vaultLevel, matchesWon, xp, units, hired, assign],
+  );
+
+  const promotionGate = useMemo(
+    () => promotionGateStatus(seasonStep, promotionSnapshot),
+    [seasonStep, promotionSnapshot],
   );
 
   const onboarding = ONBOARDING_MISSIONS.map((d) => missionStatus(d, snap));
@@ -490,12 +554,17 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
           </button>
           <div className="mission-header__copy">
             <h1 className="mission-header__title">مسیر باشگاه</h1>
-            <p className="mission-header__sub">مأموریت، جایزه، افتخار</p>
+            <p className="mission-header__sub">
+              {promotionGate.seasonTitle} · {currentDivisionLabel(seasonStep)}
+            </p>
           </div>
           <span className="mission-header__spacer" aria-hidden />
         </div>
 
-        <ClubPathOverview items={onboarding} />
+        <SeasonPathOverview
+          gate={promotionGate}
+          divisionLabel={currentDivisionLabel(seasonStep)}
+        />
       </header>
 
       <div className="missions-screen__body px-5 mt-5 space-y-7">
@@ -506,6 +575,20 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
             onClaim={() => claim(firstReady.def.id)}
           />
         )}
+
+        <section className="mission-section">
+          <SectionHeader
+            title={promotionGate.title}
+            sub={promotionGate.seasonTitle}
+            icon="🏁"
+            ready={promotionGate.complete && !promotionGate.terminal ? 1 : 0}
+          />
+          <div className="mission-section__list mission-section__list--steps">
+            {promotionGate.requirements.map((req) => (
+              <SeasonRequirementCard key={req.def.id} status={req} />
+            ))}
+          </div>
+        </section>
 
         <section className="mission-section">
           <SectionHeader
@@ -530,8 +613,8 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
         {activeOnboarding.length > 0 && (
           <section className="mission-section">
             <SectionHeader
-              title="مسیر ساخت باشگاه"
-              sub="یک‌بار — کل loop را یاد بگیر"
+              title="آموزش اولیه باشگاه"
+              sub="یک‌بار — برای یادگیری loop پایه"
               icon="🚀"
               ready={pathReady}
             />
@@ -551,7 +634,7 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
 
         {doneOnboarding.length > 0 && (
           <section className="mission-section">
-            <SectionHeader title="مراحل تکمیل‌شده" icon="✅" />
+            <SectionHeader title="آموزش‌های تکمیل‌شده" icon="✅" />
             <div className="mission-section__list mission-section__list--steps">
               {doneOnboarding.map((s) => (
                 <OnboardingStepCard
