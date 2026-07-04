@@ -6763,6 +6763,93 @@ button.collection-chip:active {
   line-height: 1.55;
 }
 
+.profile-focus-card {
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(145deg, rgba(245, 197, 66, 0.08), rgba(21, 41, 33, 0.96));
+  border: 1px solid rgba(245, 197, 66, 0.18);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+}
+
+.profile-focus-card__badge {
+  flex-shrink: 0;
+  padding: 0.32rem 0.62rem;
+  border-radius: 999px;
+  background: rgba(245, 197, 66, 0.14);
+  border: 1px solid rgba(245, 197, 66, 0.28);
+  font-size: 0.62rem;
+  font-weight: 900;
+  color: #f5c542;
+}
+
+.profile-focus-card__title {
+  font-size: 0.94rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.profile-focus-card__sub {
+  margin-top: 0.22rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.56);
+  line-height: 1.55;
+}
+
+.profile-focus-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.16);
+  text-align: right;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.profile-focus-chip:active {
+  transform: scale(0.985);
+}
+
+.profile-focus-chip--active {
+  border-color: rgba(245, 197, 66, 0.42);
+  background: rgba(245, 197, 66, 0.08);
+}
+
+.profile-focus-chip__emoji {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.profile-focus-chip__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.profile-focus-chip__label {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.profile-focus-chip__detail {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.profile-focus-card__hint {
+  text-align: right;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.52);
+  line-height: 1.55;
+}
+
 .profile-section-head {
   display: flex;
   align-items: baseline;

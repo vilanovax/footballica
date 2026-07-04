@@ -15,6 +15,11 @@ import { ACHIEVEMENT_MISSIONS } from "@/lib/missions";
 import { CLUB } from "@/lib/club";
 import { useClubAvatar } from "@/lib/clubAvatar";
 import { ownedCollectibleCount } from "@/lib/collectibles";
+import {
+  PLAYER_FOCUS_OPTIONS,
+  playerFocusLabel,
+  type PlayerFocus,
+} from "@/lib/playerFocus";
 
 interface ProfileProps {
   onOpenClub: () => void;
@@ -61,6 +66,16 @@ function CareerStat({
   );
 }
 
+function focusSummary(focus: PlayerFocus): string {
+  if (focus === "arena") {
+    return "Home با تاکید روی Quiz Arena چیده می‌شود و جدول کوییز پیش‌فرض می‌شود.";
+  }
+  if (focus === "club") {
+    return "Home با تاکید روی باشگاه شروع می‌شود و جدول باشگاه پیش‌فرض می‌شود.";
+  }
+  return "Arena و Club با وزن برابر نمایش داده می‌شوند.";
+}
+
 export function Profile({ onOpenClub, onOpenMissions, onOpenShop }: ProfileProps) {
   const [identityOpen, setIdentityOpen] = useState(false);
   const cards = useGame((s) => s.cards);
@@ -73,6 +88,8 @@ export function Profile({ onOpenClub, onOpenMissions, onOpenShop }: ProfileProps
   const club = useGame((s) => s.club);
   const ownedCollectibles = useGame((s) => s.ownedCollectibles);
   const clubAvatar = useClubAvatar();
+  const playerFocus = useGame((s) => s.playerFocus);
+  const setPlayerFocus = useGame((s) => s.setPlayerFocus);
   const missionClaimed = useGame((s) => s.missionClaimed);
   const claimableMissions = useGame((s) => s.claimableMissions);
   const resetSave = useGame((s) => s.resetSave);
@@ -202,6 +219,49 @@ export function Profile({ onOpenClub, onOpenMissions, onOpenShop }: ProfileProps
 
       <section className="px-5 mt-4">
         <CollectionShowcase onOpenShop={onOpenShop} />
+      </section>
+
+      <section className="px-5 mt-4">
+        <div className="profile-focus-card">
+          <div className="flex items-start justify-between gap-3">
+            <span className="profile-focus-card__badge">
+              {playerFocusLabel(playerFocus)}
+            </span>
+            <div className="flex-1 text-right">
+              <p className="profile-card__eyebrow">سبک بازی من</p>
+              <h2 className="profile-focus-card__title">
+                اولویت Arena یا Club را هر وقت خواستی عوض کن
+              </h2>
+              <p className="profile-focus-card__sub">
+                این تنظیم فقط ترتیب و تاکید Home و جدول را عوض می‌کند و چیزی را قفل
+                نمی‌کند.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-2">
+            {PLAYER_FOCUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setPlayerFocus(opt.id)}
+                className={`profile-focus-chip ${
+                  playerFocus === opt.id ? "profile-focus-chip--active" : ""
+                }`}
+              >
+                <span className="profile-focus-chip__emoji" aria-hidden>
+                  {opt.emoji}
+                </span>
+                <span className="profile-focus-chip__copy">
+                  <span className="profile-focus-chip__label">{opt.label}</span>
+                  <span className="profile-focus-chip__detail">{opt.detail}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <p className="profile-focus-card__hint mt-3">{focusSummary(playerFocus)}</p>
+        </div>
       </section>
 
       {/* season stats */}
