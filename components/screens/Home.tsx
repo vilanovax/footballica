@@ -23,6 +23,7 @@ import {
   promotionGateStatus,
   seasonAdvisorMessage,
 } from "@/lib/promotion";
+import { arenaScore } from "@/lib/leaderboards";
 
 interface HomeProps {
   onPlayQuick: () => void;
@@ -137,6 +138,129 @@ const MODE_DEFS = [
   },
 ] as const;
 
+function HomeDualEntry({
+  onPlayQuick,
+  onOpenClub,
+}: {
+  onPlayQuick: () => void;
+  onOpenClub: () => void;
+}) {
+  return (
+    <div className="home-dual-entry mx-5 mt-4 grid grid-cols-2 gap-2.5">
+      <GameCard
+        as="button"
+        variant="hero"
+        onClick={onPlayQuick}
+        className="home-dual-entry__card home-dual-entry__card--arena rounded-2xl p-3.5 text-right"
+      >
+        <p className="home-dual-entry__eyebrow">Quiz Arena</p>
+        <p className="home-dual-entry__title">بازی سریع</p>
+        <p className="home-dual-entry__sub">رقابت، امتیاز و جدول</p>
+      </GameCard>
+      <GameCard
+        as="button"
+        variant="asset"
+        onClick={onOpenClub}
+        className="home-dual-entry__card home-dual-entry__card--club rounded-2xl p-3.5 text-right"
+      >
+        <p className="home-dual-entry__eyebrow">Club Career</p>
+        <p className="home-dual-entry__title">باشگاه من</p>
+        <p className="home-dual-entry__sub">اقتصاد، صعود و کریر</p>
+      </GameCard>
+    </div>
+  );
+}
+
+function HomeSummaryRow({
+  arenaScoreValue,
+  streakDays,
+  lives,
+  divisionLabel,
+  gateComplete,
+  gateTotal,
+  fans,
+}: {
+  arenaScoreValue: number;
+  streakDays: number;
+  lives: number;
+  divisionLabel: string;
+  gateComplete: number;
+  gateTotal: number;
+  fans: number;
+}) {
+  return (
+    <div className="home-summary-row mx-5 mt-3 grid grid-cols-2 gap-2.5">
+      <GameCard variant="asset" className="home-summary-row__card rounded-2xl p-3 text-right">
+        <p className="home-summary-row__eyebrow">زمین مسابقه</p>
+        <p className="home-summary-row__value">{faNum(arenaScoreValue)}</p>
+        <p className="home-summary-row__sub">
+          استریک {faNum(streakDays)} · جان {faNum(lives)}
+        </p>
+      </GameCard>
+      <GameCard variant="asset" className="home-summary-row__card rounded-2xl p-3 text-right">
+        <p className="home-summary-row__eyebrow">باشگاه من</p>
+        <p className="home-summary-row__value">{divisionLabel}</p>
+        <p className="home-summary-row__sub">
+          {faNum(gateComplete)}/{faNum(gateTotal)} شرط · {faNum(fans)} هوادار
+        </p>
+      </GameCard>
+    </div>
+  );
+}
+
+function AdvisorHero({
+  advisor,
+  promotionGate,
+  primaryAction,
+}: {
+  advisor: ReturnType<typeof seasonAdvisorMessage>;
+  promotionGate: ReturnType<typeof promotionGateStatus>;
+  primaryAction: { label: string; hint: string; onClick: () => void };
+}) {
+  return (
+    <GameCard
+      variant="hero"
+      className="home-hero home-hero--primary home-command-hero mx-5 mt-4 rounded-3xl p-5"
+    >
+      <span className="absolute -left-4 -bottom-4 text-[7rem] opacity-12 leading-none pointer-events-none">
+        ⚽
+      </span>
+      <div className="relative">
+        <p className="home-command-hero__eyebrow">{advisor.eyebrow}</p>
+        <h2 className="text-2xl font-extrabold text-white text-right mt-1">
+          {advisor.title}
+        </h2>
+        <p className="mt-1.5 text-sm text-white/70 text-right leading-6">
+          {advisor.detail}
+        </p>
+      </div>
+      <div className="home-command-hero__chips">
+        <span className="home-command-hero__chip">{advisor.focus}</span>
+        <span className="home-command-hero__chip">{faNum(promotionGate.completeCount)} شرط کامل</span>
+        <span className="home-command-hero__chip">
+          {promotionGate.complete && !promotionGate.terminal
+            ? "ثبت صعود"
+            : advisor.action === "play"
+              ? "حرکت در زمین"
+              : "حرکت در باشگاه"}
+        </span>
+      </div>
+      <Button
+        onClick={primaryAction.onClick}
+        variant="primary"
+        size="lg"
+        fullWidth
+        className="relative mt-4 text-lg"
+      >
+        {primaryAction.label}
+      </Button>
+      <p className="mt-2 text-center text-[11px] font-bold text-white/55">
+        {primaryAction.hint}
+      </p>
+    </GameCard>
+  );
+}
+
 export function Home({
   onPlayQuick,
   onOpenClub,
@@ -168,6 +292,10 @@ export function Home({
   const syncLives = useGame((s) => s.syncLives);
   const ensureDailyMissions = useGame((s) => s.ensureDailyMissions);
   const showVaultTutorial = useGame((s) => s.showVaultTutorial);
+  const playerFocus = useGame((s) => s.playerFocus);
+  const totalCorrect = useGame((s) => s.totalCorrect);
+  const bombBest = useGame((s) => s.bombBest);
+  const streakDays = useGame((s) => s.streakDays);
 
   const { level } = levelInfo(xp);
   const regenIn = formatRegenCountdown(msUntilNextLife(lives, livesUpdatedAt));
@@ -320,6 +448,122 @@ export function Home({
             onClick: onOpenClub,
           };
 
+  const arenaScoreValue = arenaScore({
+    xp,
+    totalCorrect,
+    matchesWon,
+    bombBest,
+    survivalBest,
+    streakDays,
+    fans,
+    budget: safeBudget,
+    vaultLevel,
+    seasonStep,
+    clubName: club.name,
+  });
+
+  const showClubBlock = playerFocus !== "arena";
+  const showArenaBlock = playerFocus !== "club";
+  const clubHeavy = playerFocus === "club";
+  const arenaHeavy = playerFocus === "arena";
+
+  const clubSection = showClubBlock ? (
+    <>
+      <div className="home-section-head px-5 mt-5">
+        <span className="home-section-head__eyebrow">
+          {promotionGate.seasonTitle} · {faNum(promotionGate.completeCount)} از {faNum(promotionGate.totalCount)} شرط
+        </span>
+        <h2 className="home-section-head__title">{homeHeadline}</h2>
+      </div>
+      <HomeMissionBanner
+        onOpenMissions={onOpenMissions}
+        seasonTitle={promotionGate.seasonTitle}
+        seasonFocus={homeAdvisor.focus}
+      />
+      <AdvisorHero
+        advisor={homeAdvisor}
+        promotionGate={promotionGate}
+        primaryAction={homePrimaryAction}
+      />
+      <ClubHomeBanner
+        onOpenClub={onOpenClub}
+        seasonTitle={promotionGate.seasonTitle}
+        advisorTitle={homeAdvisor.title}
+        advisorAction={homeAdvisor.action}
+        advisorFocus={homeAdvisor.focus}
+      />
+    </>
+  ) : null;
+
+  const arenaSection = showArenaBlock ? (
+    <>
+      <HomeFeaturedMode
+        mode={featured}
+        disabled={featuredDisabled}
+        disabledReason={featuredDisabledReason}
+        onPlay={playFeatured}
+      />
+      <HomeStreakBar />
+    </>
+  ) : null;
+
+  const modesSection = (
+    <>
+      <div className="home-section-head home-section-head--games px-5 mt-6 mb-2">
+        <button
+          type="button"
+          onClick={onOpenGames}
+          className="home-section-head__link active:opacity-70"
+        >
+          همه مودها ›
+        </button>
+        <div className="text-right">
+          <span className="home-section-head__eyebrow">{faNum(playableModes)} مود قابل بازی</span>
+          <h3 className="home-section-head__title">مودهای بازی</h3>
+        </div>
+      </div>
+      <div className="px-5 grid grid-cols-2 gap-2.5">
+        {gridModes.map((m) => {
+          const subtitle =
+            m.id === "survival"
+              ? `بدون جان · رکورد ${faNum(survivalBest)}`
+              : m.id === "duel" && !canDuel
+                ? regenIn
+                  ? `نیاز ۱ ❤️ · ${regenIn}`
+                  : "نیاز ۱ ❤️"
+                : m.subtitle;
+
+          if (m.id === "duel" && !canDuel) {
+            return (
+              <ModeCard
+                key={m.id}
+                title={m.title}
+                subtitle={subtitle}
+                emoji={m.emoji}
+                from={m.from}
+                to={m.to}
+                disabled
+                disabledBadge="بدون جان"
+              />
+            );
+          }
+
+          return (
+            <ModeCard
+              key={m.id}
+              title={m.title}
+              subtitle={subtitle}
+              emoji={m.emoji}
+              from={m.from}
+              to={m.to}
+              onClick={() => playMode(m.play)}
+            />
+          );
+        })}
+      </div>
+    </>
+  );
+
   return (
     <div className="pitch-stripes min-h-dvh pb-32">
       <header className="px-5 pt-5">
@@ -376,130 +620,37 @@ export function Home({
 
       <ClubBankSheet open={bankOpen} onClose={() => setBankOpen(false)} />
 
-      <div className="home-section-head px-5 mt-5">
-        <span className="home-section-head__eyebrow">
-          {promotionGate.seasonTitle} · {faNum(promotionGate.completeCount)} از {faNum(promotionGate.totalCount)} شرط
-        </span>
-        <h2 className="home-section-head__title">{homeHeadline}</h2>
-      </div>
+      <HomeDualEntry onPlayQuick={onPlayQuick} onOpenClub={onOpenClub} />
 
-      <HomeMissionBanner
-        onOpenMissions={onOpenMissions}
-        seasonTitle={promotionGate.seasonTitle}
-        seasonFocus={homeAdvisor.focus}
+      <HomeSummaryRow
+        arenaScoreValue={arenaScoreValue}
+        streakDays={streakDays}
+        lives={lives}
+        divisionLabel={currentDivisionLabel(seasonStep)}
+        gateComplete={promotionGate.completeCount}
+        gateTotal={promotionGate.totalCount}
+        fans={fans}
       />
 
-      <GameCard
-        variant="hero"
-        className="home-hero home-hero--primary home-command-hero mx-5 mt-4 rounded-3xl p-5"
-      >
-        <span className="absolute -left-4 -bottom-4 text-[7rem] opacity-12 leading-none pointer-events-none">
-          ⚽
-        </span>
-        <div className="relative">
-          <p className="home-command-hero__eyebrow">{homeAdvisor.eyebrow}</p>
-          <h2 className="text-2xl font-extrabold text-white text-right mt-1">
-            {homeAdvisor.title}
-          </h2>
-          <p className="mt-1.5 text-sm text-white/70 text-right leading-6">
-            {homeAdvisor.detail}
-          </p>
-        </div>
-        <div className="home-command-hero__chips">
-          <span className="home-command-hero__chip">{homeAdvisor.focus}</span>
-          <span className="home-command-hero__chip">{faNum(promotionGate.completeCount)} شرط کامل</span>
-          <span className="home-command-hero__chip">
-            {promotionGate.complete && !promotionGate.terminal
-              ? "ثبت صعود"
-              : homeAdvisor.action === "play"
-                ? "حرکت در زمین"
-                : "حرکت در باشگاه"}
-          </span>
-        </div>
-        <Button
-          onClick={homePrimaryAction.onClick}
-          variant="primary"
-          size="lg"
-          fullWidth
-          className="relative mt-4 text-lg"
-        >
-          {homePrimaryAction.label}
-        </Button>
-        <p className="mt-2 text-center text-[11px] font-bold text-white/55">
-          {homePrimaryAction.hint}
-        </p>
-      </GameCard>
-
-      <HomeFeaturedMode
-        mode={featured}
-        disabled={featuredDisabled}
-        disabledReason={featuredDisabledReason}
-        onPlay={playFeatured}
-      />
-
-      <ClubHomeBanner
-        onOpenClub={onOpenClub}
-        seasonTitle={promotionGate.seasonTitle}
-        advisorTitle={homeAdvisor.title}
-        advisorAction={homeAdvisor.action}
-        advisorFocus={homeAdvisor.focus}
-      />
-
-      <HomeStreakBar />
-
-      <div className="home-section-head home-section-head--games px-5 mt-6 mb-2">
-        <button
-          type="button"
-          onClick={onOpenGames}
-          className="home-section-head__link active:opacity-70"
-        >
-          همه مودها ›
-        </button>
-        <div className="text-right">
-          <span className="home-section-head__eyebrow">{faNum(playableModes)} مود قابل بازی</span>
-          <h3 className="home-section-head__title">مودهای بازی</h3>
-        </div>
-      </div>
-
-      <div className="px-5 grid grid-cols-2 gap-2.5">
-        {gridModes.map((m) => {
-          const subtitle =
-            m.id === "survival"
-              ? `بدون جان · رکورد ${faNum(survivalBest)}`
-              : m.id === "duel" && !canDuel
-                ? regenIn
-                  ? `نیاز ۱ ❤️ · ${regenIn}`
-                  : "نیاز ۱ ❤️"
-                : m.subtitle;
-
-          if (m.id === "duel" && !canDuel) {
-            return (
-              <ModeCard
-                key={m.id}
-                title={m.title}
-                subtitle={subtitle}
-                emoji={m.emoji}
-                from={m.from}
-                to={m.to}
-                disabled
-                disabledBadge="بدون جان"
-              />
-            );
-          }
-
-          return (
-            <ModeCard
-              key={m.id}
-              title={m.title}
-              subtitle={subtitle}
-              emoji={m.emoji}
-              from={m.from}
-              to={m.to}
-              onClick={() => playMode(m.play)}
-            />
-          );
-        })}
-      </div>
+      {clubHeavy ? (
+        <>
+          {clubSection}
+          {arenaSection}
+          {modesSection}
+        </>
+      ) : arenaHeavy ? (
+        <>
+          {arenaSection}
+          {modesSection}
+          {clubSection}
+        </>
+      ) : (
+        <>
+          {arenaSection}
+          {clubSection}
+          {modesSection}
+        </>
+      )}
 
       <GameCard
         as="button"

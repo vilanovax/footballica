@@ -29,6 +29,7 @@ import {
   canClaimPromotion,
   promotionGateStatus,
 } from "./promotion";
+import type { PlayerFocus } from "./playerFocus";
 
 export type UpgradeResult = "ok" | "poor" | "locked" | "max";
 
@@ -90,6 +91,8 @@ interface GameState {
   dailyProgress: Record<string, number>;
   missionClaimed: Record<string, boolean>;
   seasonStep: number;
+  /** ترجیح مسیر — فقط UI را شخصی‌سازی می‌کند */
+  playerFocus: PlayerFocus;
   // اکشن‌ها
   addCards: (n: number) => void;
   addFans: (n: number) => void;
@@ -110,7 +113,8 @@ interface GameState {
   unassignUnit: (unitId: string) => void;
   upgradeVault: () => UpgradeResult;
   recordWin: () => void;
-  completeSetup: (club: ClubIdentity) => void;
+  completeSetup: (club: ClubIdentity, focus?: PlayerFocus) => void;
+  setPlayerFocus: (focus: PlayerFocus) => void;
   updateClubProfile: (
     patch: Partial<Pick<ClubIdentity, "city" | "heartTeam" | "internationalTeam">>,
   ) => void;
@@ -224,6 +228,7 @@ const initialState = {
   dailyProgress: {} as Record<string, number>,
   missionClaimed: {} as Record<string, boolean>,
   seasonStep: 1,
+  playerFocus: "both" as PlayerFocus,
 };
 
 export const useGame = create<GameState>()(
@@ -439,13 +444,20 @@ export const useGame = create<GameState>()(
 
       recordWin: () => set((s) => ({ matchesWon: s.matchesWon + 1 })),
 
-      completeSetup: (club) => {
+      completeSetup: (club, focus) => {
         const now = Date.now();
         const units = Object.fromEntries(
           Object.entries(get().units).map(([id, u]) => [id, { ...u, lastCollect: now }]),
         );
-        set({ club, setupDone: true, units });
+        set({
+          club,
+          setupDone: true,
+          units,
+          ...(focus ? { playerFocus: focus } : {}),
+        });
       },
+
+      setPlayerFocus: (focus) => set({ playerFocus: focus }),
 
       updateClubProfile: (patch) =>
         set((s) => ({
@@ -606,7 +618,7 @@ export const useGame = create<GameState>()(
     }),
     {
       name: "footballica-save",
-      version: 7,
+      version: 8,
       migrate: (persisted, version) => {
         const s = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -658,6 +670,11 @@ export const useGame = create<GameState>()(
         if (version < 7) {
           s.seasonStep = typeof s.seasonStep === "number" ? s.seasonStep : 1;
         }
+        if (version < 8) {
+          const focus = s.playerFocus;
+          s.playerFocus =
+            focus === "arena" || focus === "club" || focus === "both" ? focus : "both";
+        }
         return persisted;
       },
       storage: createJSONStorage(() => localStorage),
@@ -696,6 +713,7 @@ export const useGame = create<GameState>()(
         dailyProgress: s.dailyProgress,
         missionClaimed: s.missionClaimed,
         seasonStep: s.seasonStep,
+        playerFocus: s.playerFocus,
       }),
     },
   ),

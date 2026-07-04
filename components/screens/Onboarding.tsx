@@ -11,6 +11,10 @@ import {
   identityLabel,
   type IdentityOption,
 } from "@/lib/playerIdentity";
+import {
+  PLAYER_FOCUS_OPTIONS,
+  type PlayerFocus,
+} from "@/lib/playerFocus";
 
 interface OnboardingProps {
   onDone: () => void;
@@ -344,15 +348,19 @@ function PrefsChipGrid({
 function OnboardingPrefs({
   heartTeam,
   city,
+  playerFocus,
   onHeartTeam,
   onCity,
+  onPlayerFocus,
   onSkip,
   onContinue,
 }: {
   heartTeam?: string;
   city?: string;
+  playerFocus: PlayerFocus;
   onHeartTeam: (id: string | undefined) => void;
   onCity: (id: string | undefined) => void;
+  onPlayerFocus: (focus: PlayerFocus) => void;
   onSkip: () => void;
   onContinue: () => void;
 }) {
@@ -396,6 +404,28 @@ function OnboardingPrefs({
       </div>
 
       <div className="relative z-10 mt-5 space-y-4 flex-1 overflow-y-auto pb-2">
+        <div className="ob-chip-section">
+          <p className="ob-field-label mb-3">بیشتر دنبال چی هستی؟</p>
+          <div className="grid grid-cols-1 gap-2">
+            {PLAYER_FOCUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => onPlayerFocus(opt.id)}
+                className={`ob-focus-chip ${playerFocus === opt.id ? "ob-focus-chip--active" : ""}`}
+              >
+                <span className="ob-focus-chip__emoji" aria-hidden>
+                  {opt.emoji}
+                </span>
+                <span className="ob-focus-chip__copy">
+                  <span className="ob-focus-chip__label">{opt.label}</span>
+                  <span className="ob-focus-chip__detail">{opt.detail}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="ob-chip-section">
           <p className="ob-field-label mb-3">تیم قلبی تو</p>
           <PrefsChipGrid
@@ -556,8 +586,9 @@ export function Onboarding({ onDone }: OnboardingProps) {
   const [crest, setCrest] = useState(CRESTS[0]);
   const [heartTeam, setHeartTeam] = useState<string | undefined>();
   const [city, setCity] = useState<string | undefined>();
+  const [playerFocus, setPlayerFocus] = useState<PlayerFocus>("both");
 
-  function finish(prefs?: { heartTeam?: string; city?: string }) {
+  function finish(prefs?: { heartTeam?: string; city?: string; focus?: PlayerFocus }) {
     const club: ClubIdentity = {
       name: name.trim() || "باشگاهِ من",
       color,
@@ -565,7 +596,7 @@ export function Onboarding({ onDone }: OnboardingProps) {
       city: prefs?.city ?? city,
       heartTeam: prefs?.heartTeam ?? heartTeam,
     };
-    completeSetup(club);
+    completeSetup(club, prefs?.focus ?? playerFocus);
     onDone();
   }
 
@@ -586,9 +617,11 @@ export function Onboarding({ onDone }: OnboardingProps) {
       <OnboardingPrefs
         heartTeam={heartTeam}
         city={city}
+        playerFocus={playerFocus}
         onHeartTeam={setHeartTeam}
         onCity={setCity}
-        onSkip={() => finish({ heartTeam: undefined, city: undefined })}
+        onPlayerFocus={setPlayerFocus}
+        onSkip={() => finish({ heartTeam: undefined, city: undefined, focus: playerFocus })}
         onContinue={() => finish()}
       />
     );

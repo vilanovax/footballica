@@ -2477,6 +2477,48 @@ body {
   transform: scale(0.96);
 }
 
+.ob-focus-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.18);
+  text-align: right;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ob-focus-chip--active {
+  border-color: rgba(245, 197, 66, 0.45);
+  background: rgba(245, 197, 66, 0.08);
+}
+
+.ob-focus-chip__emoji {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.ob-focus-chip__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.ob-focus-chip__label {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.ob-focus-chip__detail {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+}
+
 .ob-skip-link {
   width: 100%;
   padding: 0.75rem;
@@ -2559,6 +2601,64 @@ body {
   background: linear-gradient(150deg, #2f9e5f, #17683b);
   border: 1px solid rgba(94, 224, 138, 0.2);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.home-dual-entry__card {
+  min-height: 6.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.home-dual-entry__eyebrow {
+  font-size: 0.56rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.42);
+  letter-spacing: 0.04em;
+}
+
+.home-dual-entry__title {
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.home-dual-entry__sub {
+  margin-top: 0.2rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.45;
+}
+
+.home-dual-entry__card--arena {
+  border-color: rgba(47, 158, 95, 0.35);
+}
+
+.home-dual-entry__card--club {
+  border-color: rgba(245, 197, 66, 0.28);
+}
+
+.home-summary-row__eyebrow {
+  font-size: 0.56rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.home-summary-row__value {
+  margin-top: 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.home-summary-row__sub {
+  margin-top: 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.48);
+  line-height: 1.4;
 }
 
 .home-command-hero {
@@ -4901,6 +5001,35 @@ body {
 .lb-header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding-bottom: 1rem;
+}
+
+.lb-tabs__btn {
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  text-align: right;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.16);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.lb-tabs__btn--active {
+  border-color: rgba(245, 197, 66, 0.42);
+  background: rgba(245, 197, 66, 0.08);
+}
+
+.lb-tabs__title {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.lb-tabs__sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .lb-season-pill {
