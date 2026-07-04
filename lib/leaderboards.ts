@@ -9,6 +9,7 @@ export interface LeaderboardPlayerInput {
   bombBest: number;
   survivalBest: number;
   streakDays: number;
+  arenaRating: number;
   fans: number;
   budget: number;
   vaultLevel: number;
@@ -29,7 +30,8 @@ export interface LeaderboardRowData {
 /** امتیاز رقابتی — skill و فعالیت در مودها */
 export function arenaScore(input: LeaderboardPlayerInput): number {
   return (
-    input.xp +
+    input.arenaRating +
+    input.xp * 0.35 +
     input.totalCorrect * 8 +
     input.matchesWon * 60 +
     input.bombBest * 12 +

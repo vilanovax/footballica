@@ -46,7 +46,9 @@ function OutcomeBadge({
 export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
   const won = result.youScore >= result.foeScore;
   const isDuel = result.mode === "duel";
+  const isRankedDuel = isDuel && result.duelKind === "ranked";
   const applyActivityReward = useGame((s) => s.applyActivityReward);
+  const applyArenaDelta = useGame((s) => s.applyArenaDelta);
   const addTotalCorrect = useGame((s) => s.addTotalCorrect);
   const recordDailyPlay = useGame((s) => s.recordDailyPlay);
   const recordWin = useGame((s) => s.recordWin);
@@ -70,7 +72,8 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
     result.xpEarned > 0 ||
     result.fansEarned > 0 ||
     result.vaultEarned > 0 ||
-    result.cardsEarned > 0;
+    result.cardsEarned > 0 ||
+    (result.arenaDelta !== undefined && result.arenaDelta !== 0);
 
   useEffect(() => {
     if (credited.current) return;
@@ -82,6 +85,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
       cards: result.cardsEarned,
     });
     if (overflow > 0) setVaultOverflow(overflow);
+    if (result.arenaDelta) applyArenaDelta(result.arenaDelta);
     addTotalCorrect(correctCount);
     recordDailyPlay();
     if (won) recordWin();
@@ -90,6 +94,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
     won,
     correctCount,
     applyActivityReward,
+    applyArenaDelta,
     addTotalCorrect,
     recordDailyPlay,
     recordWin,
@@ -125,11 +130,21 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
           }`}
         >
           <p className="result-hero__eyebrow">
-            {isDuel ? "پایان دوئل" : "پایان بازی سریع"}
+            {isRankedDuel
+              ? "پایان دوئل رنکد"
+              : isDuel
+                ? "پایان دوئل"
+                : "پایان بازی سریع"}
           </p>
           <div className="text-5xl animate-pop">{won ? "🏆" : "💪"}</div>
           <h1 className="mt-2 text-2xl font-extrabold text-white">
-            {won ? (isDuel ? "دوئل را بردی!" : "بردی!") : "این‌بار نشد"}
+            {won
+              ? isRankedDuel
+                ? "رنکد را بردی!"
+                : isDuel
+                  ? "دوئل را بردی!"
+                  : "بردی!"
+              : "این‌بار نشد"}
           </h1>
           <p className="mt-1.5 text-sm font-medium text-white/72 leading-6">
             {won
@@ -143,7 +158,11 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
             <div className="result-summary-stat">
               <span className="result-summary-stat__label">حالت بازی</span>
               <span className="result-summary-stat__value result-summary-stat__value--mode">
-                {isDuel ? "⚔️ دوئل" : "⚽ سریع"}
+                {isRankedDuel
+                  ? "🏆 رنکد"
+                  : isDuel
+                    ? "⚔️ دوئل"
+                    : "⚽ سریع"}
               </span>
             </div>
             <div className="result-summary-stat">
@@ -248,9 +267,28 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
         <div className="result-rewards-block">
           <div className="mb-2 text-right">
             <p className="text-xs font-bold text-white/55">پاداش</p>
-            <p className="mt-0.5 text-[11px] text-white/40">خروجی این راند برای پیشروی باشگاه</p>
+            <p className="mt-0.5 text-[11px] text-white/40">
+              {isRankedDuel
+                ? "تغییر رتبه Arena — بدون مزیت اقتصادی"
+                : "خروجی این راند برای پیشروی باشگاه"}
+            </p>
           </div>
-          {hasRewards ? (
+          {isRankedDuel && result.arenaDelta !== undefined ? (
+            <GameCard variant="asset" className="result-rewards-card rounded-2xl p-4 text-right">
+              <p className="text-xs font-bold text-white/55">رتبه Arena</p>
+              <p
+                className={`mt-1 text-2xl font-extrabold ${
+                  result.arenaDelta >= 0 ? "text-grass-400" : "text-red-400"
+                }`}
+              >
+                {result.arenaDelta >= 0 ? "+" : ""}
+                {faNum(result.arenaDelta)}
+              </p>
+              <p className="mt-2 text-sm text-white/55">
+                امتیاز به جدول Arena اضافه می‌شود
+              </p>
+            </GameCard>
+          ) : hasRewards ? (
             <GameCard
               variant="asset"
               className="result-rewards-card rounded-2xl p-1"

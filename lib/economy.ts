@@ -52,8 +52,11 @@ export function rewardQuickQuiz(
   };
 }
 
-/** باخت/برد دوئل */
-export function rewardDuel(won: boolean, correctCount: number): ActivityReward {
+/** باخت/برد دوئل دوستانه */
+export function rewardFriendlyDuel(
+  won: boolean,
+  correctCount: number,
+): ActivityReward {
   if (!won) {
     return {
       xp: Math.min(40, 20 + correctCount * 4),
@@ -68,6 +71,25 @@ export function rewardDuel(won: boolean, correctCount: number): ActivityReward {
     vaultMoney: 1_000_000,
     cards: Math.random() < 0.25 ? 1 : 0,
   };
+}
+
+/** @deprecated از rewardFriendlyDuel استفاده کن */
+export function rewardDuel(won: boolean, correctCount: number): ActivityReward {
+  return rewardFriendlyDuel(won, correctCount);
+}
+
+/** تغییر رتبه Arena در دوئل رنکد — بدون پاداش اقتصادی باشگاه */
+export function rankedDuelArenaDelta(
+  won: boolean,
+  correctCount: number,
+  youScore: number,
+  foeScore: number,
+): number {
+  const margin = Math.max(0, youScore - foeScore);
+  if (won) {
+    return 24 + correctCount * 4 + Math.min(12, Math.floor(margin / 20));
+  }
+  return -16 + correctCount * 2;
 }
 
 /** پنالتی — پاداشِ کامل فقط با ۵/۵ */

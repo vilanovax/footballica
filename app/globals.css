@@ -3374,6 +3374,67 @@ body {
   color: #8ab4ff;
 }
 
+.quiz-mode-badge--ranked {
+  background: rgba(245, 197, 66, 0.12);
+  border-color: rgba(245, 197, 66, 0.38);
+  color: #f5c542;
+}
+
+.duel-picker__eyebrow {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: rgba(245, 197, 66, 0.72);
+}
+
+.duel-picker__title {
+  margin-top: 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.duel-picker__sub {
+  margin-top: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.48);
+  line-height: 1.55;
+}
+
+.duel-kind-card__emoji {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.duel-kind-card__title {
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.duel-kind-card__detail {
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.duel-kind-card__rules {
+  margin-top: 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.42);
+  line-height: 1.45;
+}
+
+.duel-kind-card--ranked {
+  border-color: rgba(245, 197, 66, 0.28);
+}
+
+.duel-kind-card--friendly {
+  border-color: rgba(47, 111, 237, 0.28);
+}
+
 .quiz-var-btn {
   box-shadow: 0 10px 22px rgba(245, 197, 66, 0.16);
 }

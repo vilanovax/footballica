@@ -18,7 +18,7 @@ import { Survival } from "@/components/screens/Survival";
 import { Missions } from "@/components/screens/Missions";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { NoLivesModal } from "@/components/ui/NoLivesModal";
-import { isTab, type MatchResult, type Screen } from "@/lib/types";
+import { isTab, type DuelKind, type MatchResult, type Screen } from "@/lib/types";
 
 export default function Page() {
   const [screen, setScreen] = useState<Screen>("home");
@@ -26,6 +26,8 @@ export default function Page() {
   const [missionsFrom, setMissionsFrom] = useState<Screen>("home");
   const [clubFrom, setClubFrom] = useState<Screen>("home");
   const [mounted, setMounted] = useState(false);
+  const [duelKind, setDuelKind] = useState<DuelKind | undefined>(undefined);
+  const [duelKey, setDuelKey] = useState(0);
   const [noLives, setNoLives] = useState(false);
   const setupDone = useGame((s) => s.setupDone);
   const lives = useGame((s) => s.lives);
@@ -55,12 +57,14 @@ export default function Page() {
     setScreen("quiz");
   }
 
-  function startDuel() {
+  function startDuel(kind?: DuelKind) {
     syncLives();
     if (!useGame.getState().spendLife()) {
       setNoLives(true);
       return;
     }
+    setDuelKind(kind);
+    setDuelKey((k) => k + 1);
     setScreen("duel");
   }
 
@@ -124,6 +128,8 @@ export default function Page() {
 
       {screen === "duel" && (
         <Duel
+          key={duelKey}
+          defaultKind={duelKind}
           onFinish={(r) => {
             setResult(r);
             setScreen("result");
@@ -147,7 +153,7 @@ export default function Page() {
           onHome={() => setScreen("home")}
           onOpenClub={() => openClub("result")}
           onReplay={() => {
-            if (result.mode === "duel") startDuel();
+            if (result.mode === "duel") startDuel(result.duelKind);
             else startQuiz();
           }}
         />

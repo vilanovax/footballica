@@ -296,6 +296,7 @@ export function Home({
   const totalCorrect = useGame((s) => s.totalCorrect);
   const bombBest = useGame((s) => s.bombBest);
   const streakDays = useGame((s) => s.streakDays);
+  const arenaRating = useGame((s) => s.arenaRating);
 
   const { level } = levelInfo(xp);
   const regenIn = formatRegenCountdown(msUntilNextLife(lives, livesUpdatedAt));
@@ -455,6 +456,7 @@ export function Home({
     bombBest,
     survivalBest,
     streakDays,
+    arenaRating,
     fans,
     budget: safeBudget,
     vaultLevel,

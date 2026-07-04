@@ -146,6 +146,7 @@ export function Leaderboard() {
   const bombBest = useGame((s) => s.bombBest);
   const survivalBest = useGame((s) => s.survivalBest);
   const streakDays = useGame((s) => s.streakDays);
+  const arenaRating = useGame((s) => s.arenaRating);
   const fans = useGame((s) => s.fans);
   const budget = useGame((s) => s.budget);
   const vaultLevel = useGame((s) => s.vaultLevel);
@@ -164,6 +165,7 @@ export function Leaderboard() {
       bombBest,
       survivalBest,
       streakDays,
+      arenaRating,
       fans,
       budget,
       vaultLevel,
@@ -177,6 +179,7 @@ export function Leaderboard() {
       bombBest,
       survivalBest,
       streakDays,
+      arenaRating,
       fans,
       budget,
       vaultLevel,

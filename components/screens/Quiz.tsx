@@ -12,21 +12,23 @@ import {
   QuizOptionButton,
 } from "@/components/ui/QuizUi";
 import { drawRound, drawOneExcluding, type Question } from "@/lib/questions";
-import { scoreAnswer, SCORING, rewardQuickQuiz, rewardDuel } from "@/lib/economy";
+import { scoreAnswer, SCORING, rewardQuickQuiz, rewardFriendlyDuel, rankedDuelArenaDelta } from "@/lib/economy";
 import {
   powerUpsForMode,
   powerUpCount,
   POWERUP_CONFIG,
   type PowerUpId,
 } from "@/lib/powerups";
+import { duelPowerupsAllowed } from "@/lib/duel";
 import { faNum } from "@/lib/format";
 import { useGame } from "@/lib/store";
-import type { AnswerOutcome, MatchResult, PlayMode } from "@/lib/types";
+import type { AnswerOutcome, DuelKind, MatchResult, PlayMode } from "@/lib/types";
 import { OPPONENT } from "@/lib/types";
 
 interface QuizProps {
   onFinish: (result: MatchResult) => void;
   mode?: PlayMode;
+  duelKind?: DuelKind;
   opponent?: { name: string; short: string };
 }
 
@@ -35,10 +37,13 @@ const QUIZ_POWERUP_DEFS = powerUpsForMode("quiz").filter((p) => p.id !== "glove"
 export function Quiz({
   onFinish,
   mode = "quick",
+  duelKind = "friendly",
   opponent = OPPONENT,
 }: QuizProps) {
   const powerups = useGame((s) => s.powerups);
   const usePowerUp = useGame((s) => s.usePowerUp);
+  const powerupsEnabled =
+    mode !== "duel" || duelPowerupsAllowed(duelKind);
 
   const [round, setRound] = useState<Question[]>(() => drawRound());
   const [index, setIndex] = useState(0);
@@ -136,6 +141,7 @@ export function Quiz({
     if (revealed || awaitingVar) return;
 
     if (
+      powerupsEnabled &&
       choice !== null &&
       choice !== q.correct &&
       !gloveUsedMatch &&
@@ -182,7 +188,7 @@ export function Quiz({
     }
     setReaction(react);
 
-    if (!youCorrect && !varUsedMatch && powerUpCount(powerups, "var") > 0) {
+    if (powerupsEnabled && !youCorrect && !varUsedMatch && powerUpCount(powerups, "var") > 0) {
       setAwaitingVar(true);
       flashHint("📺 VAR فعال است — دوباره جواب بده", 5000);
       scheduleNext(5000);
@@ -274,17 +280,25 @@ export function Quiz({
       const correctCount = outcomes.current.filter((o) => o.youCorrect).length;
       const rewards =
         mode === "duel"
-          ? rewardDuel(won, correctCount)
+          ? duelKind === "ranked"
+            ? null
+            : rewardFriendlyDuel(won, correctCount)
           : rewardQuickQuiz(won, correctCount);
+      const arenaDelta =
+        mode === "duel" && duelKind === "ranked"
+          ? rankedDuelArenaDelta(won, correctCount, you, foe)
+          : undefined;
       onFinish({
         mode,
+        duelKind: mode === "duel" ? duelKind : undefined,
         youScore: you,
         foeScore: foe,
         outcomes: outcomes.current,
-        xpEarned: rewards.xp,
-        fansEarned: rewards.fans,
-        vaultEarned: rewards.vaultMoney,
-        cardsEarned: rewards.cards,
+        xpEarned: rewards?.xp ?? 0,
+        fansEarned: rewards?.fans ?? 0,
+        vaultEarned: rewards?.vaultMoney ?? 0,
+        cardsEarned: rewards?.cards ?? 0,
+        arenaDelta,
       });
       return;
     }
@@ -350,8 +364,12 @@ export function Quiz({
 
       <div className="flex justify-center gap-2 pt-5 px-5">
         {mode === "duel" ? (
-          <span className="quiz-mode-badge quiz-mode-badge--duel rounded-xl px-4 py-1.5 text-sm font-bold">
-            ⚔️ دوئل · ۱ ❤️
+          <span
+            className={`quiz-mode-badge rounded-xl px-4 py-1.5 text-sm font-bold ${
+              duelKind === "ranked" ? "quiz-mode-badge--ranked" : "quiz-mode-badge--duel"
+            }`}
+          >
+            {duelKind === "ranked" ? "🏆 رنکد · بدون کمک" : "⚔️ دوئل دوستانه · ۱ ❤️"}
           </span>
         ) : (
           <span className="quiz-mode-badge rounded-xl px-4 py-1.5 text-sm font-bold">
@@ -389,7 +407,9 @@ export function Quiz({
                 : "هر جواب سریع، XP بیشتری می‌سازد"}
           </span>
           <span className="quiz-scoreboard__support">
-            {faNum(supportCount)} کمک تاکتیکی
+            {powerupsEnabled
+              ? `${faNum(supportCount)} کمک تاکتیکی`
+              : "رنکد · بدون کمک"}
           </span>
         </div>
       </div>
@@ -454,24 +474,28 @@ export function Quiz({
 
       {hint && <p className="quiz-hint-banner mx-5 mt-3 rounded-2xl px-4 py-3 text-center">{hint}</p>}
 
-      <div className="quiz-toolbox mx-5 mt-3">
-        <div className="quiz-toolbox__head">
-          <p className="quiz-toolbox__title">کمک‌های تاکتیکی</p>
-          <p className="quiz-toolbox__sub">
-            {awaitingVar ? "الان می‌توانی VAR را فعال کنی" : "هر سؤال فقط یک‌بار از هر کمک استفاده می‌شود"}
-          </p>
-        </div>
-      </div>
+      {powerupsEnabled && (
+        <>
+          <div className="quiz-toolbox mx-5 mt-3">
+            <div className="quiz-toolbox__head">
+              <p className="quiz-toolbox__title">کمک‌های تاکتیکی</p>
+              <p className="quiz-toolbox__sub">
+                {awaitingVar ? "الان می‌توانی VAR را فعال کنی" : "هر سؤال فقط یک‌بار از هر کمک استفاده می‌شود"}
+              </p>
+            </div>
+          </div>
 
-      <PowerUpBar
-        defs={QUIZ_POWERUP_DEFS}
-        inventory={powerups}
-        disabled={puDisabled}
-        reasons={powerUpReasons}
-        hidden={puHidden}
-        onUse={handlePowerUp}
-        shakeId={shakePu}
-      />
+          <PowerUpBar
+            defs={QUIZ_POWERUP_DEFS}
+            inventory={powerups}
+            disabled={puDisabled}
+            reasons={powerUpReasons}
+            hidden={puHidden}
+            onUse={handlePowerUp}
+            shakeId={shakePu}
+          />
+        </>
+      )}
 
       <QuizQuestionCard
         meta={`${q.league} · ${q.difficulty}`}

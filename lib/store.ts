@@ -93,6 +93,8 @@ interface GameState {
   seasonStep: number;
   /** ترجیح مسیر — فقط UI را شخصی‌سازی می‌کند */
   playerFocus: PlayerFocus;
+  /** رتبه Arena — فقط از دوئل رنکد و فعالیت skill-based */
+  arenaRating: number;
   // اکشن‌ها
   addCards: (n: number) => void;
   addFans: (n: number) => void;
@@ -113,6 +115,7 @@ interface GameState {
   unassignUnit: (unitId: string) => void;
   upgradeVault: () => UpgradeResult;
   recordWin: () => void;
+  applyArenaDelta: (delta: number) => void;
   completeSetup: (club: ClubIdentity, focus?: PlayerFocus) => void;
   setPlayerFocus: (focus: PlayerFocus) => void;
   updateClubProfile: (
@@ -229,6 +232,7 @@ const initialState = {
   missionClaimed: {} as Record<string, boolean>,
   seasonStep: 1,
   playerFocus: "both" as PlayerFocus,
+  arenaRating: 1000,
 };
 
 export const useGame = create<GameState>()(
@@ -443,6 +447,10 @@ export const useGame = create<GameState>()(
       },
 
       recordWin: () => set((s) => ({ matchesWon: s.matchesWon + 1 })),
+      applyArenaDelta: (delta) =>
+        set((s) => ({
+          arenaRating: Math.max(0, Math.round(s.arenaRating + delta)),
+        })),
 
       completeSetup: (club, focus) => {
         const now = Date.now();
@@ -618,7 +626,7 @@ export const useGame = create<GameState>()(
     }),
     {
       name: "footballica-save",
-      version: 8,
+      version: 9,
       migrate: (persisted, version) => {
         const s = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -675,6 +683,9 @@ export const useGame = create<GameState>()(
           s.playerFocus =
             focus === "arena" || focus === "club" || focus === "both" ? focus : "both";
         }
+        if (version < 9) {
+          s.arenaRating = typeof s.arenaRating === "number" ? s.arenaRating : 1000;
+        }
         return persisted;
       },
       storage: createJSONStorage(() => localStorage),
@@ -714,6 +725,7 @@ export const useGame = create<GameState>()(
         missionClaimed: s.missionClaimed,
         seasonStep: s.seasonStep,
         playerFocus: s.playerFocus,
+        arenaRating: s.arenaRating,
       }),
     },
   ),

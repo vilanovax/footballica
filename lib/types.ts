@@ -28,8 +28,11 @@ export interface AnswerOutcome {
 
 export type PlayMode = "quick" | "duel";
 
+export type DuelKind = "friendly" | "ranked";
+
 export interface MatchResult {
   mode: PlayMode;
+  duelKind?: DuelKind;
   youScore: number;
   foeScore: number;
   outcomes: AnswerOutcome[];
@@ -37,6 +40,7 @@ export interface MatchResult {
   fansEarned: number;
   vaultEarned: number;
   cardsEarned: number;
+  arenaDelta?: number;
 }
 
 export const OPPONENT = {
