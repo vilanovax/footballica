@@ -107,6 +107,7 @@ export default function Page() {
         <Profile
           onOpenClub={() => openClub("profile")}
           onOpenMissions={() => openMissions("profile")}
+          onOpenShop={() => setScreen("shop")}
         />
       )}
 
@@ -118,7 +119,9 @@ export default function Page() {
         />
       )}
 
-      {screen === "club" && <Club onBack={() => setScreen(clubFrom)} />}
+      {screen === "club" && (
+        <Club onBack={() => setScreen(clubFrom)} onOpenShop={() => setScreen("shop")} />
+      )}
 
       {screen === "bomb" && <BombMode onExit={() => setScreen("home")} />}
 

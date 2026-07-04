@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { ClubBankSheet } from "@/components/ui/ClubBankSheet";
 import { PromotionCelebrationSheet } from "@/components/ui/PromotionCelebrationSheet";
+import { CollectionShowcase } from "@/components/ui/CollectionShowcase";
 import { UnitCard, LockedUnitRow } from "@/components/ui/UnitCard";
 import { UNITS, unitDef, unitUpgradeCost } from "@/lib/units";
 import { CLUB } from "@/lib/club";
@@ -29,6 +30,7 @@ import {
 
 interface ClubProps {
   onBack: () => void;
+  onOpenShop?: () => void;
 }
 
 function PromotionBar({
@@ -117,7 +119,7 @@ function PromotionBar({
   );
 }
 
-export function Club({ onBack }: ClubProps) {
+export function Club({ onBack, onOpenShop }: ClubProps) {
   const [now, setNow] = useState(() => Date.now());
   const [bankOpen, setBankOpen] = useState(false);
   const [flashCollect, setFlashCollect] = useState(false);
@@ -544,6 +546,10 @@ export function Club({ onBack }: ClubProps) {
           onClaim={claimSeasonPromotion}
         />
       </div>
+
+      <section className="mx-5 mt-5">
+        <CollectionShowcase onOpenShop={onOpenShop} />
+      </section>
 
       <ClubBankSheet
         open={bankOpen}

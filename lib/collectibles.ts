@@ -230,6 +230,20 @@ export function ownedCollectibleCount(owned: OwnedCollectibles): number {
   return COLLECTIBLES.filter((c) => owned[c.id]).length;
 }
 
+export function ownedCollectibleItems(owned: OwnedCollectibles): CollectibleDef[] {
+  return COLLECTIBLES.filter((c) => owned[c.id]);
+}
+
+const RARITY_ORDER: Record<CollectibleRarity, number> = {
+  epic: 0,
+  rare: 1,
+  common: 2,
+};
+
+export function sortCollectiblesByRarity(items: CollectibleDef[]): CollectibleDef[] {
+  return [...items].sort((a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]);
+}
+
 export function clubAvatarLabel(
   club: ClubIdentity,
   equipped: EquippedCosmetics,

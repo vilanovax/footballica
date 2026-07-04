@@ -6,6 +6,7 @@ import {
   ProfileIdentityBadges,
   ProfileIdentitySheet,
 } from "@/components/ui/ProfileIdentitySheet";
+import { CollectionShowcase } from "@/components/ui/CollectionShowcase";
 import { useGame } from "@/lib/store";
 import { faNum, faCount } from "@/lib/format";
 import { levelInfo, leagueForXp } from "@/lib/player";
@@ -18,6 +19,7 @@ import { ownedCollectibleCount } from "@/lib/collectibles";
 interface ProfileProps {
   onOpenClub: () => void;
   onOpenMissions: () => void;
+  onOpenShop?: () => void;
 }
 
 function ProfileResourceCard({
@@ -59,7 +61,7 @@ function CareerStat({
   );
 }
 
-export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
+export function Profile({ onOpenClub, onOpenMissions, onOpenShop }: ProfileProps) {
   const [identityOpen, setIdentityOpen] = useState(false);
   const cards = useGame((s) => s.cards);
   const xp = useGame((s) => s.xp);
@@ -196,6 +198,10 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
             />
           )}
         </button>
+      </section>
+
+      <section className="px-5 mt-4">
+        <CollectionShowcase onOpenShop={onOpenShop} />
       </section>
 
       {/* season stats */}
