@@ -175,6 +175,12 @@ body {
 .bottom-nav-item[data-active="true"] {
   color: var(--color-gold-400);
 }
+.bottom-nav-item[data-emphasis="true"] {
+  color: rgba(255, 255, 255, 0.78);
+}
+.bottom-nav-item[data-emphasis="true"] .nav-icon {
+  background: rgba(47, 158, 95, 0.1);
+}
 .bottom-nav-item[data-active="true"] .nav-icon {
   background: rgba(245, 197, 66, 0.16);
   transform: translateY(-3px);

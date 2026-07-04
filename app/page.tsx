@@ -33,6 +33,7 @@ export default function Page() {
   const lives = useGame((s) => s.lives);
   const livesUpdatedAt = useGame((s) => s.livesUpdatedAt);
   const syncLives = useGame((s) => s.syncLives);
+  const playerFocus = useGame((s) => s.playerFocus);
 
   useEffect(() => {
     void Promise.resolve(useGame.persist.rehydrate()).then(() => {
@@ -120,7 +121,11 @@ export default function Page() {
       )}
 
       {screen === "club" && (
-        <Club onBack={() => setScreen(clubFrom)} onOpenShop={() => setScreen("shop")} />
+        <Club
+          onBack={clubFrom === "club" ? undefined : () => setScreen(clubFrom)}
+          onOpenShop={() => setScreen("shop")}
+          onOpenProfile={() => setScreen("profile")}
+        />
       )}
 
       {screen === "bomb" && <BombMode onExit={() => setScreen("home")} />}
@@ -173,7 +178,13 @@ export default function Page() {
         />
       )}
 
-      {isTab(screen) && <BottomNav active={screen} onNavigate={setScreen} />}
+      {(isTab(screen) || (screen === "club" && playerFocus === "club")) && (
+        <BottomNav
+          active={screen === "club" ? "club" : screen}
+          onNavigate={setScreen}
+          onOpenClub={() => openClub("club")}
+        />
+      )}
     </>
   );
 }

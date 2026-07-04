@@ -29,8 +29,9 @@ import {
 } from "@/lib/promotion";
 
 interface ClubProps {
-  onBack: () => void;
+  onBack?: () => void;
   onOpenShop?: () => void;
+  onOpenProfile?: () => void;
 }
 
 function PromotionBar({
@@ -119,7 +120,7 @@ function PromotionBar({
   );
 }
 
-export function Club({ onBack, onOpenShop }: ClubProps) {
+export function Club({ onBack, onOpenShop, onOpenProfile }: ClubProps) {
   const [now, setNow] = useState(() => Date.now());
   const [bankOpen, setBankOpen] = useState(false);
   const [flashCollect, setFlashCollect] = useState(false);
@@ -341,14 +342,27 @@ export function Club({ onBack, onOpenShop }: ClubProps) {
   return (
     <div className="pitch-stripes min-h-dvh pb-12">
       <header className="flex items-center gap-3 px-5 pt-6 pb-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className="glass grid h-10 w-10 place-items-center rounded-2xl text-xl font-bold active:scale-95 transition"
-          aria-label="بازگشت"
-        >
-          ‹
-        </button>
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="glass grid h-10 w-10 place-items-center rounded-2xl text-xl font-bold active:scale-95 transition"
+            aria-label="بازگشت"
+          >
+            ‹
+          </button>
+        ) : onOpenProfile ? (
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className="glass grid h-10 min-w-10 place-items-center rounded-2xl px-3 text-sm font-bold active:scale-95 transition"
+            aria-label="پروفایل"
+          >
+            👤
+          </button>
+        ) : (
+          <div className="h-10 w-10 shrink-0" aria-hidden />
+        )}
         <div className="flex-1 min-w-0 text-right">
           <h1 className="text-lg font-extrabold leading-tight truncate">
             {club.name}
