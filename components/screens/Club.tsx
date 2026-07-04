@@ -6,6 +6,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { ClubBankSheet } from "@/components/ui/ClubBankSheet";
+import { PromotionCelebrationSheet } from "@/components/ui/PromotionCelebrationSheet";
 import { UnitCard, LockedUnitRow } from "@/components/ui/UnitCard";
 import { UNITS, unitDef, unitUpgradeCost } from "@/lib/units";
 import { CLUB } from "@/lib/club";
@@ -121,9 +122,9 @@ export function Club({ onBack }: ClubProps) {
   const [flashCollect, setFlashCollect] = useState(false);
   const [floatAmt, setFloatAmt] = useState<number | null>(null);
   const [shakeUpgrade, setShakeUpgrade] = useState(false);
-  const [promotionToast, setPromotionToast] = useState<{
-    title: string;
-    detail: string;
+  const [celebration, setCelebration] = useState<{
+    tierId: string;
+    rewardText?: string;
   } | null>(null);
 
   const cards = useGame((s) => s.cards);
@@ -317,11 +318,10 @@ export function Club({ onBack }: ClubProps) {
     const reward = promotionGate.claimReward;
     const result = claimPromotion(promotionGate.id);
     if (result === "ok") {
-      setPromotionToast({
-        title: "✓ فصل بعدی باز شد",
-        detail: reward ? `پاداش صعود: ${rewardLabel(reward)}` : "اقتصاد جدید باشگاه فعال شد",
+      setCelebration({
+        tierId: promotionGate.id,
+        rewardText: reward ? rewardLabel(reward) : undefined,
       });
-      setTimeout(() => setPromotionToast(null), 2600);
     }
   }
 
@@ -526,13 +526,6 @@ export function Club({ onBack }: ClubProps) {
           </div>
         </GameCard>
 
-        {promotionToast && (
-          <div className="mt-3 rounded-2xl border border-grass-300/30 bg-grass-500/18 px-4 py-3 text-center shadow-[0_12px_28px_rgba(35,191,96,0.16)]">
-            <p className="text-[12px] font-black text-white">{promotionToast.title}</p>
-            <p className="mt-1 text-[10px] font-bold text-white/72">{promotionToast.detail}</p>
-          </div>
-        )}
-
         <PromotionBar
           gate={promotionGate}
           advisor={seasonAdvisor}
@@ -545,6 +538,14 @@ export function Club({ onBack }: ClubProps) {
         open={bankOpen}
         onClose={() => setBankOpen(false)}
         unitsPending={snap.totalPending}
+      />
+
+      <PromotionCelebrationSheet
+        open={celebration !== null}
+        onClose={() => setCelebration(null)}
+        tierId={celebration?.tierId ?? ""}
+        clubName={club.name}
+        rewardText={celebration?.rewardText}
       />
 
       <div className="mt-6">

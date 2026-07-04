@@ -338,6 +338,36 @@ export function canClaimPromotion(
   return gate.complete && !gate.terminal;
 }
 
+export interface PromotionCelebration {
+  eyebrow: string;
+  title: string;
+  detail: string;
+  nextSeasonTitle: string;
+  divisionFrom: string;
+  divisionTo: string;
+  unlocks: { emoji: string; label: string; hint: string }[];
+}
+
+export function promotionCelebrationForTier(tierId: string): PromotionCelebration | null {
+  if (tierId === "division_two") {
+    return {
+      eyebrow: "صعود رسمی",
+      title: "به دسته دو خوش آمدی",
+      detail:
+        "باشگاهت حالا آمادهٔ اقتصاد روز مسابقه است؛ بازی، جمعیت و خدمات باهم پول می‌سازند.",
+      nextSeasonTitle: "فصل ۲: روز مسابقه",
+      divisionFrom: "دستهٔ سه",
+      divisionTo: "دستهٔ دو",
+      unlocks: [
+        { emoji: "🎟️", label: "بلیت‌فروشی", hint: "گیشهٔ اصلی روز بازی" },
+        { emoji: "🌭", label: "غرفه خوراکی", hint: "درآمد سریع روز مسابقه" },
+        { emoji: "🅿️", label: "پارکینگ", hint: "پول پایدار خدماتی" },
+      ],
+    };
+  }
+  return null;
+}
+
 export function seasonAdvisorMessage(input: SeasonAdvisorInput): AdvisorMessage {
   const {
     seasonStep,
