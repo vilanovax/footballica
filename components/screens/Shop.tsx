@@ -55,42 +55,48 @@ const BUNDLES = [
   {
     id: "pass",
     title: "بلیتِ فصلی",
-    sub: "جایزهٔ پلکانیِ فصل",
+    sub: "جایزهٔ پلکانی هر فصل — کارت و پاورآپ اضافه",
     emoji: "🎟️",
     toman: 79000,
     highlight: true,
   },
 ] as const;
 
+function modeListLabel(modes: PowerUpMode[]): string {
+  return modes.map((m) => MODE_LABELS[m]).join("، ");
+}
+
 function PowerUpItem({
   powerup,
   owned,
   enough,
+  missing,
   shaking,
   onBuy,
 }: {
   powerup: PowerUpDef;
   owned: number;
   enough: boolean;
+  missing: number;
   shaking: boolean;
   onBuy: () => void;
 }) {
   const tier = ITEM_TIER[powerup.id];
+  const buyLabel = enough
+    ? `خرید با ${faNum(powerup.price)} کارت`
+    : `نیاز به ${faNum(missing)} کارت بیشتر`;
 
   return (
     <GameCard
       variant="asset"
       className={`shop-item shop-item--${tier} ${
-        enough ? "" : "shop-item--locked"
+        enough ? "shop-item--ready" : "shop-item--locked"
       } ${shaking ? "animate-shake" : ""}`}
     >
       <div className="shop-item__stage">
         <span className="shop-item__emoji" aria-hidden>
           {powerup.emoji}
         </span>
-        {owned > 0 && (
-          <span className="shop-item__stock">×{faNum(owned)}</span>
-        )}
         <span className={`shop-item__tier shop-item__tier--${tier}`}>
           {tier === "epic" ? "افسانه" : tier === "rare" ? "نادر" : "معمولی"}
         </span>
@@ -99,12 +105,20 @@ function PowerUpItem({
       <div className="shop-item__body">
         <h3 className="shop-item__name">{powerup.name}</h3>
         <p className="shop-item__desc">{powerup.desc}</p>
-        <div className="shop-item__modes">
-          {powerup.modes.map((mode) => (
-            <span key={mode} className="shop-item__mode">
-              {MODE_LABELS[mode]}
+        <p className="shop-item__modes-line">
+          قابل استفاده: {modeListLabel(powerup.modes)}
+        </p>
+        <div className="shop-item__economy">
+          <div className="shop-item__economy-row">
+            <span className="shop-item__economy-label">هزینه</span>
+            <span className="shop-item__economy-value shop-item__economy-value--cost">
+              {faNum(powerup.price)} کارت
             </span>
-          ))}
+          </div>
+          <div className="shop-item__economy-row">
+            <span className="shop-item__economy-label">موجودی</span>
+            <span className="shop-item__economy-value">{faNum(owned)}</span>
+          </div>
         </div>
       </div>
 
@@ -114,23 +128,8 @@ function PowerUpItem({
         size="sm"
         className={`shop-item__buy ${!enough ? "shop-item__buy--dim" : ""}`}
       >
-        {enough ? (
-          <>
-            خرید
-            <span className="shop-item__buy-price">
-              ⚡ {faNum(powerup.price)}
-            </span>
-          </>
-        ) : (
-          <>نیاز: ⚡ {faNum(powerup.price)}</>
-        )}
+        {buyLabel}
       </Button>
-
-      {!enough && (
-        <div className="shop-item__lock-overlay" aria-hidden>
-          🔒
-        </div>
-      )}
     </GameCard>
   );
 }
@@ -201,6 +200,12 @@ export function Shop() {
     () => POWERUPS.reduce((n, p) => n + powerUpCount(powerups, p.id), 0),
     [powerups],
   );
+  const affordable = useMemo(() => POWERUPS.filter((p) => cards >= p.price), [cards]);
+  const firstAffordable = affordable[0] ?? null;
+
+  function scrollToPremium() {
+    document.getElementById("shop-premium")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   function showToast(msg: string) {
     setToast(msg);
@@ -244,27 +249,55 @@ export function Shop() {
             </div>
           </div>
           <p className="shop-banner__hint mt-3">
-            سوپرپاور بخر · در مسابقه، پنالتی و بمب استفاده کن
+            با کارت تاکتیکی، سوپرپاورهای مسابقه را فعال کن.
           </p>
           {totalOwned > 0 && (
             <p className="shop-banner__owned mt-2">
-              موجودی تو: {faNum(totalOwned)} پاورآپ
+              کولهٔ تاکتیک: {faNum(totalOwned)} پاورآپ
             </p>
           )}
+          <div className="shop-banner__actions">
+            <Button onClick={scrollToPremium} variant="secondary" size="sm">
+              خرید کارت تاکتیکی
+            </Button>
+          </div>
         </div>
       </GameCard>
 
+      {affordable.length > 0 && firstAffordable && (
+        <section className="mx-5 mt-4">
+          <GameCard variant="asset" highlight className="shop-ready-banner">
+            <div className="shop-ready-banner__row">
+              <div className="shop-ready-banner__copy">
+                <p className="shop-ready-banner__title">
+                  {faNum(affordable.length)} از {faNum(POWERUPS.length)} سوپرپاور قابل خرید
+                </p>
+                <p className="shop-ready-banner__sub">
+                  با {faNum(firstAffordable.price)} کارت، «{firstAffordable.name}» را بخر.
+                </p>
+              </div>
+              <Button onClick={() => buy(firstAffordable.id)} variant="primary" size="sm">
+                خرید با {faNum(firstAffordable.price)} کارت
+              </Button>
+            </div>
+          </GameCard>
+        </section>
+      )}
+
       {/* power-up shelf */}
       <section className="mx-5 mt-6">
-        <GameCard variant="asset" className="shop-shelf">
+        <GameCard variant="asset" className="shop-shelf shop-shelf--ingame">
           <div className="shop-shelf__head">
+            <div className="text-right flex-1">
+              <p className="shop-shelf__eyebrow">با کارت تاکتیکی</p>
+              <h2 className="shop-shelf__title">سوپرپاورها</h2>
+            </div>
+            <span className="shop-shelf__count">
+              {faNum(affordable.length)} از {faNum(POWERUPS.length)}
+            </span>
             <span className="shop-shelf__icon" aria-hidden>
               🛒
             </span>
-            <div className="text-right">
-              <h2 className="shop-shelf__title">سوپرپاورها</h2>
-              <p className="shop-shelf__sub">با کارت تاکتیکی ⚡</p>
-            </div>
           </div>
 
           <div className="shop-grid">
@@ -277,6 +310,7 @@ export function Shop() {
                   powerup={p}
                   owned={owned}
                   enough={enough}
+                  missing={Math.max(0, p.price - cards)}
                   shaking={shakeId === p.id}
                   onBuy={() => buy(p.id)}
                 />
@@ -287,30 +321,41 @@ export function Shop() {
       </section>
 
       {/* premium offers */}
-      <section className="mx-5 mt-7">
-        <div className="shop-shelf__head mb-3 px-1">
-          <span className="shop-shelf__icon" aria-hidden>
-            💎
-          </span>
-          <div className="text-right">
-            <h2 className="shop-shelf__title">بسته‌های ویژه</h2>
-            <p className="shop-shelf__sub">پول واقعی · به‌زودی</p>
+      <section id="shop-premium" className="shop-premium mx-5 mt-8">
+        <div className="shop-premium__divider">
+          <span className="shop-premium__divider-line" aria-hidden />
+          <span className="shop-premium__divider-label">خرید با پول واقعی</span>
+          <span className="shop-premium__divider-line" aria-hidden />
+        </div>
+
+        <GameCard variant="asset" className="shop-premium__panel">
+          <div className="shop-premium__head">
+            <span className="shop-premium__icon" aria-hidden>
+              💎
+            </span>
+            <div className="text-right flex-1">
+              <h2 className="shop-premium__title">بسته‌های ویژه</h2>
+              <p className="shop-premium__sub">
+                کارت تاکتیکی و مزایا — جدا از خرید درون‌بازی
+              </p>
+            </div>
+            <span className="shop-premium__badge">به‌زودی</span>
           </div>
-        </div>
 
-        <div className="space-y-3">
-          {BUNDLES.map((b) => (
-            <BundleCard
-              key={b.id}
-              bundle={b}
-              onTap={() => showToast("خرید با پول واقعی به‌زودی فعال می‌شود")}
-            />
-          ))}
-        </div>
+          <div className="shop-premium__list space-y-3">
+            {BUNDLES.map((b) => (
+              <BundleCard
+                key={b.id}
+                bundle={b}
+                onTap={() => showToast("خرید با پول واقعی به‌زودی فعال می‌شود")}
+              />
+            ))}
+          </div>
 
-        <p className="shop-footnote mt-4 text-center text-xs leading-6">
-          pay-to-skip، نه pay-to-win
-        </p>
+          <p className="shop-footnote mt-4 text-center text-xs leading-6">
+            pay-to-skip، نه pay-to-win — مصرف در دوئل و لیدربورد محدود می‌شود
+          </p>
+        </GameCard>
       </section>
 
       {toast && <div className="shop-toast animate-pop">{toast}</div>}

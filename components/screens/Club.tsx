@@ -110,11 +110,62 @@ export function Club({ onBack }: ClubProps) {
   const vaultCap = vaultCapacity(vaultLevel);
   const unlockedUnits = UNITS.filter((u) => isUnitUnlocked(u.id, xp));
   const lockedUnits = UNITS.filter((u) => !isUnitUnlocked(u.id, xp));
+  const nextLockedUnit = lockedUnits[0] ?? null;
+  const laterLockedUnits = lockedUnits.slice(1);
   const canCollectAll =
     snap.readyCount > 0 && snap.vaultFree > 0 && !bank && snap.totalPending > 0;
   const vaultFull = snap.vaultFull && !bank;
   const upgradeCost = vaultUpgradeCost(vaultLevel);
   const canUpgradeVault = vaultLevel < VAULT_MAX && safeBudget >= upgradeCost;
+  const nextLockedNeed = nextLockedUnit ? Math.max(0, nextLockedUnit.requiresLevel - level) : 0;
+
+  const economyAction = canCollectAll
+    ? {
+        tone: "collect" as const,
+        eyebrow: "حرکت بعدی",
+        title: `${faTreasuryShort(snap.totalPending)} آماده انتقال به خزانه`,
+        detail: "الان جمع‌آوری کن تا پول برای ارتقا و استخدام آزاد شود.",
+        cta: "جمع‌آوری",
+        onClick: collectAll,
+      }
+    : vaultFull
+      ? {
+          tone: "alert" as const,
+          eyebrow: "هشدار",
+          title: "خزانه پر شده است",
+          detail: "خرج کن یا آن را بزرگ‌تر کن تا درآمد جدید هدر نرود.",
+          cta: "جزئیات خزانه",
+          onClick: () => setBankOpen(true),
+        }
+      : canUpgradeVault
+        ? {
+            tone: "upgrade" as const,
+            eyebrow: "فرصت ارتقا",
+            title: "ارتقای خزانه باز شده",
+            detail: "ظرفیت بیشتر یعنی فضای امن‌تر برای جمع‌کردن درآمد واحدها.",
+            cta: "ارتقای خزانه",
+            onClick: tryUpgradeVault,
+          }
+        : nextLockedUnit
+          ? {
+              tone: "build" as const,
+              eyebrow: "مسیر ساخت",
+              title: `${nextLockedUnit.name} هدف بعدی باشگاه است`,
+              detail: `برای باز شدنش ${faNum(nextLockedNeed)} سطح دیگر لازم داری.`,
+              cta: "دیدن برنامه ساخت",
+              onClick: () =>
+                document
+                  .getElementById("club-next-build")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+            }
+          : {
+              tone: "calm" as const,
+              eyebrow: "پیشروی باشگاه",
+              title: "همه‌چیز تحت کنترل است",
+              detail: "واحدها را ارتقا بده و برای صعود هوادار بیشتری جمع کن.",
+              cta: "جزئیات خزانه",
+              onClick: () => setBankOpen(true),
+            };
 
   function collectAll() {
     const got = collectAllUnits();
@@ -188,6 +239,33 @@ export function Club({ onBack }: ClubProps) {
             )}
           </div>
         </div>
+
+        <GameCard
+          variant="asset"
+          className={`club-next-action-strip club-next-action-strip--${economyAction.tone} mt-4 rounded-2xl p-3.5`}
+        >
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={economyAction.onClick}
+              variant={
+                economyAction.tone === "collect"
+                  ? "primary"
+                  : economyAction.tone === "upgrade"
+                    ? "accent"
+                    : "secondary"
+              }
+              size="sm"
+              className="shrink-0 px-3"
+            >
+              {economyAction.cta}
+            </Button>
+            <div className="flex-1 min-w-0 text-right">
+              <p className="club-next-action-strip__eyebrow">{economyAction.eyebrow}</p>
+              <p className="club-next-action-strip__title">{economyAction.title}</p>
+              <p className="club-next-action-strip__sub">{economyAction.detail}</p>
+            </div>
+          </div>
+        </GameCard>
 
         <GameCard
           variant="hero"
@@ -319,9 +397,11 @@ export function Club({ onBack }: ClubProps) {
       />
 
       <div className="mt-6">
-        <div className="px-5 flex items-center justify-between mb-3">
-          <span className="text-[10px] font-bold text-white/35">دارایی‌های فعال</span>
-          <h2 className="text-base font-extrabold">
+        <div className="club-section-head px-5 mb-3">
+          <span className="club-section-head__eyebrow">
+            {faNum(snap.readyCount)} آماده · {faNum(unlockedUnits.length)} فعال
+          </span>
+          <h2 className="club-section-head__title">
             ساختمان‌های باشگاه
             <span className="mr-2 text-xs font-bold text-grass-400">
               {faNum(unlockedUnits.length)} فعال
@@ -335,12 +415,40 @@ export function Club({ onBack }: ClubProps) {
         </div>
       </div>
 
-      {lockedUnits.length > 0 && (
-        <div className="mx-5 mt-6 rounded-2xl bg-black/20 px-4 py-3 border border-white/5">
-          <p className="text-sm font-extrabold text-white/55 text-right mb-2">
-            🔒 ساخت‌وساز بعدی
-          </p>
-          {lockedUnits.map((u) => (
+      {nextLockedUnit && (
+        <div id="club-next-build" className="mx-5 mt-6">
+          <GameCard variant="asset" className="club-next-build-hero rounded-3xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="club-next-build-hero__icon grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-[1.9rem]">
+                {nextLockedUnit.emoji}
+              </div>
+              <div className="flex-1 min-w-0 text-right">
+                <div className="flex items-center justify-end gap-2 flex-wrap">
+                  <span className="club-next-build-hero__badge">بعدی</span>
+                  <h3 className="club-next-build-hero__title">{nextLockedUnit.name}</h3>
+                </div>
+                <p className="club-next-build-hero__sub">{nextLockedUnit.flavor}</p>
+              </div>
+            </div>
+            <ProgressBar
+              value={level}
+              max={nextLockedUnit.requiresLevel}
+              tone="info"
+              className="mt-4"
+              trackClassName="h-2"
+            />
+            <div className="club-next-build-hero__meta">
+              <span>سطح {faNum(level)} از {faNum(nextLockedUnit.requiresLevel)}</span>
+              <span>{faNum(nextLockedNeed)} سطح تا باز شدن</span>
+            </div>
+          </GameCard>
+        </div>
+      )}
+
+      {laterLockedUnits.length > 0 && (
+        <div className="mx-5 mt-4 rounded-2xl bg-black/20 px-4 py-3 border border-white/5">
+          <p className="club-section-head__eyebrow text-right mb-2">بعد از این</p>
+          {laterLockedUnits.map((u) => (
             <LockedUnitRow key={u.id} id={u.id} />
           ))}
         </div>

@@ -125,6 +125,7 @@ primitiveهای جدید در این نواحی adopt شده‌اند:
 - `components/screens/Home.tsx`
 - `components/screens/Club.tsx`
 - `components/screens/Missions.tsx`
+- `components/screens/Profile.tsx`
 - `components/screens/Result.tsx`
 - `components/screens/Shop.tsx`
 - `components/ui/ClubBankSheet.tsx`
@@ -132,6 +133,7 @@ primitiveهای جدید در این نواحی adopt شده‌اند:
 - `components/ui/HomeFeaturedMode.tsx`
 - `components/ui/HomeMissionBanner.tsx`
 - `components/ui/HomeStreakBar.tsx`
+- `components/ui/ProfileIdentitySheet.tsx`
 - `components/ui/ManagerPanel.tsx`
 - `components/ui/UnitCard.tsx`
 
@@ -139,15 +141,19 @@ primitiveهای جدید در این نواحی adopt شده‌اند:
 
 ### Home
 
+- topbar و header stats به surfaces هماهنگ با screen grammar جدید
 - quick-play hero به `GameCard + Button`
 - featured mode card به `GameCard`
 - mission banner به `GameCard + Button`
-- streak panel به `GameCard`
+- streak panel و club banner به `GameCard`
+- mode grid و teaserها با CTAهای کوتاه و action-first
 
 ### Club
 
 - treasury hero به `GameCard + ProgressBar + Button`
 - season goal به `GameCard + ProgressBar`
+- next-action strip برای collect / upgrade / unlock
+- next-build hero برای واضح کردن نزدیک‌ترین unlock
 - building cards به `GameCard + ProgressBar + Button`
 - locked build rows به `GameCard`
 
@@ -168,11 +174,21 @@ primitiveهای جدید در این نواحی adopt شده‌اند:
 - mission cards به `GameCard + Button + ProgressBar`
 - onboarding path progress به `GameCard + ProgressBar`
 
+### Profile
+
+- level panel با `ProgressBar` ضخیم‌تر و reward سطح بعد
+- identity block با CTA واضح برای `تکمیل پروفایل / ویرایش`
+- sectionهای `آمار فصل` و `رکوردهای من` با hierarchy پررنگ‌تر
+- mission و club cardها با action chipهای روشن‌تر
+- `ProfileIdentitySheet` در نقش ورودی اصلی برای identity editing
+
 ### Shop
 
 - shop banner و shelf به `GameCard`
 - power-up cards به `GameCard + Button`
-- premium offers به `GameCard`
+- CTAها با language مبتنی بر `کارت تاکتیکی`
+- affordability به صورت `X از Y` و نه claimهای کلی
+- premium offers در پنل جدا با مرز و زبان متفاوت از خرید درون‌بازی
 
 ## Usage Rules
 
@@ -190,6 +206,7 @@ primitiveهای جدید در این نواحی adopt شده‌اند:
 بعد از rollout، این‌ها پاس شده‌اند:
 
 - `npx tsc --noEmit`
+- `npm run build`
 - lint diagnostics روی فایل‌های تغییرکرده
 
 ## Recommended Next Steps

@@ -74,11 +74,12 @@ export function ClubHomeBanner({ onOpenClub }: ClubHomeBannerProps) {
         <button
           type="button"
           onClick={onOpenClub}
-          className="text-xs font-bold text-white/45 shrink-0 pt-0.5 active:opacity-70"
+          className="home-club-panel__action shrink-0 pt-0.5 active:opacity-70"
         >
-          باشگاه ›
+          جزئیات ›
         </button>
         <div className="flex-1 min-w-0">
+          <p className="home-loop-card__eyebrow">باشگاه</p>
           <p className="font-extrabold text-white text-sm">خزانهٔ باشگاه</p>
           {!bank ? (
             <p className="mt-0.5 text-xs text-white/55 tabular-nums">

@@ -50,16 +50,21 @@ function ModeCard({
     return (
       <GameCard
         variant="locked"
-        className="home-mode-card--disabled h-28 rounded-2xl p-3.5 text-right flex flex-col justify-end"
+        className="home-mode-card home-mode-card--disabled h-32 rounded-2xl p-3.5 text-right flex flex-col justify-between"
       >
-        {disabledBadge && (
-          <span className="absolute top-2.5 right-2.5 rounded-full home-mode-soon-badge px-2 py-0.5 text-[10px] font-bold">
-            {disabledBadge}
-          </span>
-        )}
-        <span className="absolute top-2.5 left-2.5 text-2xl opacity-40 grayscale">{emoji}</span>
-        <h3 className="text-base font-extrabold text-white/45">{title}</h3>
-        <p className="text-[11px] text-white/35">{subtitle}</p>
+        <div className="flex items-start justify-between gap-2">
+          <span className="home-mode-card__emoji opacity-40 grayscale">{emoji}</span>
+          {disabledBadge && (
+            <span className="rounded-full home-mode-soon-badge px-2 py-0.5 text-[10px] font-bold">
+              {disabledBadge}
+            </span>
+          )}
+        </div>
+        <div>
+          <p className="home-mode-card__eyebrow">فعلا بسته</p>
+          <h3 className="text-base font-extrabold text-white/45">{title}</h3>
+          <p className="mt-1 text-[11px] text-white/35 leading-5">{subtitle}</p>
+        </div>
       </GameCard>
     );
   }
@@ -69,12 +74,18 @@ function ModeCard({
       as="button"
       variant="hero"
       onClick={onClick}
-      className="h-28 rounded-2xl p-3.5 text-right flex flex-col justify-end"
+      className="home-mode-card h-32 rounded-2xl p-3.5 text-right flex flex-col justify-between"
       style={{ background: `linear-gradient(150deg, ${from}, ${to})` }}
     >
-      <span className="absolute top-2.5 left-2.5 text-2xl drop-shadow">{emoji}</span>
-      <h3 className="text-base font-extrabold text-white">{title}</h3>
-      <p className="text-[11px] text-white/80">{subtitle}</p>
+      <div className="flex items-start justify-between gap-2">
+        <span className="home-mode-card__emoji drop-shadow">{emoji}</span>
+        <span className="home-mode-card__cta">بازی کن</span>
+      </div>
+      <div>
+        <p className="home-mode-card__eyebrow">حالت بازی</p>
+        <h3 className="text-base font-extrabold text-white">{title}</h3>
+        <p className="mt-1 text-[11px] text-white/80 leading-5">{subtitle}</p>
+      </div>
     </GameCard>
   );
 }
@@ -180,6 +191,7 @@ export function Home({
       : undefined;
 
   const gridModes = MODE_DEFS.filter((m) => m.id !== featured.id);
+  const playableModes = MODE_DEFS.filter((m) => m.id !== "duel" || canDuel).length;
 
   return (
     <div className="pitch-stripes min-h-dvh pb-32">
@@ -187,10 +199,11 @@ export function Home({
         <button
           type="button"
           onClick={onOpenClub}
-          className="flex items-center gap-3 w-full text-right active:scale-[0.98] transition-transform"
+          className="home-topbar w-full text-right active:scale-[0.98] transition-transform"
         >
-          <Avatar label={club.crest} color={club.color} size={48} />
+          <Avatar label={club.crest} color={club.color} size={52} />
           <div className="flex-1 min-w-0">
+            <p className="home-topbar__eyebrow">اتاق فرمان امروز</p>
             <p className="text-lg font-extrabold leading-tight truncate text-white">
               {club.name}
             </p>
@@ -198,16 +211,17 @@ export function Home({
               سطح {faNum(level)} · {league}
             </p>
           </div>
+          <span className="home-topbar__action">ورود به باشگاه</span>
         </button>
 
-        <div className="mt-3 flex items-stretch gap-2">
+        <div className="mt-3 home-header-stats">
           <button
             type="button"
             onClick={() => setBankOpen(true)}
-            className="home-header-stat flex-1 min-w-0 rounded-xl px-2.5 py-2 text-right active:scale-[0.98]"
+            className="home-header-stat home-header-stat--wide flex-1 min-w-0 rounded-xl px-3 py-2.5 text-right active:scale-[0.98]"
           >
-            <p className="text-[9px] font-bold text-white/40">خزانه</p>
-            <p className="text-xs font-extrabold text-gold-400 tabular-nums truncate">
+            <p className="home-header-stat__label">خزانه</p>
+            <p className="home-header-stat__value text-gold-400 tabular-nums truncate">
               {bank ? (
                 <>🏦 {faVaultM(safeBudget)}م+</>
               ) : (
@@ -217,16 +231,16 @@ export function Home({
               )}
             </p>
           </button>
-          <div className="home-header-stat rounded-xl px-2.5 py-2 text-center shrink-0 min-w-13">
-            <p className="text-[9px] font-bold text-white/40">کارت</p>
-            <p className="text-xs font-extrabold">🃏 {faNum(cards)}</p>
+          <div className="home-header-stat rounded-xl px-3 py-2.5 text-center shrink-0 min-w-16">
+            <p className="home-header-stat__label">کارت</p>
+            <p className="home-header-stat__value">🃏 {faNum(cards)}</p>
           </div>
           <div
-            className="home-header-stat rounded-xl px-2.5 py-2 text-center shrink-0 min-w-13"
+            className="home-header-stat rounded-xl px-3 py-2.5 text-center shrink-0 min-w-16"
             title={regenIn && lives < 5 ? `جان بعدی: ${regenIn}` : undefined}
           >
-            <p className="text-[9px] font-bold text-white/40">جان</p>
-            <p className="text-xs font-extrabold">
+            <p className="home-header-stat__label">جان</p>
+            <p className="home-header-stat__value">
               ❤️ {faNum(lives)}/۵
             </p>
           </div>
@@ -235,21 +249,34 @@ export function Home({
 
       <ClubBankSheet open={bankOpen} onClose={() => setBankOpen(false)} />
 
+      <div className="home-section-head px-5 mt-5">
+        <span className="home-section-head__eyebrow">حلقه روزانه</span>
+        <h2 className="home-section-head__title">الان بهترین حرکت چیست؟</h2>
+      </div>
+
       <HomeMissionBanner onOpenMissions={onOpenMissions} />
 
       <GameCard
         variant="hero"
-        className="home-hero home-hero--primary mx-5 mt-4 rounded-3xl p-5"
+        className="home-hero home-hero--primary home-command-hero mx-5 mt-4 rounded-3xl p-5"
       >
         <span className="absolute -left-4 -bottom-4 text-[7rem] opacity-12 leading-none pointer-events-none">
           ⚽
         </span>
-        <h2 className="text-2xl font-extrabold text-white text-right relative">
-          شروع سریع
-        </h2>
-        <p className="mt-1.5 text-sm text-white/70 text-right relative">
-          کویز تک‌نفره · رایگان · بدون مصرف جان
-        </p>
+        <div className="relative">
+          <p className="home-command-hero__eyebrow">سریع‌ترین راه برای XP و ریتم بازی</p>
+          <h2 className="text-2xl font-extrabold text-white text-right mt-1">
+            شروع سریع
+          </h2>
+          <p className="mt-1.5 text-sm text-white/70 text-right leading-6">
+            کویز تک‌نفره برای گرم‌کردن؛ بدون مصرف جان و آماده برای هر بار برگشتن به بازی.
+          </p>
+        </div>
+        <div className="home-command-hero__chips">
+          <span className="home-command-hero__chip">بدون جان</span>
+          <span className="home-command-hero__chip">رایگان</span>
+          <span className="home-command-hero__chip">همیشه آماده</span>
+        </div>
         <Button
           onClick={onPlayQuick}
           variant="primary"
@@ -272,15 +299,18 @@ export function Home({
 
       <HomeStreakBar />
 
-      <div className="px-5 mt-6 mb-2 flex items-center justify-between">
+      <div className="home-section-head home-section-head--games px-5 mt-6 mb-2">
         <button
           type="button"
           onClick={onOpenGames}
-          className="text-xs text-gold-400 font-bold active:opacity-70"
+          className="home-section-head__link active:opacity-70"
         >
-          همه ›
+          همه مودها ›
         </button>
-        <h3 className="text-base font-extrabold text-white">مودهای بازی</h3>
+        <div className="text-right">
+          <span className="home-section-head__eyebrow">{faNum(playableModes)} مود قابل بازی</span>
+          <h3 className="home-section-head__title">مودهای بازی</h3>
+        </div>
       </div>
 
       <div className="px-5 grid grid-cols-2 gap-2.5">
@@ -323,13 +353,23 @@ export function Home({
         })}
       </div>
 
-      <button
-        type="button"
+      <GameCard
+        as="button"
+        variant="locked"
         onClick={onOpenGames}
-        className="home-soon-link mx-5 mt-5 mb-2 w-[calc(100%-2.5rem)] rounded-xl py-3 text-center text-xs font-bold text-white/38 active:opacity-70"
+        className="home-soon-link home-soon-card mx-5 mt-5 mb-2 w-[calc(100%-2.5rem)] rounded-2xl p-4 text-right"
       >
-        🔒 تورنمنت و رقابت آنلاین — به‌زودی ›
-      </button>
+        <div className="flex items-center justify-between gap-3">
+          <span className="home-soon-card__lock">🔒</span>
+          <div className="flex-1 min-w-0">
+            <p className="home-soon-card__eyebrow">به‌زودی</p>
+            <p className="home-soon-card__title">تورنمنت و رقابت آنلاین</p>
+            <p className="home-soon-card__sub">
+              لیگ زنده، جدول هم‌زمان و رقابت مستقیم با بازیکن‌های دیگر.
+            </p>
+          </div>
+        </div>
+      </GameCard>
     </div>
   );
 }

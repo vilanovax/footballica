@@ -127,11 +127,13 @@ export function ProfileIdentityBadges({
   heartTeam,
   internationalTeam,
   onEdit,
+  showEditButton = true,
 }: {
   city?: string;
   heartTeam?: string;
   internationalTeam?: string;
   onEdit?: () => void;
+  showEditButton?: boolean;
 }) {
   const cityName = identityLabel(city, CITIES);
   const heartName = isMeaningfulTeam(heartTeam)
@@ -144,11 +146,7 @@ export function ProfileIdentityBadges({
   const hasAny = cityName || heartName || intlName;
 
   if (!hasAny) {
-    return (
-      <button type="button" onClick={onEdit} className="profile-identity-cta mt-2 w-full">
-        📍 شهر و تیم محبوب را اضافه کن
-      </button>
-    );
+    return null;
   }
 
   return (
@@ -168,7 +166,7 @@ export function ProfileIdentityBadges({
           {identityEmoji(internationalTeam, INTL_TEAMS)} {intlName}
         </span>
       )}
-      {onEdit && (
+      {onEdit && showEditButton && (
         <button type="button" onClick={onEdit} className="profile-identity-edit">
           ویرایش
         </button>

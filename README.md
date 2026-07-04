@@ -47,10 +47,9 @@ loop اصلی بازی این است:
 
 ## Recent Implemented Changes
 
-تغییرات نهایی‌ای که در این فاز پیاده‌سازی شدند:
+تغییرات نهایی این rollout فقط روی primitiveها نماند و به یک پاس polish روی screenهای اصلی هم رسید:
 
 - ساده‌سازی اقتصاد باشگاه با مدل `treasury as spendable money`
-- بهبود onboarding، home، club و manager flow
 - اضافه شدن `lib/designSystem.ts` برای mode/rarity/theme maps
 - اضافه شدن primitiveهای مشترک:
   - `components/ui/Button.tsx`
@@ -61,6 +60,7 @@ loop اصلی بازی این است:
   - `Home`
   - `Club`
   - `Missions`
+  - `Profile`
   - `Shop`
   - `Result`
   - `UnitCard`
@@ -70,6 +70,12 @@ loop اصلی بازی این است:
   - `HomeMissionBanner`
   - `HomeStreakBar`
   - `ClubHomeBanner`
+  - `ProfileIdentitySheet`
+- آخرین پاس UX/UI:
+  - `Home` به فرم command-center با quick-play hero، featured mode، mission banner و tournament teaser
+  - `Club` با next-action strip، next-build hero و CTAهای روشن‌تر برای collect / upgrade / unlock
+  - `Profile` با identity CTA واضح‌تر، نوار XP ضخیم‌تر، reward سطح بعد و بخش `آمار فصل`
+  - `Shop` با CTAهای مبتنی بر کارت تاکتیکی، شمارش دقیق affordability و جداسازی واضح خرید درون‌بازی از خرید با پول واقعی
 
 ## Development
 

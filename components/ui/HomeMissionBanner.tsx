@@ -131,8 +131,9 @@ export function HomeMissionBanner({ onOpenMissions }: HomeMissionBannerProps) {
           onClick={onOpenMissions}
           className="flex-1 min-w-0 text-right active:opacity-85"
         >
+          <p className="home-loop-card__eyebrow">جایزه امروز</p>
           <p className="font-extrabold text-white text-sm">
-            🎯 جایزه آماده است
+            جایزه آماده است
             {count > 1 && (
               <span className="text-gold-400/90"> · {faNum(count)} ماموریت</span>
             )}
@@ -147,6 +148,7 @@ export function HomeMissionBanner({ onOpenMissions }: HomeMissionBannerProps) {
             )}
           </p>
         </button>
+        <span className="home-loop-card__count">{faNum(count)}</span>
       </div>
     </GameCard>
   );

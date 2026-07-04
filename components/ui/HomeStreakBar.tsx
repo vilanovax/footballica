@@ -15,9 +15,15 @@ export function HomeStreakBar() {
 
   if (streakDays === 0 && !playedToday) {
     return (
-      <p className="mx-5 mt-2 text-center text-[11px] text-white/38 leading-5">
-        🔥 ۳ روز پیاپی بازی = <span className="text-gold-400/80">+۱ کارت</span>
-      </p>
+      <GameCard
+        variant="locked"
+        className="home-streak-bar home-streak-bar--slim mx-5 mt-3 rounded-xl px-3 py-2.5 text-right"
+      >
+        <p className="home-loop-card__eyebrow">استریک</p>
+        <p className="text-[11px] text-white/58 leading-5">
+          ۳ روز پیاپی بازی کن و <span className="text-gold-400/80">+۱ کارت</span> بگیر.
+        </p>
+      </GameCard>
     );
   }
 
@@ -48,8 +54,9 @@ export function HomeStreakBar() {
           })}
         </div>
         <div className="flex-1 text-right min-w-0">
+          <p className="home-loop-card__eyebrow">استریک</p>
           <p className="text-[11px] font-extrabold text-white/80 truncate">
-            🔥 {faNum(streakDays)} روز
+            {faNum(streakDays)} روز
             {playedToday && <span className="text-grass-400 mr-1">· امروز ✓</span>}
             {reward && (
               <span className="text-white/40 font-bold mr-1">

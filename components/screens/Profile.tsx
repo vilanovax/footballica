@@ -10,11 +10,29 @@ import { useGame } from "@/lib/store";
 import { faNum, faCount } from "@/lib/format";
 import { levelInfo, leagueForXp } from "@/lib/player";
 import { nextUnlock } from "@/lib/progress";
+import { ACHIEVEMENT_MISSIONS } from "@/lib/missions";
 import { CLUB } from "@/lib/club";
 
 interface ProfileProps {
   onOpenClub: () => void;
   onOpenMissions: () => void;
+}
+
+function ProfileResourceCard({
+  value,
+  label,
+  accent,
+}: {
+  value: string;
+  label: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className={`profile-resource-card ${accent ? "profile-resource-card--accent" : ""}`}>
+      <p className="profile-resource-card__value tabular-nums">{value}</p>
+      <p className="profile-resource-card__label">{label}</p>
+    </div>
+  );
 }
 
 function CareerStat({
@@ -49,6 +67,7 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
   const gamesPlayed = useGame((s) => s.gamesPlayed);
   const matchesWon = useGame((s) => s.matchesWon);
   const club = useGame((s) => s.club);
+  const missionClaimed = useGame((s) => s.missionClaimed);
   const claimableMissions = useGame((s) => s.claimableMissions);
   const resetSave = useGame((s) => s.resetSave);
 
@@ -56,6 +75,10 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
   const league = leagueForXp(xp);
   const unlock = nextUnlock(level);
   const missionBadge = claimableMissions();
+  const xpRemaining = Math.max(0, need - into);
+  const achievementCount = ACHIEVEMENT_MISSIONS.filter((m) => missionClaimed[m.id]).length;
+  const hasIdentity = Boolean(club.city || club.heartTeam || club.internationalTeam);
+  const rankValue = gamesPlayed > 0 ? faNum(CLUB.rank) : "-";
 
   return (
     <div className="pitch-stripes min-h-dvh pb-32">
@@ -76,55 +99,113 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
           </h1>
           <p className="profile-league-ribbon">{league}</p>
 
-          <ProfileIdentityBadges
-            city={club.city}
-            heartTeam={club.heartTeam}
-            internationalTeam={club.internationalTeam}
-            onEdit={() => setIdentityOpen(true)}
-          />
-
-          <div className="profile-xp mt-5">
-            <div className="profile-xp__labels">
-              <span className="profile-xp__tag">سطح {faNum(level)}</span>
-              <span className="profile-xp__tag profile-xp__tag--next">
-                سطح {faNum(level + 1)}
+          <div className="profile-level-panel">
+            <div className="profile-level-panel__top">
+              <span className="profile-level-panel__level">سطح {faNum(level)}</span>
+              <span className="profile-level-panel__xp">
+                XP: {faNum(into)} / {faNum(need)}
               </span>
             </div>
-            <div className="profile-xp__track">
-              <div
-                className="profile-xp__fill"
-                style={{ width: `${Math.max(pct, pct > 0 ? 4 : 0)}%` }}
-              />
-            </div>
-            <p className="profile-xp__meta">
-              <span>{faNum(into)}</span>
-              <span className="text-white/35"> / </span>
-              <span>{faNum(need)} XP</span>
-            </p>
-          </div>
 
-          {unlock && (
-            <p className="profile-unlock-hint mt-3 text-xs leading-5">
-              سطح {faNum(unlock.level)}:{" "}
-              <span className="text-gold-400/90">{unlock.label}</span>
-            </p>
-          )}
+            <div className="profile-xp mt-4">
+              <div className="profile-xp__labels">
+                <span className="profile-xp__tag">سطح {faNum(level)}</span>
+                <span className="profile-xp__tag profile-xp__tag--next">
+                  سطح {faNum(level + 1)}
+                </span>
+              </div>
+              <div className="profile-xp__track">
+                <div
+                  className="profile-xp__fill"
+                  style={{ width: `${Math.max(pct, pct > 0 ? 4 : 0)}%` }}
+                />
+              </div>
+              <div className="profile-xp__meta">
+                <span>{faNum(xpRemaining)} XP تا سطح بعد</span>
+                <span className="profile-xp__meta-sep" aria-hidden>
+                  ·
+                </span>
+                <span>
+                  {faNum(into)} / {faNum(need)}
+                </span>
+              </div>
+            </div>
+
+            {unlock && (
+              <div className="profile-next-unlock mt-3">
+                <p className="profile-next-unlock__eyebrow">جایزهٔ سطح بعد</p>
+                <p className="profile-next-unlock__title">
+                  باز شدن در سطح {faNum(unlock.level)}
+                </p>
+                <p className="profile-next-unlock__sub">{unlock.label}</p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
-      {/* career stats */}
+      <section className="px-5 mt-4">
+        <div className="profile-resource-grid">
+          <ProfileResourceCard value={faCount(fans)} label="هوادار" />
+          <ProfileResourceCard value={faNum(cards)} label="کارت تاکتیکی" accent />
+          <ProfileResourceCard value={faNum(achievementCount)} label="افتخار" />
+          <ProfileResourceCard value={rankValue} label="رتبهٔ هفتگی" />
+        </div>
+      </section>
+
+      <section className="px-5 mt-4">
+        <button
+          type="button"
+          onClick={() => setIdentityOpen(true)}
+          className={`profile-identity-card w-full text-right ${
+            hasIdentity ? "profile-identity-card--filled" : ""
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <span className="profile-identity-card__icon" aria-hidden>
+              📍
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="profile-card__eyebrow">
+                {hasIdentity ? "هویت باشگاه" : "شخصی‌سازی باشگاه"}
+              </p>
+              <p className="profile-identity-card__title">
+                {hasIdentity ? "هویت باشگاهت ثبت شده" : "شهر و تیم محبوبت را انتخاب کن"}
+              </p>
+              <p className="profile-identity-card__sub">
+                {hasIdentity
+                  ? "برای رویدادها، لیگ شهرها و هویت باشگاهت آماده‌ای."
+                  : "برای رویدادها، لیگ شهرها و پاداش‌های تیمی"}
+              </p>
+            </div>
+            <span className="profile-action-chip profile-action-chip--identity">
+              {hasIdentity ? "ویرایش" : "تکمیل پروفایل"}
+            </span>
+          </div>
+          {hasIdentity && (
+            <ProfileIdentityBadges
+              city={club.city}
+              heartTeam={club.heartTeam}
+              internationalTeam={club.internationalTeam}
+              showEditButton={false}
+            />
+          )}
+        </button>
+      </section>
+
+      {/* season stats */}
       <section className="px-5 mt-6">
         <div className="profile-section-head mb-3">
-          <span className="profile-section-eyebrow">فصل جاری</span>
-          <h2 className="profile-section-title">کارنامهٔ مدیر</h2>
+          <span className="profile-section-eyebrow">رکوردهای من</span>
+          <h2 className="profile-section-title">آمار فصل</h2>
         </div>
         <div className="profile-stat-grid">
           <CareerStat emoji="⚽" value={faNum(gamesPlayed)} label="بازی" />
           <CareerStat emoji="🏆" value={faNum(matchesWon)} label="برد" accent />
-          <CareerStat emoji="🎯" value={faCount(totalCorrect)} label="درست" />
-          <CareerStat emoji="🔥" value={faNum(streakDays)} label="استریک" accent />
+          <CareerStat emoji="🎯" value={faCount(totalCorrect)} label="جواب درست" />
           <CareerStat emoji="🎽" value={faCount(fans)} label="هوادار" />
-          <CareerStat emoji="⚡" value={faNum(cards)} label="کارت تاکتیکی" />
+          <CareerStat emoji="⚡" value={faNum(cards)} label="کارت تاکتیکی" accent />
+          <CareerStat emoji="🔥" value={faNum(streakDays)} label="روز استریک" />
         </div>
       </section>
 
@@ -141,20 +222,20 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
           <div className="relative flex items-center gap-3">
             <span className="profile-quest-card__icon">🎯</span>
             <div className="flex-1 min-w-0">
+              <p className="profile-card__eyebrow">اولویت امروز</p>
               <p className="profile-quest-card__title">مسیر باشگاه</p>
               <p className="profile-quest-card__sub">
                 {missionBadge > 0
-                  ? `${faNum(missionBadge)} جایزهٔ آماده — بگیر!`
-                  : `${faNum(totalCorrect)} جواب درست · پیشرفت را ببین`}
+                  ? `${faNum(missionBadge)} جایزهٔ آماده — همین حالا بگیر`
+                  : `${faNum(totalCorrect)} جواب درست · پیشرفت و جایزه‌ها را ببین`}
               </p>
             </div>
-            {missionBadge > 0 ? (
-              <span className="profile-quest-badge">{faNum(missionBadge)}</span>
-            ) : (
-              <span className="profile-chevron" aria-hidden>
-                ‹
+            <div className="profile-quest-card__aside">
+              {missionBadge > 0 && <span className="profile-quest-badge">{faNum(missionBadge)}</span>}
+              <span className="profile-action-chip">
+                {missionBadge > 0 ? "رفتن و دریافت" : "رفتن به مسیر باشگاه"}
               </span>
-            )}
+            </div>
           </div>
         </button>
 
@@ -168,7 +249,11 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
               <Avatar label={club.crest} color={club.color} size={52} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="profile-club-card__title">باشگاه من</p>
+              <p className="profile-card__eyebrow">اتاق فرمان</p>
+              <p className="profile-club-card__title">اتاق فرمان باشگاه</p>
+              <p className="profile-club-card__sub">
+                لوگو، رنگ، شهر و تیم محبوب باشگاهت را تنظیم کن.
+              </p>
               <div className="mt-1 flex flex-wrap justify-end gap-1.5">
                 <span className="profile-club-pill">{CLUB.division}</span>
                 <span className="profile-club-pill profile-club-pill--fans">
@@ -176,14 +261,12 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
                 </span>
               </div>
             </div>
-            <span className="profile-chevron" aria-hidden>
-              ‹
-            </span>
+            <span className="profile-action-chip profile-action-chip--club">ورود</span>
           </div>
         </button>
       </section>
 
-      <div className="profile-danger-zone mx-5 mt-8">
+      <div className="profile-danger-zone mx-5 mt-10">
         <p className="profile-danger-zone__label">منطقهٔ خطر</p>
         <button
           type="button"
