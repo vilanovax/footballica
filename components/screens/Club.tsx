@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
+import { GameCard } from "@/components/ui/GameCard";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { ClubBankSheet } from "@/components/ui/ClubBankSheet";
@@ -24,7 +27,10 @@ function PromotionBar() {
   const remaining = Math.max(0, promotion.need - fans);
 
   return (
-    <div className="club-season-goal mx-5 mt-6 rounded-3xl px-4 py-4">
+    <GameCard
+      variant="hero"
+      className="club-season-goal mx-5 mt-6 rounded-3xl px-4 py-4"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="text-left shrink-0">
           <p className="text-lg font-black text-gold-400 tabular-nums">
@@ -44,18 +50,19 @@ function PromotionBar() {
           </p>
         </div>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/30">
-        <div
-          className="h-full rounded-full bg-grass-500 transition-all duration-700"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <ProgressBar
+        value={fans}
+        max={promotion.need}
+        tone="success"
+        className="mt-3"
+        trackClassName="h-2"
+      />
       {remaining > 0 && (
         <p className="mt-2 text-[11px] text-white/42 text-right">
           هنوز {faCount(remaining)} هوادار تا صعود باقی مانده.
         </p>
       )}
-    </div>
+    </GameCard>
   );
 }
 
@@ -182,7 +189,9 @@ export function Club({ onBack }: ClubProps) {
           </div>
         </div>
 
-        <div
+        <GameCard
+          variant="hero"
+          highlight={snap.totalPending > 0}
           className={`club-treasury-hero mt-4 rounded-3xl p-4 ${
             flashCollect ? "flash-green" : ""
           } ${snap.totalPending > 0 ? "club-treasury-hero--ready" : ""} ${
@@ -212,17 +221,13 @@ export function Club({ onBack }: ClubProps) {
 
           {!bank && (
             <>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/30">
-                <div
-                  className="h-full rounded-full transition-[width] duration-500"
-                  style={{
-                    width: `${Math.min(100, vaultCap > 0 ? (safeBudget / vaultCap) * 100 : 0)}%`,
-                    background: vaultFull
-                      ? "linear-gradient(90deg,#e0a92e,#f5c542)"
-                      : "linear-gradient(90deg,#2f9e5f,#5ee08a)",
-                  }}
-                />
-              </div>
+              <ProgressBar
+                value={safeBudget}
+                max={vaultCap}
+                tone={vaultFull ? "money" : "success"}
+                className="mt-4"
+                trackClassName="h-2"
+              />
               <div className="mt-2 flex items-center justify-between gap-3 text-[11px]">
                 <span className="font-bold text-white/40">
                   {vaultFull ? "ظرفیت کامل" : "در حال پر شدن"}
@@ -268,45 +273,43 @@ export function Club({ onBack }: ClubProps) {
                   +{faTreasuryShort(floatAmt)}
                 </span>
               )}
-              <button
-                type="button"
+              <Button
                 onClick={canCollectAll ? collectAll : () => setBankOpen(true)}
-                className={`w-full rounded-2xl py-3 text-sm font-extrabold transition active:scale-[0.98] ${
-                  canCollectAll
-                    ? "btn-gold"
-                    : "bg-white/8 text-white/55"
-                }`}
+                variant={canCollectAll ? "primary" : "muted"}
+                size="md"
+                fullWidth
               >
                 {canCollectAll
-                    ? `جمع‌آوری ${faTreasuryShort(snap.totalPending)}`
+                  ? `جمع‌آوری ${faTreasuryShort(snap.totalPending)}`
                   : snap.totalPending > 0
                     ? "درآمد آماده در واحدها"
                     : "جزئیات خزانه"}
-              </button>
+              </Button>
             </div>
             {!bank ? (
-              <button
-                type="button"
+              <Button
                 onClick={tryUpgradeVault}
-                className={`w-full rounded-2xl py-3 text-sm font-extrabold transition active:scale-[0.98] ${
-                  shakeUpgrade ? "animate-shake" : ""
-                } ${canUpgradeVault ? "bg-team-you text-white" : "bg-white/8 text-white/45"}`}
+                variant={canUpgradeVault ? "accent" : "muted"}
+                size="md"
+                fullWidth
+                shake={shakeUpgrade}
               >
                 {canUpgradeVault
                   ? `ارتقای خزانه · ${faMoney(upgradeCost)}`
                   : "ارتقای خزانه"}
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button"
+              <Button
                 onClick={() => setBankOpen(true)}
-                className="w-full rounded-2xl bg-white/8 py-3 text-sm font-extrabold text-white/70 transition active:scale-[0.98]"
+                variant="muted"
+                size="md"
+                fullWidth
               >
                 جزئیات بانک
-              </button>
+              </Button>
             )}
           </div>
-        </div>
+        </GameCard>
       </div>
 
       <ClubBankSheet

@@ -1,5 +1,9 @@
 "use client";
 
+import { BottomSheet, BottomSheetHandle, BottomSheetHeader } from "@/components/ui/BottomSheet";
+import { Button } from "@/components/ui/Button";
+import { GameCard } from "@/components/ui/GameCard";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useMemo, useState, type ReactNode } from "react";
 import { RARITY_ORDER, RARITY_THEME } from "@/lib/designSystem";
 import { useGame } from "@/lib/store";
@@ -123,53 +127,50 @@ function ManagerCard({
   if (assignedHere) {
     action = (
       <div className="grid grid-cols-[1fr_auto] gap-2">
-        <button
-          type="button"
-          className="manager-btn manager-btn--active rounded-xl py-2.5 text-sm font-extrabold"
-        >
+        <Button variant="success" size="md" fullWidth className="manager-btn manager-btn--active">
           ✓ مدیر فعال این ساختمان
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
           onClick={onUnassign}
-          className="manager-btn manager-btn--subtle rounded-xl px-3 py-2.5 text-xs font-bold active:scale-[0.98]"
+          variant="secondary"
+          size="sm"
+          className="manager-btn manager-btn--subtle px-3 text-xs font-bold"
         >
           جابه‌جا
-        </button>
+        </Button>
       </div>
     );
   } else if (isHired) {
     action = (
-      <button
-        type="button"
+      <Button
         onClick={onAssign}
         disabled={assignedElsewhere}
-        className={`manager-btn w-full rounded-xl py-3 text-sm font-extrabold active:scale-[0.98] transition ${
-          assignedElsewhere
-            ? "manager-btn--disabled"
-            : "manager-btn--assign bg-team-you text-white"
-        }`}
+        variant={assignedElsewhere ? "muted" : "accent"}
+        size="md"
+        fullWidth
+        className="manager-btn manager-btn--assign"
       >
         {assignedElsewhere ? "اول از ساختمان دیگر بردارش" : `انتصاب به ${unitLabel}`}
-      </button>
+      </Button>
     );
   } else {
     action = (
-      <button
-        type="button"
+      <Button
         onClick={onHire}
         disabled={!canHire}
-        className={`manager-btn w-full rounded-xl py-3 text-sm font-extrabold active:scale-[0.98] transition ${
-          canHire ? "manager-btn--hire btn-gold" : "manager-btn--disabled"
-        }`}
+        variant={canHire ? "primary" : "muted"}
+        size="md"
+        fullWidth
+        className="manager-btn manager-btn--hire"
       >
         {canHire ? `استخدام برای باشگاه · ${faMoney(m.cost)}` : `نیاز به ${faMoney(shortfall)} بیشتر`}
-      </button>
+      </Button>
     );
   }
 
   return (
-    <article
+    <GameCard
+      variant="asset"
       className={`manager-card manager-contract rounded-[1.35rem] p-3.5 ${
         shake ? "animate-shake" : ""
       } ${assignedHere ? "manager-card--assigned" : ""} ${
@@ -236,12 +237,13 @@ function ManagerCard({
               <span>هزینه استخدام</span>
               <span>{faMoney(budget)} / {faMoney(m.cost)}</span>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/30">
-              <div
-                className="h-full rounded-full bg-gold-400/80 transition-[width] duration-500"
-                style={{ width: `${fundingPct}%` }}
-              />
-            </div>
+            <ProgressBar
+              value={budget}
+              max={m.cost}
+              tone="money"
+              className="mt-2"
+              trackClassName="h-1.5"
+            />
             <p className="mt-1.5 text-[10px] text-white/38">
               {canHire
                 ? "خزانه برای قرارداد آماده است."
@@ -256,7 +258,7 @@ function ManagerCard({
           </p>
         )}
       </div>
-    </article>
+    </GameCard>
   );
 }
 
@@ -363,25 +365,22 @@ export function ManagerPanel({
   }
 
   return (
-    <div
-      className="manager-sheet-backdrop fixed inset-0 z-60 mx-auto flex max-w-[460px] flex-col justify-end"
-      onClick={onClose}
+    <BottomSheet
+      onClose={onClose}
+      backdropClassName="manager-sheet-backdrop"
+      panelClassName="manager-sheet animate-rise pb-10 no-scrollbar"
     >
-      <div
-        className="manager-sheet animate-rise max-h-[88dvh] overflow-y-auto rounded-t-[28px] pb-10 no-scrollbar"
-        onClick={(e) => e.stopPropagation()}
-        dir="rtl"
-      >
-        <div className="sticky top-0 z-10 manager-sheet-header px-5 pt-4 pb-4">
-          <div className="manager-sheet-handle mx-auto mb-4" />
+        <BottomSheetHeader className="manager-sheet-header px-5 pt-4 pb-4">
+          <BottomSheetHandle className="manager-sheet-handle mb-4" />
           <div className="flex items-start justify-between gap-3">
-            <button
-              type="button"
+            <Button
               onClick={onClose}
-              className="manager-sheet-close shrink-0 rounded-xl px-3.5 py-2 text-xs font-bold active:scale-95"
+              variant="secondary"
+              size="sm"
+              className="manager-sheet-close shrink-0 px-3.5 text-xs font-bold"
             >
               بستن
-            </button>
+            </Button>
             <div className="flex-1 text-right min-w-0">
               <p className="text-[10px] font-bold tracking-wide text-gold-400/75">
                 اتاق مدیریت
@@ -406,7 +405,7 @@ export function ManagerPanel({
               بعد از استخدام، فقط کافی‌ست مدیر را روی این ساختمان منصوب کنی.
             </p>
           </div>
-        </div>
+        </BottomSheetHeader>
 
         <div className="px-5 pb-2 space-y-3">
           {grouped.assigned.length > 0 && (
@@ -459,7 +458,6 @@ export function ManagerPanel({
             </p>
           )}
         </div>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

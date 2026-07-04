@@ -281,6 +281,210 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-button);
+  padding-inline: 1rem;
+  font-weight: 800;
+  line-height: 1;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.12s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.ui-btn:active {
+  transform: scale(0.98);
+}
+
+.ui-btn:disabled {
+  transform: none;
+}
+
+.ui-btn--full {
+  width: 100%;
+}
+
+.ui-btn--sm {
+  min-height: var(--button-height-sm);
+  padding-block: 0.7rem;
+  font-size: 0.75rem;
+}
+
+.ui-btn--md {
+  min-height: var(--button-height-md);
+  padding-block: 0.8rem;
+  font-size: 0.875rem;
+}
+
+.ui-btn--lg {
+  min-height: var(--button-height-lg);
+  padding-block: 0.95rem;
+  font-size: 1rem;
+}
+
+.ui-btn--primary {
+  background: linear-gradient(180deg, var(--color-gold-400), var(--color-gold-500));
+  color: #3a2600;
+  box-shadow: var(--shadow-press);
+}
+
+.ui-btn--primary:active {
+  box-shadow: var(--shadow-press-active);
+}
+
+.ui-btn--secondary {
+  background: var(--color-surface-panel);
+  color: var(--color-text-primary);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.ui-btn--accent {
+  background: var(--color-team-you);
+  color: white;
+  box-shadow: 0 8px 18px rgba(12, 27, 56, 0.26);
+}
+
+.ui-btn--success {
+  background: linear-gradient(180deg, var(--color-grass-400), var(--color-grass-500));
+  color: white;
+}
+
+.ui-btn--muted {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.ui-btn--disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-disabled);
+  border-color: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
+.ui-game-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.ui-game-card--hero {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(245, 197, 66, 0.12), transparent 24%),
+    linear-gradient(165deg, rgba(24, 58, 39, 0.96), rgba(15, 32, 24, 0.92));
+  border: 1px solid rgba(245, 197, 66, 0.18);
+}
+
+.ui-game-card--asset {
+  background: linear-gradient(180deg, rgba(28, 53, 43, 0.96), rgba(14, 31, 24, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ui-game-card--locked {
+  background: #152921;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+}
+
+.ui-game-card--interactive {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.ui-game-card--interactive:active {
+  transform: scale(0.98);
+}
+
+.ui-game-card--highlight {
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(245, 197, 66, 0.12),
+    0 0 22px rgba(245, 197, 66, 0.08);
+}
+
+.ui-game-card--disabled {
+  box-shadow: none;
+}
+
+.ui-progress__track {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.ui-progress__fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.5s ease;
+}
+
+.ui-progress__fill--money {
+  background: linear-gradient(90deg, var(--color-gold-500), var(--color-gold-400));
+}
+
+.ui-progress__fill--success {
+  background: linear-gradient(90deg, var(--color-grass-400), var(--color-status-success));
+}
+
+.ui-progress__fill--danger {
+  background: linear-gradient(90deg, var(--color-team-foe), #ff8a3d);
+}
+
+.ui-progress__fill--info {
+  background: linear-gradient(90deg, var(--color-team-you), #8ab4ff);
+}
+
+.ui-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.ui-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.ui-sheet__panel {
+  position: relative;
+  width: min(100%, 460px);
+  max-height: 88dvh;
+  overflow-y: auto;
+  border-top-left-radius: var(--radius-sheet);
+  border-top-right-radius: var(--radius-sheet);
+  background: var(--color-surface-card);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.55);
+}
+
+.ui-sheet__handle {
+  width: 40px;
+  height: 4px;
+  margin-inline: auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.ui-sheet__header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 /* آواتار مربعیِ گِرد */
 .avatar {
   display: grid;

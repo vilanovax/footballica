@@ -1,5 +1,6 @@
 "use client";
 
+import { GameCard } from "@/components/ui/GameCard";
 import { useGame } from "@/lib/store";
 import { faNum } from "@/lib/format";
 import { nextStreakRewardInfo, isStreakMilestoneDay } from "@/lib/home";
@@ -21,7 +22,10 @@ export function HomeStreakBar() {
   }
 
   return (
-    <div className="home-streak-bar home-streak-bar--slim mx-5 mt-3 rounded-xl px-3 py-2.5">
+    <GameCard
+      variant="asset"
+      className="home-streak-bar home-streak-bar--slim mx-5 mt-3 rounded-xl px-3 py-2.5"
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="flex gap-1 shrink-0">
           {Array.from({ length: 7 }).map((_, i) => {
@@ -56,6 +60,6 @@ export function HomeStreakBar() {
           </p>
         </div>
       </div>
-    </div>
+    </GameCard>
   );
 }

@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { GameCard } from "@/components/ui/GameCard";
 import { useGame } from "@/lib/store";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { RARITY_THEME } from "@/lib/designSystem";
 import { faNum, faMoney, faTreasuryShort } from "@/lib/format";
 import { fanIncomeMultiplier } from "@/lib/economy";
@@ -63,12 +66,11 @@ export function UnitCard({
 
   if (locked) {
     const need = def.requiresLevel;
-    const progress =
-      playerLevel >= need
-        ? 100
-        : Math.min(100, (playerLevel / need) * 100);
     return (
-      <div className="club-unit-locked mx-5 flex items-center gap-3 rounded-2xl p-3.5">
+      <GameCard
+        variant="locked"
+        className="club-unit-locked mx-5 flex items-center gap-3 rounded-2xl p-3.5"
+      >
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-black/25 text-2xl grayscale opacity-60">
           {def.emoji}
         </div>
@@ -77,17 +79,19 @@ export function UnitCard({
           <p className="mt-0.5 text-[11px] text-white/40 leading-5">
             🔒 سطح {faNum(need)} · {def.flavor}
           </p>
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-black/30">
-            <div
-              className="h-full rounded-full bg-white/20 transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          <ProgressBar
+            value={playerLevel}
+            max={need}
+            tone="info"
+            className="mt-2"
+            trackClassName="h-1"
+            fillClassName="bg-white/20"
+          />
           <p className="mt-1 text-[10px] text-white/35">
             سطح تو: {faNum(playerLevel)} / {faNum(need)}
           </p>
         </div>
-      </div>
+      </GameCard>
     );
   }
 
@@ -98,7 +102,6 @@ export function UnitCard({
   const pending = now
     ? unitPending(def, level, items, last, now, income, speed, fanMult)
     : 0;
-  const pct = stats.cap > 0 ? Math.min(100, (pending / stats.cap) * 100) : 0;
   const full = pending >= stats.cap;
   const ready = pending > 0;
 
@@ -129,7 +132,9 @@ export function UnitCard({
 
   return (
     <>
-      <div
+      <GameCard
+        variant="asset"
+        highlight={ready && !manager}
         className={`club-unit-card mx-5 rounded-3xl p-4 ${flash ? "flash-green" : ""} ${
           full && !manager ? "ring-1 ring-gold-500/45" : ""
         } ${ready && !manager ? "club-unit-card--ready" : ""}`}
@@ -179,10 +184,10 @@ export function UnitCard({
           <div className="club-building-stat rounded-2xl px-2.5 py-2.5 text-right">
             <p className="text-[10px] font-bold text-white/38">ظرفیت</p>
             <p className="mt-1 text-sm font-extrabold text-white/80">
-              {faMoney(pending)}
+              {faMoney(stats.cap)}
             </p>
             <p className="mt-1 text-[10px] text-white/35">
-              از {faMoney(stats.cap)}
+              پر: {faMoney(pending)}
               {manager && (
                 <span className="text-grass-400 mr-1">
                   · ×{faNum(income.toFixed(1).replace(".", "٫"))}
@@ -217,6 +222,15 @@ export function UnitCard({
           </p>
         </div>
 
+        <ProgressBar
+          value={pending}
+          max={stats.cap}
+          tone={full ? "money" : ready ? "success" : "info"}
+          className="mt-3"
+          trackClassName="h-1.5"
+          fillClassName={!ready ? "bg-white/15" : undefined}
+        />
+
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="relative">
             {floatAmt !== null && (
@@ -224,58 +238,57 @@ export function UnitCard({
                 +{faMoney(floatAmt)}
               </span>
             )}
-            <button
-              type="button"
+            <Button
               onClick={collect}
               disabled={!canDeposit}
-              className={`w-full rounded-xl py-2.5 text-sm font-extrabold transition active:scale-[0.98] ${
-                canDeposit ? "btn-gold" : "bg-white/8 text-white/35"
-              } ${full && canDeposit ? "animate-pulse-soft" : ""}`}
+              variant={canDeposit ? "primary" : "muted"}
+              size="md"
+              fullWidth
+              className={full && canDeposit ? "animate-pulse-soft" : undefined}
             >
               {vaultFull && ready
                 ? "خزانه پر"
                 : ready
                   ? `جمع‌آوری ${faTreasuryShort(pending)}`
                   : "جمع…"}
-            </button>
+            </Button>
           </div>
-          <button
+          <Button
             onClick={upgrade}
-            className={`rounded-xl py-2.5 text-sm font-extrabold transition active:scale-[0.98] ${shake ? "animate-shake" : ""} ${
-              maxed
-                ? "bg-grass-500/15 text-grass-400"
-                : canUpgrade
-                  ? "bg-team-you text-white"
-                  : "bg-white/8 text-white/35"
-            }`}
+            variant={maxed ? "success" : canUpgrade ? "accent" : "muted"}
+            size="md"
+            fullWidth
+            shake={shake}
           >
             {maxed ? "حداکثر" : canUpgrade ? "ارتقای ساختمان" : `نیاز ${faMoney(upCost)}`}
-          </button>
+          </Button>
         </div>
 
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <button
+          <Button
             onClick={() => setDetail(true)}
-            className={`rounded-xl py-2 text-xs font-bold active:scale-[0.98] ${
-              activeItems > 0
-                ? "bg-grass-500/12 text-grass-400 border border-grass-500/25"
-                : "bg-white/5 text-white/70"
-            }`}
+            variant={activeItems > 0 ? "success" : "secondary"}
+            size="sm"
+            fullWidth
+            className="text-xs font-bold"
           >
             {`ارتقای آیتم‌ها ${faNum(activeItems)}/${faNum(def.items.length)}`}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setPanel(true)}
-            className="rounded-xl bg-white/5 py-2 text-xs font-bold active:scale-[0.98]"
+            variant="secondary"
+            size="sm"
+            fullWidth
+            className="text-xs font-bold"
           >
             {manager ? (
               <span className="text-grass-400 truncate">{manager.name}</span>
             ) : (
               <span className="text-gold-400">استخدام مدیر</span>
             )}
-          </button>
+          </Button>
         </div>
-      </div>
+      </GameCard>
 
       {panel && <ManagerPanel unitId={id} onClose={() => setPanel(false)} />}
       {detail && <UnitDetail unitId={id} onClose={() => setDetail(false)} />}
@@ -291,7 +304,10 @@ export function LockedUnitRow({ id }: { id: string }) {
   const need = def.requiresLevel;
 
   return (
-    <div className="club-build-next-card rounded-2xl px-3 py-3 text-right">
+    <GameCard
+      variant="locked"
+      className="club-build-next-card rounded-2xl px-3 py-3 text-right"
+    >
       <div className="flex items-start gap-3">
         <div className="club-build-next-card__icon grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-2xl">
           {def.emoji}
@@ -309,6 +325,6 @@ export function LockedUnitRow({ id }: { id: string }) {
           </p>
         </div>
       </div>
-    </div>
+    </GameCard>
   );
 }

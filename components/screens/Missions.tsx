@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
+import { GameCard } from "@/components/ui/GameCard";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useEffect, useMemo, useState } from "react";
 import { useGame } from "@/lib/store";
 import { faMoney, faNum } from "@/lib/format";
@@ -45,7 +48,9 @@ function MissionCard({
   const { def, progress, complete, claimed, claimable, pct } = status;
 
   return (
-    <article
+    <GameCard
+      variant={claimed ? "locked" : "asset"}
+      highlight={claimable}
       className={`mission-card ${claimable ? "mission-card--ready" : ""} ${
         claimed ? "mission-card--done" : ""
       } ${complete && !claimed ? "mission-card--complete" : ""} ${
@@ -80,29 +85,32 @@ function MissionCard({
                   {faNum(progress)} / {faNum(def.target)}
                 </span>
               </div>
-              <div className="mission-progress__track">
-                <div
-                  className={`mission-progress__fill ${
-                    complete ? "mission-progress__fill--done" : ""
-                  }`}
-                  style={{ width: `${Math.max(pct, pct > 0 ? 3 : 0)}%` }}
-                />
-              </div>
+              <ProgressBar
+                value={progress}
+                max={def.target}
+                tone={complete ? "success" : "money"}
+                trackClassName="mission-progress__track h-2"
+                fillClassName={`mission-progress__fill ${
+                  complete ? "mission-progress__fill--done" : ""
+                }`}
+              />
             </div>
           )}
         </div>
       </div>
 
       {claimable && (
-        <button
-          type="button"
+        <Button
           onClick={onClaim}
-          className="btn-gold mission-claim-btn mt-3 w-full"
+          variant="primary"
+          size="md"
+          fullWidth
+          className="mission-claim-btn mt-3"
         >
           دریافت جایزه
-        </button>
+        </Button>
       )}
-    </article>
+    </GameCard>
   );
 }
 
@@ -271,25 +279,29 @@ export function Missions({ onBack }: MissionsProps) {
           )}
         </div>
 
-        <div className="mission-path mt-4 rounded-2xl p-3.5">
+        <GameCard
+          variant="asset"
+          className="mission-path mt-4 rounded-2xl p-3.5"
+        >
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="mission-path__count">
               {faNum(onboardingDone)}/{faNum(onboardingTotal)}
             </span>
             <span className="mission-path__label">🎯 مسیر یادگیری باشگاه</span>
           </div>
-          <div className="mission-path__track">
-            <div
-              className="mission-path__fill"
-              style={{ width: `${Math.max(pathPct, pathPct > 0 ? 4 : 0)}%` }}
-            />
-          </div>
+          <ProgressBar
+            value={onboardingDone}
+            max={onboardingTotal}
+            tone="info"
+            trackClassName="mission-path__track h-2.5"
+            fillClassName="mission-path__fill"
+          />
           <p className="mission-path__hint mt-2">
             {onboardingDone >= onboardingTotal
               ? "مسیر آموزشی تکمیل شد — افتخارات را ادامه بده"
               : `${faNum(onboardingTotal - onboardingDone)} ماموریت آموزشی باقی‌مانده`}
           </p>
-        </div>
+        </GameCard>
       </header>
 
       <div className="px-5 mt-5 space-y-7">

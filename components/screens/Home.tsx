@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { ClubBankSheet } from "@/components/ui/ClubBankSheet";
+import { Button } from "@/components/ui/Button";
 import { ClubHomeBanner } from "@/components/ui/ClubHomeBanner";
+import { GameCard } from "@/components/ui/GameCard";
 import { HomeStreakBar } from "@/components/ui/HomeStreakBar";
 import { HomeFeaturedMode } from "@/components/ui/HomeFeaturedMode";
 import { HomeMissionBanner } from "@/components/ui/HomeMissionBanner";
@@ -46,7 +48,10 @@ function ModeCard({
 }) {
   if (disabled) {
     return (
-      <div className="home-mode-card--disabled relative overflow-hidden rounded-2xl p-3.5 text-right h-28 flex flex-col justify-end">
+      <GameCard
+        variant="locked"
+        className="home-mode-card--disabled h-28 rounded-2xl p-3.5 text-right flex flex-col justify-end"
+      >
         {disabledBadge && (
           <span className="absolute top-2.5 right-2.5 rounded-full home-mode-soon-badge px-2 py-0.5 text-[10px] font-bold">
             {disabledBadge}
@@ -55,21 +60,22 @@ function ModeCard({
         <span className="absolute top-2.5 left-2.5 text-2xl opacity-40 grayscale">{emoji}</span>
         <h3 className="text-base font-extrabold text-white/45">{title}</h3>
         <p className="text-[11px] text-white/35">{subtitle}</p>
-      </div>
+      </GameCard>
     );
   }
 
   return (
-    <button
-      type="button"
+    <GameCard
+      as="button"
+      variant="hero"
       onClick={onClick}
-      className="relative overflow-hidden rounded-2xl p-3.5 text-right h-28 flex flex-col justify-end active:scale-[0.97] transition-transform"
+      className="h-28 rounded-2xl p-3.5 text-right flex flex-col justify-end"
       style={{ background: `linear-gradient(150deg, ${from}, ${to})` }}
     >
       <span className="absolute top-2.5 left-2.5 text-2xl drop-shadow">{emoji}</span>
       <h3 className="text-base font-extrabold text-white">{title}</h3>
       <p className="text-[11px] text-white/80">{subtitle}</p>
-    </button>
+    </GameCard>
   );
 }
 
@@ -231,7 +237,10 @@ export function Home({
 
       <HomeMissionBanner onOpenMissions={onOpenMissions} />
 
-      <div className="home-hero home-hero--primary mx-5 mt-4 rounded-3xl p-5 relative overflow-hidden">
+      <GameCard
+        variant="hero"
+        className="home-hero home-hero--primary mx-5 mt-4 rounded-3xl p-5"
+      >
         <span className="absolute -left-4 -bottom-4 text-[7rem] opacity-12 leading-none pointer-events-none">
           ⚽
         </span>
@@ -241,14 +250,16 @@ export function Home({
         <p className="mt-1.5 text-sm text-white/70 text-right relative">
           کویز تک‌نفره · رایگان · بدون مصرف جان
         </p>
-        <button
-          type="button"
+        <Button
           onClick={onPlayQuick}
-          className="btn-gold relative mt-4 w-full rounded-2xl py-3.5 text-lg font-extrabold active:scale-[0.98] transition-transform"
+          variant="primary"
+          size="lg"
+          fullWidth
+          className="relative mt-4 text-lg"
         >
           ⚽ شروع بازی
-        </button>
-      </div>
+        </Button>
+      </GameCard>
 
       <HomeFeaturedMode
         mode={featured}

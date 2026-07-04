@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
+import { GameCard } from "@/components/ui/GameCard";
 import { useMemo, useState } from "react";
 import { useGame } from "@/lib/store";
 import {
@@ -76,7 +78,8 @@ function PowerUpItem({
   const tier = ITEM_TIER[powerup.id];
 
   return (
-    <article
+    <GameCard
+      variant="asset"
       className={`shop-item shop-item--${tier} ${
         enough ? "" : "shop-item--locked"
       } ${shaking ? "animate-shake" : ""}`}
@@ -105,10 +108,11 @@ function PowerUpItem({
         </div>
       </div>
 
-      <button
-        type="button"
+      <Button
         onClick={onBuy}
-        className={`shop-item__buy ${enough ? "btn-gold" : "shop-item__buy--dim"}`}
+        variant={enough ? "primary" : "muted"}
+        size="sm"
+        className={`shop-item__buy ${!enough ? "shop-item__buy--dim" : ""}`}
       >
         {enough ? (
           <>
@@ -120,14 +124,14 @@ function PowerUpItem({
         ) : (
           <>نیاز: ⚡ {faNum(powerup.price)}</>
         )}
-      </button>
+      </Button>
 
       {!enough && (
         <div className="shop-item__lock-overlay" aria-hidden>
           🔒
         </div>
       )}
-    </article>
+    </GameCard>
   );
 }
 
@@ -143,7 +147,12 @@ function BundleCard({
 
   if (hero) {
     return (
-      <button type="button" onClick={onTap} className="shop-offer-hero">
+      <GameCard
+        as="button"
+        variant="hero"
+        onClick={onTap}
+        className="shop-offer-hero"
+      >
         <div className="shop-offer-hero__glow" aria-hidden />
         <span className="shop-offer-hero__badge">ویژه</span>
         <span className="shop-offer-hero__emoji" aria-hidden>
@@ -154,13 +163,14 @@ function BundleCard({
         <span className="shop-offer-hero__cta btn-gold">
           {faCount(bundle.toman)} تومان
         </span>
-      </button>
+      </GameCard>
     );
   }
 
   return (
-    <button
-      type="button"
+    <GameCard
+      as="button"
+      variant="asset"
       onClick={onTap}
       className={`shop-offer-row ${featured ? "shop-offer-row--featured" : ""}`}
     >
@@ -175,7 +185,7 @@ function BundleCard({
         <p className="shop-offer-row__sub">{bundle.sub}</p>
       </div>
       <span className="shop-offer-row__price">{faCount(bundle.toman)} تومان</span>
-    </button>
+    </GameCard>
   );
 }
 
@@ -212,7 +222,10 @@ export function Shop() {
   return (
     <div className="shop-screen pitch-stripes min-h-dvh pb-32">
       {/* store banner */}
-      <header className="shop-banner mx-5 mt-5 rounded-3xl overflow-hidden">
+      <GameCard
+        variant="hero"
+        className="shop-banner mx-5 mt-5 rounded-3xl overflow-hidden"
+      >
         <div className="shop-banner__glow" aria-hidden />
         <div className="relative px-5 pt-5 pb-4">
           <div className="flex items-start justify-between gap-3">
@@ -239,11 +252,11 @@ export function Shop() {
             </p>
           )}
         </div>
-      </header>
+      </GameCard>
 
       {/* power-up shelf */}
       <section className="mx-5 mt-6">
-        <div className="shop-shelf">
+        <GameCard variant="asset" className="shop-shelf">
           <div className="shop-shelf__head">
             <span className="shop-shelf__icon" aria-hidden>
               🛒
@@ -270,7 +283,7 @@ export function Shop() {
               );
             })}
           </div>
-        </div>
+        </GameCard>
       </section>
 
       {/* premium offers */}

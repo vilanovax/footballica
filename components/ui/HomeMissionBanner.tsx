@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
+import { GameCard } from "@/components/ui/GameCard";
 import { useMemo, useState } from "react";
 import { useGame } from "@/lib/store";
 import { faNum } from "@/lib/format";
@@ -106,20 +108,24 @@ export function HomeMissionBanner({ onOpenMissions }: HomeMissionBannerProps) {
   }
 
   return (
-    <div className="home-mission-banner mx-5 mt-3 w-[calc(100%-2.5rem)] rounded-2xl p-3.5 text-right relative">
+    <GameCard
+      variant="asset"
+      className="home-mission-banner mx-5 mt-3 w-[calc(100%-2.5rem)] rounded-2xl p-3.5 text-right"
+    >
       {toast && (
         <p className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-lg bg-grass-500/90 px-3 py-1 text-[10px] font-extrabold text-white whitespace-nowrap z-10">
           {toast}
         </p>
       )}
       <div className="flex items-center gap-3">
-        <button
-          type="button"
+        <Button
           onClick={claim}
-          className="home-mission-claim-btn shrink-0 rounded-xl px-3.5 py-2 text-xs font-extrabold active:scale-[0.97]"
+          variant="primary"
+          size="sm"
+          className="home-mission-claim-btn shrink-0 px-3.5"
         >
           دریافت
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onOpenMissions}
@@ -142,6 +148,6 @@ export function HomeMissionBanner({ onOpenMissions }: HomeMissionBannerProps) {
           </p>
         </button>
       </div>
-    </div>
+    </GameCard>
   );
 }

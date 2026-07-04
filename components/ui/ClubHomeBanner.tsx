@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { GameCard } from "@/components/ui/GameCard";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useGame } from "@/lib/store";
 import { unitIncomeSnapshot } from "@/lib/clubEconomy";
 import { isBank } from "@/lib/vault";
@@ -60,7 +63,9 @@ export function ClubHomeBanner({ onOpenClub }: ClubHomeBannerProps) {
   }
 
   return (
-    <div
+    <GameCard
+      variant="asset"
+      highlight={needsAttention}
       className={`home-club-panel mx-5 mt-3 rounded-2xl p-4 text-right ${
         needsAttention ? "home-club-panel--active" : ""
       } ${flash ? "home-club-panel--flash" : ""}`}
@@ -88,6 +93,16 @@ export function ClubHomeBanner({ onOpenClub }: ClubHomeBannerProps) {
         </div>
       </div>
 
+      {!bank && (
+        <ProgressBar
+          value={safeBudget}
+          max={snap.vaultCap}
+          tone={blocked || snap.vaultFull ? "money" : "success"}
+          className="mt-3"
+          trackClassName="h-1.5"
+        />
+      )}
+
       {snap.topReady && (
         <div className="mt-3 flex items-center gap-2 rounded-xl bg-black/20 px-3 py-2.5">
           <div className="flex-1 min-w-0 text-right">
@@ -105,36 +120,40 @@ export function ClubHomeBanner({ onOpenClub }: ClubHomeBannerProps) {
             </p>
           </div>
           {canCollect ? (
-            <button
-              type="button"
+            <Button
               onClick={collect}
-              className="home-club-collect-btn shrink-0 rounded-xl px-3 py-2 text-xs font-extrabold active:scale-[0.97]"
+              variant="primary"
+              size="sm"
+              className="home-club-collect-btn shrink-0 px-3"
             >
               {collected !== null
                 ? `+${faClubMoneyLabel(collected)}`
                 : "جمع‌آوری"}
-            </button>
+            </Button>
           ) : blocked ? (
-            <button
-              type="button"
+            <Button
               onClick={onOpenClub}
-              className="shrink-0 rounded-xl bg-team-foe/20 px-3 py-2 text-[10px] font-extrabold text-team-foe"
+              variant="muted"
+              size="sm"
+              className="shrink-0 px-3 text-[10px] font-extrabold text-team-foe"
             >
               خزانه پر
-            </button>
+            </Button>
           ) : null}
         </div>
       )}
 
       {!snap.topReady && (
-        <button
-          type="button"
+        <Button
           onClick={onOpenClub}
-          className="mt-3 w-full rounded-xl bg-white/5 py-2.5 text-xs font-bold text-white/50 active:scale-[0.98]"
+          variant="muted"
+          size="sm"
+          fullWidth
+          className="mt-3 text-xs font-bold text-white/50"
         >
           مدیریت باشگاه و ارتقاها
-        </button>
+        </Button>
       )}
-    </div>
+    </GameCard>
   );
 }

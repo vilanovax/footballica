@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { BottomSheet, BottomSheetHandle } from "@/components/ui/BottomSheet";
+import { Button } from "@/components/ui/Button";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useGame } from "@/lib/store";
 import {
   faClubMoneyLabel,
@@ -52,12 +55,9 @@ export function ClubBankSheet({
   const [flash, setFlash] = useState(false);
   const [shake, setShake] = useState(false);
 
-  if (!open) return null;
-
   const bank = isBank(vaultLevel);
   const info = vaultInfo(vaultLevel);
   const cap = vaultCapacity(vaultLevel);
-  const pct = bank ? 0 : Math.min(100, cap > 0 ? (budget / cap) * 100 : 0);
   const full = !bank && budget >= cap;
   const cost = vaultUpgradeCost(vaultLevel);
   const isFinal = vaultLevel >= VAULT_MAX;
@@ -76,15 +76,13 @@ export function ClubBankSheet({
   }
 
   return (
-    <div className="bank-sheet-root" role="dialog" aria-modal="true" aria-label="خزانه باشگاه">
-      <button
-        type="button"
-        className="bank-sheet-backdrop"
-        onClick={onClose}
-        aria-label="بستن"
-      />
-      <div className={`bank-sheet ${flash ? "flash-green" : ""}`}>
-        <div className="bank-sheet__handle" aria-hidden />
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      backdropClassName="bank-sheet-backdrop"
+      panelClassName={`bank-sheet ${flash ? "flash-green" : ""}`}
+    >
+        <BottomSheetHandle className="bank-sheet__handle" />
         <div className="bank-sheet__head">
           <button type="button" onClick={onClose} className="bank-sheet__close" aria-label="بستن">
             ✕
@@ -147,19 +145,14 @@ export function ClubBankSheet({
                 <span className="text-white/35"> / {faVaultM(cap)}</span>
               </span>
             </div>
-            <div className="bank-vault-panel__track">
-              <div
-                className="bank-vault-panel__fill"
-                style={{
-                  width: `${pct}%`,
-                  background: full
-                    ? "linear-gradient(90deg,#e0a92e,#f5c542)"
-                    : budget > 0
-                      ? "linear-gradient(90deg,#2f9e5f,#5ee08a)"
-                      : "rgba(255,255,255,0.08)",
-                }}
-              />
-            </div>
+            <ProgressBar
+              value={budget}
+              max={cap}
+              tone={full ? "money" : "success"}
+              className="bank-vault-panel__track"
+              trackClassName="h-2"
+              fillClassName={!full && budget <= 0 ? "bg-white/8" : undefined}
+            />
             <p className="mt-2 text-[10px] text-white/38 text-center">
               آفلاین حداکثر {faNum(ECONOMY.offlineCapHours)} ساعت
             </p>
@@ -176,18 +169,14 @@ export function ClubBankSheet({
         )}
 
         <div className="bank-sheet__actions">
-          <button
-            type="button"
+          <Button
             onClick={upgrade}
-            className={`w-full rounded-2xl py-3.5 text-sm font-extrabold transition active:scale-[0.98] ${shake ? "animate-shake" : ""} ${
-              isFinal
-                ? "bg-gold-500/15 text-gold-400"
-                : canUpgrade
-                  ? nextIsBank
-                    ? "bg-gold-400 text-[#3a2600]"
-                    : "bg-team-you text-white"
-                  : "bg-white/8 text-white/35"
-            }`}
+            variant={
+              isFinal ? "muted" : canUpgrade ? (nextIsBank ? "primary" : "accent") : "muted"
+            }
+            size="md"
+            fullWidth
+            shake={shake}
           >
             {isFinal
               ? "حداکثر ظرفیت ✓"
@@ -196,9 +185,8 @@ export function ClubBankSheet({
                 : canUpgrade
                   ? `ارتقای خزانه · ${faClubMoneyLabel(cost)}`
                   : `ارتقا نیاز ${faClubMoneyLabel(cost)}`}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

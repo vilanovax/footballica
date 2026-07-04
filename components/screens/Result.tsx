@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
 import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { GameCard } from "@/components/ui/GameCard";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { RewardBreakdown } from "@/components/ui/RewardBreakdown";
 import { faNum, faMoney } from "@/lib/format";
 import { useGame } from "@/lib/store";
@@ -114,7 +117,8 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
     <div className="quiz-screen pitch-stripes min-h-dvh flex flex-col pb-36">
       <div className="flex-1 px-5 pt-6 space-y-5 max-w-sm mx-auto w-full">
         {/* hero + score */}
-        <div
+        <GameCard
+          variant="hero"
           className={`result-hero rounded-3xl p-5 text-center ${
             won ? "result-hero--win" : "result-hero--loss"
           }`}
@@ -138,20 +142,13 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
                 {faNum(accuracyPct)}٪
               </span>
             </div>
-            <div className="result-accuracy-track h-2.5 overflow-hidden rounded-full">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  accuracyPct >= 60
-                    ? "bg-gradient-to-l from-grass-400 to-grass-500"
-                    : accuracyPct >= 40
-                      ? "bg-gradient-to-l from-gold-400 to-gold-500"
-                      : accuracyPct > 0
-                        ? "bg-gradient-to-l from-team-foe to-red-600"
-                        : "bg-white/8"
-                }`}
-                style={{ width: `${Math.max(accuracyPct, accuracyPct === 0 ? 0 : 4)}%` }}
-              />
-            </div>
+            <ProgressBar
+              value={accuracyPct}
+              max={100}
+              tone={accuracyPct >= 60 ? "success" : accuracyPct >= 40 ? "money" : "danger"}
+              trackClassName="result-accuracy-track h-2.5"
+              fillClassName={accuracyPct === 0 ? "bg-white/8" : undefined}
+            />
           </div>
 
           <div className="result-scoreboard mt-5 rounded-2xl p-4" dir="rtl">
@@ -208,13 +205,16 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
               </div>
             </div>
           </div>
-        </div>
+        </GameCard>
 
         {/* rewards */}
         <div className="result-rewards-block">
           <p className="mb-2 text-right text-xs font-bold text-white/55">پاداش</p>
           {hasRewards ? (
-            <div className="result-rewards-card rounded-2xl p-1">
+            <GameCard
+              variant="asset"
+              className="result-rewards-card rounded-2xl p-1"
+            >
               <RewardBreakdown
                 compact
                 xp={result.xpEarned}
@@ -229,11 +229,14 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
                     : undefined
                 }
               />
-            </div>
+            </GameCard>
           ) : (
-            <div className="result-rewards-card rounded-2xl px-4 py-3.5 text-sm text-white/55 text-center">
+            <GameCard
+              variant="locked"
+              className="result-rewards-card rounded-2xl px-4 py-3.5 text-sm text-white/55 text-center"
+            >
               بدون پاداش — تمرینِ خوب بود
-            </div>
+            </GameCard>
           )}
           {vaultOverflow > 0 && (
             <p className="mt-2 text-center text-xs text-team-foe leading-5">
@@ -243,18 +246,24 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
         </div>
 
         {showVaultCta && (
-          <div className="rounded-2xl border border-gold-500/45 bg-gold-500/10 p-4 text-right animate-pulse-soft">
+          <GameCard
+            variant="hero"
+            className="rounded-2xl border border-gold-500/45 bg-gold-500/10 p-4 text-right animate-pulse-soft"
+          >
             <p className="text-sm font-extrabold text-gold-400">🔐 قدم بعدی: باشگاه</p>
             <p className="mt-2 text-sm text-white/70 leading-6">
               پول در خزانه است. برو باشگاه و واحدها را ارتقا بده.
             </p>
-            <button
+            <Button
               onClick={onOpenClub}
-              className="btn-gold mt-3 w-full rounded-xl py-3 text-sm font-extrabold"
+              variant="primary"
+              size="md"
+              fullWidth
+              className="mt-3"
             >
               🏟️ برو به باشگاه
-            </button>
-          </div>
+            </Button>
+          </GameCard>
         )}
 
         {/* question review */}
@@ -281,8 +290,9 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
 
           <div className="space-y-2">
             {result.outcomes.map((o, i) => (
-              <div
+              <GameCard
                 key={i}
+                variant={o.youCorrect ? "asset" : "locked"}
                 className={`result-outcome-row rounded-2xl px-3.5 py-3 ${
                   o.youCorrect ? "result-outcome-row--ok" : "result-outcome-row--miss"
                 }`}
@@ -304,7 +314,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
                     <OutcomeBadge correct={o.foeCorrect} variant="foe" />
                   </div>
                 </div>
-              </div>
+              </GameCard>
             ))}
           </div>
         </div>
@@ -313,29 +323,38 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
       {/* sticky actions */}
       <div className="result-actions sticky bottom-0 inset-x-0 px-5 pt-4 pb-[calc(14px+env(safe-area-inset-bottom))] max-w-sm mx-auto w-full space-y-2.5">
         {!showVaultCta ? (
-          <button
+          <Button
             onClick={onReplay}
-            className="btn-gold w-full rounded-2xl py-4 text-lg font-extrabold active:scale-[0.98] transition-transform flex flex-col items-center gap-0.5"
+            variant="primary"
+            size="lg"
+            fullWidth
+            className="text-lg flex flex-col items-center gap-0.5"
           >
             <span>⚽ بازیِ دوباره</span>
             {!won && (
               <span className="text-[11px] font-bold opacity-75">فرصت جبران داری</span>
             )}
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
             onClick={onReplay}
-            className="w-full rounded-2xl bg-white/10 py-3.5 font-bold text-white/80"
+            variant="muted"
+            size="md"
+            fullWidth
+            className="font-bold text-white/80"
           >
             ⚽ بازیِ دوباره
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           onClick={onHome}
-          className="w-full rounded-2xl result-home-btn py-3.5 font-bold text-white/88"
+          variant="secondary"
+          size="md"
+          fullWidth
+          className="result-home-btn font-bold text-white/88"
         >
           بازگشت به خانه
-        </button>
+        </Button>
       </div>
     </div>
   );

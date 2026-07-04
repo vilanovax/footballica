@@ -1,5 +1,6 @@
 "use client";
 
+import { GameCard } from "@/components/ui/GameCard";
 import type { FeaturedModeDef, FeaturedModeId } from "@/lib/home";
 
 interface HomeFeaturedModeProps {
@@ -17,7 +18,10 @@ export function HomeFeaturedMode({
 }: HomeFeaturedModeProps) {
   if (disabled) {
     return (
-      <div className="home-featured-compact mx-5 mt-3 rounded-2xl p-3.5 home-mode-card--disabled opacity-90">
+      <GameCard
+        variant="locked"
+        className="home-featured-compact home-mode-card--disabled mx-5 mt-3 rounded-2xl p-3.5 opacity-90"
+      >
         <div className="flex items-center gap-3">
           <span className="text-2xl grayscale opacity-50 shrink-0">{mode.emoji}</span>
           <div className="flex-1 text-right min-w-0">
@@ -26,15 +30,16 @@ export function HomeFeaturedMode({
             <p className="text-[11px] text-white/35">{disabledReason}</p>
           </div>
         </div>
-      </div>
+      </GameCard>
     );
   }
 
   return (
-    <button
-      type="button"
+    <GameCard
+      as="button"
+      variant="hero"
       onClick={() => onPlay(mode.id)}
-      className="home-featured-compact home-featured-compact--active mx-5 mt-3 w-[calc(100%-2.5rem)] rounded-2xl p-3.5 text-right active:scale-[0.98] transition-transform overflow-hidden relative"
+      className="home-featured-compact home-featured-compact--active mx-5 mt-3 w-[calc(100%-2.5rem)] rounded-2xl p-3.5 text-right"
       style={{ background: `linear-gradient(135deg, ${mode.from}, ${mode.to})` }}
     >
       <div className="relative flex items-center gap-3">
@@ -49,6 +54,6 @@ export function HomeFeaturedMode({
           <p className="text-[11px] text-white/80 mt-0.5">{mode.perk}</p>
         </div>
       </div>
-    </button>
+    </GameCard>
   );
 }
