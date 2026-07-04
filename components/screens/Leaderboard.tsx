@@ -8,6 +8,7 @@ import { useGame } from "@/lib/store";
 import { faNum, faCount } from "@/lib/format";
 import { leagueForXp } from "@/lib/player";
 import { currentDivisionLabel } from "@/lib/promotion";
+import { useClubAvatar } from "@/lib/clubAvatar";
 import {
   arenaScore,
   buildLeaderboardRows,
@@ -152,6 +153,7 @@ export function Leaderboard() {
   const vaultLevel = useGame((s) => s.vaultLevel);
   const seasonStep = useGame((s) => s.seasonStep);
   const playerFocus = useGame((s) => s.playerFocus);
+  const clubAvatar = useClubAvatar();
 
   const [tab, setTab] = useState<LeaderboardKind>(
     playerFocus === "club" ? "club" : "arena",
@@ -300,8 +302,8 @@ export function Leaderboard() {
           <div key={`${tab}-${r.rank}-${r.short}`}>
             <LeaderboardRow
               row={r}
-              crest={club.crest}
-              crestColor={club.color}
+              crest={clubAvatar.label}
+              crestColor={clubAvatar.color}
               pointsLabel={pointsLabel}
             />
             {i === 2 && <Zone label="منطقهٔ امن" kind="safe" />}

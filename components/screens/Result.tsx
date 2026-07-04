@@ -9,6 +9,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { RewardBreakdown } from "@/components/ui/RewardBreakdown";
 import { faNum, faMoney } from "@/lib/format";
 import { useGame } from "@/lib/store";
+import { useClubAvatar } from "@/lib/clubAvatar";
 import { isBank } from "@/lib/vault";
 import type { MatchResult } from "@/lib/types";
 import { OPPONENT } from "@/lib/types";
@@ -53,6 +54,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
   const recordDailyPlay = useGame((s) => s.recordDailyPlay);
   const recordWin = useGame((s) => s.recordWin);
   const club = useGame((s) => s.club);
+  const clubAvatar = useClubAvatar();
   const vaultLevel = useGame((s) => s.vaultLevel);
   const budget = useGame((s) => s.budget);
   const showVaultTutorial = useGame((s) => s.showVaultTutorial);
@@ -214,7 +216,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
                   won ? "result-scoreboard-side--win" : "result-scoreboard-side--dim"
                 }`}
               >
-                <Avatar label={club.crest} color={club.color} size={56} crown={won} />
+                <Avatar label={clubAvatar.label} color={clubAvatar.color} size={56} crown={won} />
                 <p className="text-[10px] font-extrabold uppercase tracking-wide text-gold-400">تو</p>
                 <p className="text-xs text-white/65 truncate max-w-full">{club.name}</p>
                 <p

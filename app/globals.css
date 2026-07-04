@@ -6155,6 +6155,137 @@ body {
   font-weight: 800;
 }
 
+.shop-tabs__btn {
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  text-align: right;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.16);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.shop-tabs__btn--active {
+  border-color: rgba(245, 197, 66, 0.42);
+  background: rgba(245, 197, 66, 0.08);
+}
+
+.shop-tabs__title {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.shop-tabs__sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.shop-guardrail__title {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #f5c542;
+}
+
+.shop-guardrail__sub {
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.55;
+}
+
+.shop-shelf--collection {
+  border-color: rgba(245, 197, 66, 0.14);
+}
+
+.shop-collectible {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 1.1rem;
+  min-height: 100%;
+}
+
+.shop-collectible--common {
+  border-color: rgba(47, 158, 95, 0.22);
+}
+
+.shop-collectible--rare {
+  border-color: rgba(47, 111, 237, 0.28);
+}
+
+.shop-collectible--epic {
+  border-color: rgba(245, 197, 66, 0.32);
+}
+
+.shop-collectible--owned {
+  background: rgba(47, 158, 95, 0.06);
+}
+
+.shop-collectible__stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.shop-collectible__emoji {
+  font-size: 1.6rem;
+}
+
+.shop-collectible__tier {
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.shop-collectible__category {
+  font-size: 0.56rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.shop-collectible__name {
+  margin-top: 0.15rem;
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.shop-collectible__desc,
+.shop-collectible__guard,
+.shop-collectible__price {
+  margin-top: 0.25rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.52);
+  line-height: 1.45;
+}
+
+.shop-collectible__guard {
+  color: rgba(245, 197, 66, 0.62);
+}
+
+.shop-collectible__owned-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.85rem;
+  background: rgba(47, 158, 95, 0.12);
+  border: 1px solid rgba(47, 158, 95, 0.28);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #5ee08a;
+}
+
 .shop-footnote {
   color: rgba(255, 255, 255, 0.32);
 }

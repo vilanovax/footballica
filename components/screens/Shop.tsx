@@ -11,7 +11,18 @@ import {
   type PowerUpId,
   type PowerUpMode,
 } from "@/lib/powerups";
-import { faNum, faCount } from "@/lib/format";
+import {
+  COLLECTIBLE_CATEGORIES,
+  COLLECTIBLES,
+  categoryLabel,
+  collectibleDef,
+  isEquipped,
+  ownedCollectibleCount,
+  rarityLabel,
+  type CollectibleDef,
+  type CollectibleId,
+} from "@/lib/collectibles";
+import { faNum, faCount, faMoney } from "@/lib/format";
 
 const MODE_LABELS: Record<PowerUpMode, string> = {
   quiz: "مسابقه",
@@ -134,6 +145,85 @@ function PowerUpItem({
   );
 }
 
+function CollectibleItem({
+  item,
+  owned,
+  equipped,
+  canBuy,
+  missing,
+  shaking,
+  onBuy,
+  onEquip,
+}: {
+  item: CollectibleDef;
+  owned: boolean;
+  equipped: boolean;
+  canBuy: boolean;
+  missing: number;
+  shaking: boolean;
+  onBuy: () => void;
+  onEquip: () => void;
+}) {
+  const priceLabel =
+    item.currency === "cards"
+      ? `${faNum(item.price)} کارت`
+      : faMoney(item.price);
+
+  return (
+    <GameCard
+      variant="asset"
+      className={`shop-collectible shop-collectible--${item.rarity} ${
+        owned ? "shop-collectible--owned" : canBuy ? "shop-collectible--ready" : "shop-collectible--locked"
+      } ${shaking ? "animate-shake" : ""}`}
+    >
+      <div className="shop-collectible__stage">
+        <span className="shop-collectible__emoji" aria-hidden>
+          {item.emoji}
+        </span>
+        <span className={`shop-collectible__tier shop-collectible__tier--${item.rarity}`}>
+          {rarityLabel(item.rarity)}
+        </span>
+      </div>
+
+      <div className="shop-collectible__body">
+        <p className="shop-collectible__category">{categoryLabel(item.category)}</p>
+        <h3 className="shop-collectible__name">{item.name}</h3>
+        <p className="shop-collectible__desc">{item.desc}</p>
+        <p className="shop-collectible__guard">بدون اثر رنکد · فقط کلکسیون</p>
+        {!owned && (
+          <p className="shop-collectible__price">
+            {canBuy ? priceLabel : `نیاز به ${item.currency === "cards" ? `${faNum(missing)} کارت` : faMoney(missing)} بیشتر`}
+          </p>
+        )}
+      </div>
+
+      {owned ? (
+        item.equippable ? (
+          <Button
+            onClick={onEquip}
+            variant={equipped ? "secondary" : "primary"}
+            size="sm"
+            className="shop-collectible__action"
+          >
+            {equipped ? "فعال ✓" : "فعال‌سازی"}
+          </Button>
+        ) : (
+          <span className="shop-collectible__owned-badge">در کلکسیون ✓</span>
+        )
+      ) : (
+        <Button
+          onClick={onBuy}
+          variant={canBuy ? "primary" : "muted"}
+          size="sm"
+          className={`shop-collectible__action ${!canBuy ? "shop-collectible__action--dim" : ""}`}
+        >
+          {canBuy ? `خرید · ${priceLabel}` : "کمبود منابع"}
+        </Button>
+      )}
+    </GameCard>
+  );
+}
+
 function BundleCard({
   bundle,
   onTap,
@@ -190,9 +280,15 @@ function BundleCard({
 
 export function Shop() {
   const cards = useGame((s) => s.cards);
+  const budget = useGame((s) => s.budget);
   const powerups = useGame((s) => s.powerups);
+  const ownedCollectibles = useGame((s) => s.ownedCollectibles);
+  const equippedCosmetics = useGame((s) => s.equippedCosmetics);
   const buyPowerUp = useGame((s) => s.buyPowerUp);
+  const buyCollectible = useGame((s) => s.buyCollectible);
+  const equipCollectible = useGame((s) => s.equipCollectible);
 
+  const [tab, setTab] = useState<"tactics" | "collection">("tactics");
   const [toast, setToast] = useState<string | null>(null);
   const [shakeId, setShakeId] = useState<string | null>(null);
 
@@ -202,6 +298,18 @@ export function Shop() {
   );
   const affordable = useMemo(() => POWERUPS.filter((p) => cards >= p.price), [cards]);
   const firstAffordable = affordable[0] ?? null;
+  const collectionOwned = useMemo(
+    () => ownedCollectibleCount(ownedCollectibles),
+    [ownedCollectibles],
+  );
+  const affordableCollectibles = useMemo(
+    () =>
+      COLLECTIBLES.filter((c) => {
+        if (ownedCollectibles[c.id]) return false;
+        return c.currency === "cards" ? cards >= c.price : budget >= c.price;
+      }),
+    [cards, budget, ownedCollectibles],
+  );
 
   function scrollToPremium() {
     document.getElementById("shop-premium")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -224,6 +332,28 @@ export function Shop() {
     }
   }
 
+  function buyItem(id: CollectibleId) {
+    const item = collectibleDef(id);
+    const res = buyCollectible(id);
+    if (res === "ok") {
+      showToast(`«${item.name}» به کلکسیون اضافه شد ✓`);
+    } else {
+      setShakeId(id);
+      setTimeout(() => setShakeId(null), 400);
+      showToast(
+        item.currency === "cards" ? "کارت تاکتیکی کافی نیست" : "بودجهٔ خزانه کافی نیست",
+      );
+    }
+  }
+
+  function equipItem(id: CollectibleId) {
+    const item = collectibleDef(id);
+    const res = equipCollectible(id);
+    if (res === "ok") {
+      showToast(`«${item.name}» فعال شد ✓`);
+    }
+  }
+
   return (
     <div className="shop-screen pitch-stripes min-h-dvh pb-32">
       {/* store banner */}
@@ -235,7 +365,7 @@ export function Shop() {
         <div className="relative px-5 pt-5 pb-4">
           <div className="flex items-start justify-between gap-3">
             <div className="text-right flex-1">
-              <p className="shop-banner__eyebrow">بازار تاکتیک</p>
+              <p className="shop-banner__eyebrow">بازار باشگاه</p>
               <h1 className="shop-banner__title">فروشگاه</h1>
             </div>
             <div className="shop-wallet">
@@ -249,13 +379,20 @@ export function Shop() {
             </div>
           </div>
           <p className="shop-banner__hint mt-3">
-            با کارت تاکتیکی، سوپرپاورهای مسابقه را فعال کن.
+            تاکتیک برای بازی دوستانه · کلکسیون برای هویت باشگاه — هر دو بدون مزیت رنکد.
           </p>
-          {totalOwned > 0 && (
-            <p className="shop-banner__owned mt-2">
-              کولهٔ تاکتیک: {faNum(totalOwned)} پاورآپ
-            </p>
-          )}
+          <div className="shop-banner__stats mt-2">
+            {totalOwned > 0 && (
+              <span className="shop-banner__owned">
+                کولهٔ تاکتیک: {faNum(totalOwned)} پاورآپ
+              </span>
+            )}
+            {collectionOwned > 0 && (
+              <span className="shop-banner__owned">
+                کلکسیون: {faNum(collectionOwned)} از {faNum(COLLECTIBLES.length)}
+              </span>
+            )}
+          </div>
           <div className="shop-banner__actions">
             <Button onClick={scrollToPremium} variant="secondary" size="sm">
               خرید کارت تاکتیکی
@@ -264,6 +401,27 @@ export function Shop() {
         </div>
       </GameCard>
 
+      <div className="shop-tabs mx-5 mt-4 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setTab("tactics")}
+          className={`shop-tabs__btn ${tab === "tactics" ? "shop-tabs__btn--active" : ""}`}
+        >
+          <span className="shop-tabs__title">تاکتیک</span>
+          <span className="shop-tabs__sub">پاورآپ · فقط دوئل دوستانه</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("collection")}
+          className={`shop-tabs__btn ${tab === "collection" ? "shop-tabs__btn--active" : ""}`}
+        >
+          <span className="shop-tabs__title">کلکسیون باشگاه</span>
+          <span className="shop-tabs__sub">cosmetic · prestige · اقتصاد</span>
+        </button>
+      </div>
+
+      {tab === "tactics" && (
+        <>
       {affordable.length > 0 && firstAffordable && (
         <section className="mx-5 mt-4">
           <GameCard variant="asset" highlight className="shop-ready-banner">
@@ -353,10 +511,91 @@ export function Shop() {
           </div>
 
           <p className="shop-footnote mt-4 text-center text-xs leading-6">
-            pay-to-skip، نه pay-to-win — مصرف در دوئل و لیدربورد محدود می‌شود
+            pay-to-skip، نه pay-to-win — در رنکد هیچ پاورآپی فعال نیست
           </p>
         </GameCard>
       </section>
+        </>
+      )}
+
+      {tab === "collection" && (
+        <>
+          <section className="mx-5 mt-4">
+            <GameCard variant="asset" className="shop-guardrail rounded-2xl p-4 text-right">
+              <p className="shop-guardrail__title">قانون مارکت</p>
+              <p className="shop-guardrail__sub">
+                کلکسیون فقط هویت، prestige و راحتی اقتصادی می‌دهد — accuracy، زمان پاسخ و
+                fairness رنکد را دست نمی‌زند.
+              </p>
+            </GameCard>
+          </section>
+
+          {affordableCollectibles.length > 0 && (
+            <section className="mx-5 mt-4">
+              <GameCard variant="asset" highlight className="shop-ready-banner">
+                <div className="shop-ready-banner__row">
+                  <div className="shop-ready-banner__copy">
+                    <p className="shop-ready-banner__title">
+                      {faNum(affordableCollectibles.length)} آیتم کلکسیونی آمادهٔ خرید
+                    </p>
+                    <p className="shop-ready-banner__sub">
+                      از «{affordableCollectibles[0]!.name}» شروع کن و باشگاهت را متمایز کن.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => buyItem(affordableCollectibles[0]!.id)}
+                    variant="primary"
+                    size="sm"
+                  >
+                    خرید
+                  </Button>
+                </div>
+              </GameCard>
+            </section>
+          )}
+
+          {COLLECTIBLE_CATEGORIES.map((cat) => {
+            const items = COLLECTIBLES.filter((c) => c.category === cat.id);
+            return (
+              <section key={cat.id} className="mx-5 mt-6">
+                <GameCard variant="asset" className="shop-shelf shop-shelf--collection">
+                  <div className="shop-shelf__head">
+                    <div className="text-right flex-1">
+                      <p className="shop-shelf__eyebrow">{cat.detail}</p>
+                      <h2 className="shop-shelf__title">{cat.label}</h2>
+                    </div>
+                    <span className="shop-shelf__count">
+                      {faNum(items.filter((i) => ownedCollectibles[i.id]).length)} / {faNum(items.length)}
+                    </span>
+                  </div>
+                  <div className="shop-grid">
+                    {items.map((item) => {
+                      const owned = !!ownedCollectibles[item.id];
+                      const equipped = isEquipped(item.id, equippedCosmetics);
+                      const balance = item.currency === "cards" ? cards : budget;
+                      const canBuy = !owned && balance >= item.price;
+                      const missing = Math.max(0, item.price - balance);
+                      return (
+                        <CollectibleItem
+                          key={item.id}
+                          item={item}
+                          owned={owned}
+                          equipped={equipped}
+                          canBuy={canBuy}
+                          missing={missing}
+                          shaking={shakeId === item.id}
+                          onBuy={() => buyItem(item.id)}
+                          onEquip={() => equipItem(item.id)}
+                        />
+                      );
+                    })}
+                  </div>
+                </GameCard>
+              </section>
+            );
+          })}
+        </>
+      )}
 
       {toast && <div className="shop-toast animate-pop">{toast}</div>}
     </div>

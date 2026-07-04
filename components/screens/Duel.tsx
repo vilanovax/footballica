@@ -8,6 +8,7 @@ import { faNum } from "@/lib/format";
 import { OPPONENT, type DuelKind, type MatchResult } from "@/lib/types";
 import { ECONOMY } from "@/lib/economy";
 import { useGame } from "@/lib/store";
+import { useClubAvatar } from "@/lib/clubAvatar";
 import { levelInfo } from "@/lib/player";
 import { DUEL_KIND_OPTIONS, duelKindLabel } from "@/lib/duel";
 
@@ -21,6 +22,7 @@ export function Duel({ onFinish, onExit, defaultKind }: DuelProps) {
   const [kind, setKind] = useState<DuelKind | null>(defaultKind ?? null);
   const [started, setStarted] = useState(false);
   const club = useGame((s) => s.club);
+  const clubAvatar = useClubAvatar();
   const xp = useGame((s) => s.xp);
   const arenaRating = useGame((s) => s.arenaRating);
   const { level } = levelInfo(xp);
@@ -95,7 +97,7 @@ export function Duel({ onFinish, onExit, defaultKind }: DuelProps) {
 
       <div className="mt-8 flex items-center gap-4">
         <div className="flex flex-col items-center gap-2 animate-rise">
-          <Avatar label={club.crest} color={club.color} size={92} />
+          <Avatar label={clubAvatar.label} color={clubAvatar.color} size={92} />
           <p className="font-extrabold">{club.name}</p>
           <p className="text-xs text-white/50">سطح {faNum(level)}</p>
         </div>

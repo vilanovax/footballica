@@ -12,6 +12,8 @@ import { levelInfo, leagueForXp } from "@/lib/player";
 import { nextUnlock } from "@/lib/progress";
 import { ACHIEVEMENT_MISSIONS } from "@/lib/missions";
 import { CLUB } from "@/lib/club";
+import { useClubAvatar } from "@/lib/clubAvatar";
+import { ownedCollectibleCount } from "@/lib/collectibles";
 
 interface ProfileProps {
   onOpenClub: () => void;
@@ -67,6 +69,8 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
   const gamesPlayed = useGame((s) => s.gamesPlayed);
   const matchesWon = useGame((s) => s.matchesWon);
   const club = useGame((s) => s.club);
+  const ownedCollectibles = useGame((s) => s.ownedCollectibles);
+  const clubAvatar = useClubAvatar();
   const missionClaimed = useGame((s) => s.missionClaimed);
   const claimableMissions = useGame((s) => s.claimableMissions);
   const resetSave = useGame((s) => s.resetSave);
@@ -77,6 +81,7 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
   const missionBadge = claimableMissions();
   const xpRemaining = Math.max(0, need - into);
   const achievementCount = ACHIEVEMENT_MISSIONS.filter((m) => missionClaimed[m.id]).length;
+  const collectionCount = ownedCollectibleCount(ownedCollectibles);
   const hasIdentity = Boolean(club.city || club.heartTeam || club.internationalTeam);
   const rankValue = gamesPlayed > 0 ? faNum(CLUB.rank) : "-";
 
@@ -88,7 +93,7 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
         <div className="relative px-5 pt-6 pb-5">
           <div className="profile-avatar-wrap mx-auto">
             <div className="profile-avatar-ring" aria-hidden />
-            <Avatar label={club.crest} color={club.color} size={96} />
+            <Avatar label={clubAvatar.label} color={clubAvatar.color} size={96} />
             <span className="profile-level-shield" aria-label={`سطح ${faNum(level)}`}>
               {faNum(level)}
             </span>
@@ -206,6 +211,7 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
           <CareerStat emoji="🎽" value={faCount(fans)} label="هوادار" />
           <CareerStat emoji="⚡" value={faNum(cards)} label="کارت تاکتیکی" accent />
           <CareerStat emoji="🔥" value={faNum(streakDays)} label="روز استریک" />
+          <CareerStat emoji="🧩" value={faNum(collectionCount)} label="کلکسیون" />
         </div>
       </section>
 
@@ -246,7 +252,7 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
         >
           <div className="flex items-center gap-3">
             <div className="profile-club-card__crest">
-              <Avatar label={club.crest} color={club.color} size={52} />
+              <Avatar label={clubAvatar.label} color={clubAvatar.color} size={52} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="profile-card__eyebrow">اتاق فرمان</p>

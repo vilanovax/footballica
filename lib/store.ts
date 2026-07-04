@@ -30,6 +30,12 @@ import {
   promotionGateStatus,
 } from "./promotion";
 import type { PlayerFocus } from "./playerFocus";
+import type {
+  CollectibleId,
+  EquippedCosmetics,
+  OwnedCollectibles,
+} from "./collectibles";
+import { collectibleDef } from "./collectibles";
 
 export type UpgradeResult = "ok" | "poor" | "locked" | "max";
 
@@ -95,6 +101,9 @@ interface GameState {
   playerFocus: PlayerFocus;
   /** رتبه Arena — فقط از دوئل رنکد و فعالیت skill-based */
   arenaRating: number;
+  /** کلکسیون باشگاه — cosmetic و prestige، بدون اثر رنکد */
+  ownedCollectibles: OwnedCollectibles;
+  equippedCosmetics: EquippedCosmetics;
   // اکشن‌ها
   addCards: (n: number) => void;
   addFans: (n: number) => void;
@@ -131,6 +140,8 @@ interface GameState {
   addTotalCorrect: (n: number) => void;
   /** خریدِ سوپرپاور از فروشگاه */
   buyPowerUp: (id: PowerUpId) => UpgradeResult;
+  buyCollectible: (id: CollectibleId) => UpgradeResult;
+  equipCollectible: (id: CollectibleId) => UpgradeResult;
   /** مصرفِ یک عدد از موجودی؛ false اگر نداشت */
   usePowerUp: (id: PowerUpId) => boolean;
   /** همگام‌سازی اقتصاد باشگاه بعد از rehydrate (مدیران + بانک) */
@@ -233,6 +244,8 @@ const initialState = {
   seasonStep: 1,
   playerFocus: "both" as PlayerFocus,
   arenaRating: 1000,
+  ownedCollectibles: {} as OwnedCollectibles,
+  equippedCosmetics: {} as EquippedCosmetics,
 };
 
 export const useGame = create<GameState>()(
@@ -556,6 +569,40 @@ export const useGame = create<GameState>()(
         return "ok";
       },
 
+      buyCollectible: (id) => {
+        const def = collectibleDef(id);
+        const state = get();
+        if (state.ownedCollectibles[id]) return "locked";
+        if (def.currency === "cards") {
+          if (state.cards < def.price) return "poor";
+          set((s) => ({
+            cards: s.cards - def.price,
+            ownedCollectibles: { ...s.ownedCollectibles, [id]: true },
+          }));
+          return "ok";
+        }
+        if (state.budget < def.price) return "poor";
+        set((s) => ({
+          budget: s.budget - def.price,
+          ownedCollectibles: { ...s.ownedCollectibles, [id]: true },
+        }));
+        return "ok";
+      },
+
+      equipCollectible: (id) => {
+        const def = collectibleDef(id);
+        const state = get();
+        if (!state.ownedCollectibles[id]) return "locked";
+        if (!def.equippable) return "locked";
+        set((s) => {
+          const next: EquippedCosmetics = { ...s.equippedCosmetics };
+          if (def.category === "crest") next.crestId = id;
+          if (def.category === "kit") next.kitId = id;
+          return { equippedCosmetics: next };
+        });
+        return "ok";
+      },
+
       usePowerUp: (id) => {
         const count = get().powerups[id] ?? 0;
         if (count <= 0) return false;
@@ -626,7 +673,7 @@ export const useGame = create<GameState>()(
     }),
     {
       name: "footballica-save",
-      version: 9,
+      version: 10,
       migrate: (persisted, version) => {
         const s = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -686,6 +733,16 @@ export const useGame = create<GameState>()(
         if (version < 9) {
           s.arenaRating = typeof s.arenaRating === "number" ? s.arenaRating : 1000;
         }
+        if (version < 10) {
+          s.ownedCollectibles =
+            typeof s.ownedCollectibles === "object" && s.ownedCollectibles
+              ? s.ownedCollectibles
+              : {};
+          s.equippedCosmetics =
+            typeof s.equippedCosmetics === "object" && s.equippedCosmetics
+              ? s.equippedCosmetics
+              : {};
+        }
         return persisted;
       },
       storage: createJSONStorage(() => localStorage),
@@ -726,6 +783,8 @@ export const useGame = create<GameState>()(
         seasonStep: s.seasonStep,
         playerFocus: s.playerFocus,
         arenaRating: s.arenaRating,
+        ownedCollectibles: s.ownedCollectibles,
+        equippedCosmetics: s.equippedCosmetics,
       }),
     },
   ),

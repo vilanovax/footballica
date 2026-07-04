@@ -15,6 +15,7 @@ import { isUnitUnlocked, unitIncomeSnapshot } from "@/lib/clubEconomy";
 import { levelInfo } from "@/lib/player";
 import { vaultCapacity, vaultUpgradeCost, VAULT_MAX, isBank } from "@/lib/vault";
 import { useGame } from "@/lib/store";
+import { useClubAvatar } from "@/lib/clubAvatar";
 import { faNum, faShort, faMoney, faTreasuryShort, faVaultM } from "@/lib/format";
 import { rewardLabel } from "@/lib/missions";
 import {
@@ -138,6 +139,7 @@ export function Club({ onBack }: ClubProps) {
   const matchesWon = useGame((s) => s.matchesWon);
   const xp = useGame((s) => s.xp);
   const club = useGame((s) => s.club);
+  const clubAvatar = useClubAvatar();
   const showVaultTutorial = useGame((s) => s.showVaultTutorial);
   const seasonStep = useGame((s) => s.seasonStep);
   const collectAllUnits = useGame((s) => s.collectAllUnits);
@@ -353,7 +355,7 @@ export function Club({ onBack }: ClubProps) {
             سطح {faNum(level)} · {currentDivisionLabel(seasonStep)}
           </p>
         </div>
-        <Avatar label={club.crest} color={club.color} size={48} />
+        <Avatar label={clubAvatar.label} color={clubAvatar.color} size={48} />
       </header>
 
       <div className="club-economy-panel mx-5 mt-2">

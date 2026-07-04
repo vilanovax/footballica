@@ -24,6 +24,7 @@ import {
   seasonAdvisorMessage,
 } from "@/lib/promotion";
 import { arenaScore } from "@/lib/leaderboards";
+import { useClubAvatar } from "@/lib/clubAvatar";
 
 interface HomeProps {
   onPlayQuick: () => void;
@@ -279,6 +280,7 @@ export function Home({
   const vaultLevel = useGame((s) => s.vaultLevel);
   const xp = useGame((s) => s.xp);
   const club = useGame((s) => s.club);
+  const clubAvatar = useClubAvatar();
   const units = useGame((s) => s.units);
   const itemLevels = useGame((s) => s.itemLevels);
   const assign = useGame((s) => s.assign);
@@ -574,7 +576,7 @@ export function Home({
           onClick={onOpenClub}
           className="home-topbar w-full text-right active:scale-[0.98] transition-transform"
         >
-          <Avatar label={club.crest} color={club.color} size={52} />
+          <Avatar label={clubAvatar.label} color={clubAvatar.color} size={52} />
           <div className="flex-1 min-w-0">
             <p className="home-topbar__eyebrow">اتاق فرمان امروز</p>
             <p className="text-lg font-extrabold leading-tight truncate text-white">
