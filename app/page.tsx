@@ -107,7 +107,11 @@ export default function Page() {
       )}
 
       {screen === "missions" && (
-        <Missions onBack={() => setScreen(missionsFrom)} />
+        <Missions
+          onBack={() => setScreen(missionsFrom)}
+          onGoToGames={() => setScreen("games")}
+          onGoToClub={() => openClub("missions")}
+        />
       )}
 
       {screen === "club" && <Club onBack={() => setScreen(clubFrom)} />}

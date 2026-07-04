@@ -64,7 +64,7 @@ export const ONBOARDING_MISSIONS: MissionDef[] = [
     id: "ob_first_collect",
     kind: "onboarding",
     emoji: "🏪",
-    title: "اولین درآمد باشگاه",
+    title: "اولین درآمد باشگاهت",
     detail: "درآمد فروشگاه را به خزانه بفرست",
     target: 1,
     reward: { xp: 50, fans: 0, vaultMoney: 500_000, cards: 0 },
@@ -94,8 +94,8 @@ export const ONBOARDING_MISSIONS: MissionDef[] = [
     id: "ob_assign_manager",
     kind: "onboarding",
     emoji: "📋",
-    title: "اولین انتصاب مدیریتی",
-    detail: "مدیر را روی یک واحد بگذار",
+    title: "اولین مدیرت را منصوب کن",
+    detail: "مدیر را روی یکی از واحدهای باشگاه بگذار",
     target: 1,
     reward: { xp: 60, fans: 20, vaultMoney: 0, cards: 0 },
     progressKey: "assignedCount",
@@ -113,7 +113,7 @@ export const DAILY_MISSIONS: MissionDef[] = [
     id: "daily_play",
     kind: "daily",
     emoji: "🎮",
-    title: "یک بازی امروز",
+    title: "امروز یک بازی بزن",
     detail: "هر مود — کوییز، پنالتی، بمب…",
     target: 1,
     reward: { xp: 40, fans: 0, vaultMoney: 0, cards: 0 },
@@ -133,8 +133,8 @@ export const DAILY_MISSIONS: MissionDef[] = [
     id: "daily_collect_2",
     kind: "daily",
     emoji: "💰",
-    title: "۲ بار جمع‌آوری درآمد",
-    detail: "دو بار درآمد واحد را جمع کن",
+    title: "۲ بار درآمد باشگاه را جمع کن",
+    detail: "دو بار درآمد یکی از واحدهای باشگاه را جمع کن",
     target: 2,
     reward: { xp: 50, fans: 0, vaultMoney: 1_000_000, cards: 0 },
     progressKey: "daily_collect",
@@ -344,6 +344,17 @@ export function claimableMissionCount(snap: MissionSnapshot): number {
 
 export function firstClaimableMission(snap: MissionSnapshot): MissionStatus | null {
   return allMissionStatuses(snap).find((s) => s.claimable) ?? null;
+}
+
+export type MissionNavTarget = "games" | "club";
+
+/** مقصد CTA برای مأموریت‌های روزانه */
+export function dailyMissionNavTarget(id: string): MissionNavTarget {
+  return id === "daily_collect_2" ? "club" : "games";
+}
+
+export function dailyMissionCtaLabel(id: string): string {
+  return id === "daily_collect_2" ? "رفتن به باشگاه" : "رفتن به بازی";
 }
 
 export function rewardLabel(reward: ActivityReward): string {

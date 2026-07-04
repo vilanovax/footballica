@@ -11,7 +11,12 @@ import {
   DAILY_MISSIONS,
   ACHIEVEMENT_MISSIONS,
   buildMissionSnapshot,
+  dailyMissionCtaLabel,
+  dailyMissionNavTarget,
+  firstClaimableMission,
   missionStatus,
+  rewardLabel,
+  type MissionNavTarget,
   type MissionStatus,
 } from "@/lib/missions";
 import type { ActivityReward as EconomyReward } from "@/lib/economy";
@@ -89,16 +94,53 @@ function ClubPathOverview({ items }: { items: MissionStatus[] }) {
   );
 }
 
+function ReadyRewardsBanner({
+  count,
+  first,
+  onClaim,
+}: {
+  count: number;
+  first: MissionStatus;
+  onClaim: () => void;
+}) {
+  return (
+    <GameCard variant="asset" highlight className="mission-ready-banner">
+      <div className="mission-ready-banner__row">
+        <div className="mission-ready-banner__copy">
+          <p className="mission-ready-banner__title">
+            {faNum(count)} جایزه آماده دریافت داری
+          </p>
+          <p className="mission-ready-banner__sub">
+            {first.def.title}
+            <span className="mission-ready-banner__reward"> · {rewardLabel(first.def.reward)}</span>
+          </p>
+        </div>
+        <Button onClick={onClaim} variant="primary" size="sm" className="shrink-0">
+          دریافت
+        </Button>
+      </div>
+    </GameCard>
+  );
+}
+
 function DailyMissionCard({
   status,
   onClaim,
+  onNavigate,
   shake,
 }: {
   status: MissionStatus;
   onClaim: () => void;
+  onNavigate: (target: MissionNavTarget) => void;
   shake: boolean;
 }) {
-  const { def, progress, complete, claimed, claimable, pct } = status;
+  const { def, progress, claimed, claimable } = status;
+  const navTarget = dailyMissionNavTarget(def.id);
+  const ctaLabel = claimed
+    ? "دریافت شد"
+    : claimable
+      ? "دریافت"
+      : dailyMissionCtaLabel(def.id);
 
   return (
     <GameCard
@@ -119,29 +161,27 @@ function DailyMissionCard({
               <span className="mission-badge mission-badge--ready">آماده</span>
             )}
           </div>
+          <p className="mission-daily-card__detail">{def.detail}</p>
           <RewardLoot reward={def.reward} compact />
         </div>
-        {claimable ? (
-          <Button
-            onClick={onClaim}
-            variant="primary"
-            size="sm"
-            className="mission-daily-card__claim shrink-0 px-3"
-          >
-            دریافت
-          </Button>
-        ) : (
-          <span className="mission-daily-card__pct shrink-0">{faNum(Math.round(pct))}٪</span>
-        )}
+        <Button
+          onClick={claimed ? undefined : claimable ? onClaim : () => onNavigate(navTarget)}
+          variant={claimable ? "primary" : claimed ? "success" : "secondary"}
+          size="sm"
+          className={`mission-daily-card__claim shrink-0 px-3 ${
+            claimed ? "pointer-events-none" : ""
+          }`}
+        >
+          {ctaLabel}
+        </Button>
       </div>
       {!claimed && (
         <div className="mission-daily-card__progress">
           <ProgressBar
             value={progress}
             max={def.target}
-            tone={complete ? "success" : "money"}
+            tone="success"
             trackClassName="mission-daily-card__track h-1.5"
-            fillClassName={complete ? "mission-progress__fill--done" : undefined}
           />
           <p className="mission-daily-card__count">
             {faNum(progress)} از {faNum(def.target)}
@@ -192,9 +232,8 @@ function OnboardingStepCard({
               <ProgressBar
                 value={progress}
                 max={def.target}
-                tone={complete ? "success" : "info"}
-                trackClassName="h-1.5"
-                fillClassName={complete ? "mission-progress__fill--done" : undefined}
+                tone="info"
+                trackClassName="mission-step-card__track h-1.5"
               />
               <p className="mission-step-card__count">
                 {faNum(progress)} از {faNum(def.target)}
@@ -230,6 +269,20 @@ function AchievementMedalCard({
 }) {
   const { def, progress, complete, claimed, claimable } = status;
   const locked = !complete && !claimable && !claimed;
+  const statusTone = claimable
+    ? "ready"
+    : claimed
+      ? "earned"
+      : progress > 0
+        ? "progress"
+        : "locked";
+  const statusLabel = claimable
+    ? "قابل دریافت"
+    : claimed
+      ? "دریافت شد"
+      : progress > 0
+        ? "در مسیر"
+        : "قفل";
 
   return (
     <GameCard
@@ -248,18 +301,24 @@ function AchievementMedalCard({
           {locked && <span className="mission-medal__lock">🔒</span>}
         </div>
         <div className="mission-medal__copy">
-          <h4 className="mission-medal__title">{def.title}</h4>
+          <div className="mission-medal__title-row">
+            <h4 className="mission-medal__title">{def.title}</h4>
+            <span className={`mission-medal__status mission-medal__status--${statusTone}`}>
+              {statusLabel}
+            </span>
+          </div>
           <p className="mission-medal__detail">{def.detail}</p>
         </div>
       </div>
 
-      {!claimed && !locked && (
+      {!claimed && (
         <div className="mission-medal__progress">
           <ProgressBar
             value={progress}
             max={def.target}
-            tone={complete ? "money" : "success"}
-            trackClassName="h-1"
+            tone="money"
+            trackClassName="mission-medal__track h-1.5"
+            fillClassName={claimable ? "mission-progress__fill--done" : undefined}
           />
           <p className="mission-medal__count">
             {faNum(progress)} از {faNum(def.target)}
@@ -311,9 +370,11 @@ function SectionHeader({
 
 interface MissionsProps {
   onBack: () => void;
+  onGoToGames: () => void;
+  onGoToClub: () => void;
 }
 
-export function Missions({ onBack }: MissionsProps) {
+export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
   const gamesPlayed = useGame((s) => s.gamesPlayed);
   const totalCorrect = useGame((s) => s.totalCorrect);
   const unitCollectCount = useGame((s) => s.unitCollectCount);
@@ -391,6 +452,7 @@ export function Missions({ onBack }: MissionsProps) {
   const dailyReady = daily.filter((s) => s.claimable).length;
   const pathReady = onboarding.filter((s) => s.claimable).length;
   const trophyReady = achievements.filter((s) => s.claimable).length;
+  const firstReady = firstClaimableMission(snap);
 
   const activeOnboarding = onboarding.filter((s) => !s.claimed);
   const doneOnboarding = onboarding.filter((s) => s.claimed);
@@ -404,6 +466,14 @@ export function Missions({ onBack }: MissionsProps) {
       setShakeId(id);
       setTimeout(() => setShakeId(null), 400);
     }
+  }
+
+  function goToTarget(target: MissionNavTarget) {
+    if (target === "club") {
+      onGoToClub();
+      return;
+    }
+    onGoToGames();
   }
 
   return (
@@ -422,17 +492,21 @@ export function Missions({ onBack }: MissionsProps) {
             <h1 className="mission-header__title">مسیر باشگاه</h1>
             <p className="mission-header__sub">مأموریت، جایزه، افتخار</p>
           </div>
-          {claimable > 0 ? (
-            <span className="mission-header-badge">{faNum(claimable)}</span>
-          ) : (
-            <span className="mission-header__spacer" aria-hidden />
-          )}
+          <span className="mission-header__spacer" aria-hidden />
         </div>
 
         <ClubPathOverview items={onboarding} />
       </header>
 
       <div className="missions-screen__body px-5 mt-5 space-y-7">
+        {firstReady && (
+          <ReadyRewardsBanner
+            count={claimable}
+            first={firstReady}
+            onClaim={() => claim(firstReady.def.id)}
+          />
+        )}
+
         <section className="mission-section">
           <SectionHeader
             title="مأموریت‌های امروز"
@@ -445,6 +519,7 @@ export function Missions({ onBack }: MissionsProps) {
               <DailyMissionCard
                 key={s.def.id}
                 status={s}
+                onNavigate={goToTarget}
                 shake={shakeId === s.def.id}
                 onClaim={() => claim(s.def.id)}
               />
@@ -455,7 +530,7 @@ export function Missions({ onBack }: MissionsProps) {
         {activeOnboarding.length > 0 && (
           <section className="mission-section">
             <SectionHeader
-              title="مسیر شروع باشگاه"
+              title="مسیر ساخت باشگاه"
               sub="یک‌بار — کل loop را یاد بگیر"
               icon="🚀"
               ready={pathReady}
@@ -493,7 +568,7 @@ export function Missions({ onBack }: MissionsProps) {
 
         <section className="mission-section">
           <SectionHeader
-            title="تالار افتخارات"
+            title="تالار افتخارات باشگاه"
             sub="کلکسیون بلندمدت"
             icon="🏅"
             ready={trophyReady}
