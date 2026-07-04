@@ -1,6 +1,6 @@
 import { currentDivisionLabel } from "./promotion";
 
-export type LeaderboardKind = "arena" | "club";
+export type PlayerLeaderboardKind = "arena" | "club";
 
 export interface LeaderboardPlayerInput {
   xp: number;
@@ -71,7 +71,7 @@ const MOCK_SHORTS = ["س.ک", "ز.ر", "م.ا", "تو", "ع.ن", "ن.ص", "ر.ح
 const MOCK_COLORS = ["foe", "#8b3fe0", "#e08a2f", "you", "foe", "#2f9e5f", "foe", "#8b3fe0", "#2f9e5f", "foe"];
 
 export function buildLeaderboardRows(
-  kind: LeaderboardKind,
+  kind: PlayerLeaderboardKind,
   input: LeaderboardPlayerInput,
 ): LeaderboardRowData[] {
   const youPoints = kind === "arena" ? arenaScore(input) : clubValue(input);
@@ -93,18 +93,4 @@ export function buildLeaderboardRows(
   return rows
     .sort((a, b) => b.points - a.points)
     .map((row, i) => ({ ...row, rank: i + 1 }));
-}
-
-export function leaderboardPointsLabel(kind: LeaderboardKind): string {
-  return kind === "arena" ? "امتیاز Arena" : "ارزش باشگاه";
-}
-
-export function leaderboardTitle(kind: LeaderboardKind): string {
-  return kind === "arena" ? "جدول کوییز هفتگی" : "جدول باشگاه فصلی";
-}
-
-export function leaderboardSubtitle(kind: LeaderboardKind): string {
-  return kind === "arena"
-    ? "رتبه بر اساس skill، برد، رکورد و streak — بدون مزیت اقتصادی باشگاه."
-    : "رتبه بر اساس ارزش باشگاه، هوادار، خزانه و صعود فصل.";
 }

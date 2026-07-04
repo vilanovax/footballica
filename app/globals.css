@@ -5093,6 +5093,39 @@ body {
   color: rgba(255, 255, 255, 0.45);
 }
 
+.lb-community-avatar {
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.35rem;
+}
+
+.lb-row--community .lb-you-badge {
+  font-size: 0.58rem;
+}
+
+.lb-identity-cta {
+  border-color: rgba(47, 111, 237, 0.24);
+}
+
+.lb-identity-cta__title {
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.lb-identity-cta__sub {
+  margin-top: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.52);
+  line-height: 1.55;
+}
+
 .lb-season-pill {
   display: inline-flex;
   align-items: center;
