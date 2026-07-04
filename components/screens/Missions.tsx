@@ -12,10 +12,14 @@ import {
   ACHIEVEMENT_MISSIONS,
   buildMissionSnapshot,
   dailyMissionCtaLabel,
+  dailyMissionDisplay,
   dailyMissionNavTarget,
   firstClaimableMission,
   missionStatus,
   rewardLabel,
+  seasonMissionCtaLabel,
+  seasonMissionNavTarget,
+  seasonMissionsForStep,
   type MissionNavTarget,
   type MissionStatus,
 } from "@/lib/missions";
@@ -168,6 +172,78 @@ function ReadyRewardsBanner({
 
 function DailyMissionCard({
   status,
+  seasonStep,
+  onClaim,
+  onNavigate,
+  shake,
+}: {
+  status: MissionStatus;
+  seasonStep: number;
+  onClaim: () => void;
+  onNavigate: (target: MissionNavTarget) => void;
+  shake: boolean;
+}) {
+  const { def, progress, claimed, claimable } = status;
+  const display = dailyMissionDisplay(def, seasonStep);
+  const navTarget = dailyMissionNavTarget(def.id);
+  const ctaLabel = claimed
+    ? "دریافت شد"
+    : claimable
+      ? "دریافت"
+      : dailyMissionCtaLabel(def.id);
+
+  return (
+    <GameCard
+      variant="asset"
+      highlight={claimable}
+      className={`mission-daily-card ${claimable ? "mission-daily-card--ready" : ""} ${
+        shake ? "animate-shake" : ""
+      }`}
+    >
+      <div className="mission-daily-card__row">
+        <span className="mission-daily-card__icon" aria-hidden>
+          {def.emoji}
+        </span>
+        <div className="mission-daily-card__main">
+          <div className="mission-daily-card__title-row">
+            <h4 className="mission-daily-card__title">{display.title}</h4>
+            {claimable && (
+              <span className="mission-badge mission-badge--ready">آماده</span>
+            )}
+          </div>
+          <p className="mission-daily-card__detail">{display.detail}</p>
+          <RewardLoot reward={def.reward} compact />
+        </div>
+        <Button
+          onClick={claimed ? undefined : claimable ? onClaim : () => onNavigate(navTarget)}
+          variant={claimable ? "primary" : claimed ? "success" : "secondary"}
+          size="sm"
+          className={`mission-daily-card__claim shrink-0 px-3 ${
+            claimed ? "pointer-events-none" : ""
+          }`}
+        >
+          {ctaLabel}
+        </Button>
+      </div>
+      {!claimed && (
+        <div className="mission-daily-card__progress">
+          <ProgressBar
+            value={progress}
+            max={def.target}
+            tone="success"
+            trackClassName="mission-daily-card__track h-1.5"
+          />
+          <p className="mission-daily-card__count">
+            {faNum(progress)} از {faNum(def.target)}
+          </p>
+        </div>
+      )}
+    </GameCard>
+  );
+}
+
+function SeasonMissionCard({
+  status,
   onClaim,
   onNavigate,
   shake,
@@ -178,12 +254,8 @@ function DailyMissionCard({
   shake: boolean;
 }) {
   const { def, progress, claimed, claimable } = status;
-  const navTarget = dailyMissionNavTarget(def.id);
-  const ctaLabel = claimed
-    ? "دریافت شد"
-    : claimable
-      ? "دریافت"
-      : dailyMissionCtaLabel(def.id);
+  const navTarget = seasonMissionNavTarget(def);
+  const ctaLabel = seasonMissionCtaLabel(def, status);
 
   return (
     <GameCard
@@ -223,7 +295,7 @@ function DailyMissionCard({
           <ProgressBar
             value={progress}
             max={def.target}
-            tone="success"
+            tone="info"
             trackClassName="mission-daily-card__track h-1.5"
           />
           <p className="mission-daily-card__count">
@@ -506,17 +578,19 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
   );
 
   const onboarding = ONBOARDING_MISSIONS.map((d) => missionStatus(d, snap));
+  const season = seasonMissionsForStep(seasonStep).map((d) => missionStatus(d, snap));
   const daily = DAILY_MISSIONS.map((d) => missionStatus(d, snap));
   const achievements = ACHIEVEMENT_MISSIONS.map((d) => missionStatus(d, snap));
 
-  const claimable = [...onboarding, ...daily, ...achievements].filter(
+  const claimable = [...onboarding, ...season, ...daily, ...achievements].filter(
     (s) => s.claimable,
   ).length;
 
   const dailyReady = daily.filter((s) => s.claimable).length;
+  const seasonReady = season.filter((s) => s.claimable).length;
   const pathReady = onboarding.filter((s) => s.claimable).length;
   const trophyReady = achievements.filter((s) => s.claimable).length;
-  const firstReady = firstClaimableMission(snap);
+  const firstReady = firstClaimableMission(snap, seasonStep);
 
   const activeOnboarding = onboarding.filter((s) => !s.claimed);
   const doneOnboarding = onboarding.filter((s) => s.claimed);
@@ -592,6 +666,26 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
 
         <section className="mission-section">
           <SectionHeader
+            title="مأموریت‌های فصل"
+            sub={promotionGate.seasonTitle}
+            icon="🎯"
+            ready={seasonReady}
+          />
+          <div className="mission-section__list">
+            {season.map((s) => (
+              <SeasonMissionCard
+                key={s.def.id}
+                status={s}
+                onNavigate={goToTarget}
+                shake={shakeId === s.def.id}
+                onClaim={() => claim(s.def.id)}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section className="mission-section">
+          <SectionHeader
             title="مأموریت‌های امروز"
             sub="هر شب از نو می‌شوند"
             icon="📅"
@@ -602,6 +696,7 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
               <DailyMissionCard
                 key={s.def.id}
                 status={s}
+                seasonStep={seasonStep}
                 onNavigate={goToTarget}
                 shake={shakeId === s.def.id}
                 onClaim={() => claim(s.def.id)}

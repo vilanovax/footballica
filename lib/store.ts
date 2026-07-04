@@ -597,8 +597,10 @@ export const useGame = create<GameState>()(
         return "ok";
       },
 
-      claimableMissions: () =>
-        claimableMissionCount(missionSnapFromState(get())),
+      claimableMissions: () => {
+        const state = get();
+        return claimableMissionCount(missionSnapFromState(state), state.seasonStep);
+      },
 
       resetSave: () => set({ ...initialState }),
     }),

@@ -40,6 +40,7 @@ export function HomeMissionBanner({
   const missionClaimed = useGame((s) => s.missionClaimed);
   const claimMission = useGame((s) => s.claimMission);
   const claimableMissions = useGame((s) => s.claimableMissions);
+  const seasonStep = useGame((s) => s.seasonStep);
 
   const [toast, setToast] = useState<string | null>(null);
 
@@ -84,7 +85,7 @@ export function HomeMissionBanner({
   );
 
   const count = claimableMissions();
-  const first = firstClaimableMission(snap);
+  const first = firstClaimableMission(snap, seasonStep);
 
   if (count <= 0) {
     return (
