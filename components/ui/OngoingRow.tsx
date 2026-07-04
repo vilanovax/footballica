@@ -1,8 +1,10 @@
 import { Avatar } from "@/components/ui/Avatar";
+import { GameCard } from "@/components/ui/GameCard";
 
 export interface OngoingGame {
   name: string;
   short: string;
+  mode: string;
   meta: string;
   color: string;
   status: string;
@@ -12,26 +14,36 @@ export interface OngoingGame {
 export function OngoingRow({
   name,
   short,
+  mode,
   meta,
   color,
   status,
   statusGold,
 }: OngoingGame) {
   return (
-    <div className="glass rounded-2xl p-3 flex items-center gap-3">
-      <Avatar label={short} color={color} size={48} />
-      <div className="flex-1 text-right">
-        <p className="font-bold">{name}</p>
-        <p className="text-sm text-white/55">{meta}</p>
+    <GameCard
+      variant="asset"
+      highlight={Boolean(statusGold)}
+      className={`ongoing-row ${statusGold ? "ongoing-row--ready" : ""}`}
+    >
+      <div className="ongoing-row__layout">
+        <Avatar label={short} color={color} size={48} className="shrink-0" />
+        <div className="ongoing-row__copy">
+          <div className="ongoing-row__top">
+            <p className="ongoing-row__name">{name}</p>
+            <span className="ongoing-row__mode">{mode}</span>
+          </div>
+          <p className="ongoing-row__meta">{meta}</p>
+        </div>
+        <span
+          className={`ongoing-row__status ${
+            statusGold ? "ongoing-row__status--ready" : "ongoing-row__status--waiting"
+          }`}
+        >
+          {status}
+        </span>
       </div>
-      <span
-        className={`rounded-xl px-3 py-1.5 text-sm font-bold ${
-          statusGold ? "bg-gold-400 text-[#3a2600]" : "bg-white/10 text-white/70"
-        }`}
-      >
-        {status}
-      </span>
-    </div>
+    </GameCard>
   );
 }
 
@@ -39,7 +51,8 @@ export const ONGOING_GAMES: OngoingGame[] = [
   {
     name: "سینا کریمی",
     short: "س.ک",
-    meta: "راند ۲ · تو ۳۲۰ — او ۲۸۰",
+    mode: "راند ۲",
+    meta: "تو ۳۲۰ — او ۲۸۰",
     color: "foe",
     status: "نوبت تو",
     statusGold: true,
@@ -47,14 +60,16 @@ export const ONGOING_GAMES: OngoingGame[] = [
   {
     name: "مهدی احمدی",
     short: "م.ا",
-    meta: "تورنمنت · مرحلهٔ یک‌هشتم",
+    mode: "تورنمنت",
+    meta: "مرحلهٔ یک‌هشتم",
     color: "#8b3fe0",
     status: "منتظر او",
   },
   {
     name: "زهرا رضایی",
     short: "ز.ر",
-    meta: "راند ۱ · تازه شروع شد",
+    mode: "راند ۱",
+    meta: "تازه شروع شد",
     color: "you",
     status: "نوبت تو",
     statusGold: true,
@@ -62,7 +77,8 @@ export const ONGOING_GAMES: OngoingGame[] = [
   {
     name: "علی نوری",
     short: "ع.ن",
-    meta: "دوئل · تو ۱۸۰ — او ۲۴۰",
+    mode: "دوئل",
+    meta: "تو ۱۸۰ — او ۲۴۰",
     color: "foe",
     status: "منتظر او",
   },

@@ -1,6 +1,8 @@
 "use client";
 
 import { Avatar } from "@/components/ui/Avatar";
+import { GameCard } from "@/components/ui/GameCard";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useGame } from "@/lib/store";
 import { faNum, faCount } from "@/lib/format";
 import { leagueForXp } from "@/lib/player";
@@ -134,40 +136,81 @@ export function Leaderboard() {
   const promoCutoff = rows[2]?.points ?? 0;
   const xpToPromo =
     youRow && youRow.rank > 3 ? Math.max(0, promoCutoff - youRow.points + 1) : 0;
+  const rankProgress =
+    youRow && promoCutoff > 0 ? Math.max(8, Math.min(100, (youRow.points / promoCutoff) * 100)) : 0;
+  const seasonState =
+    youRow && youRow.rank <= 3
+      ? "تو همین حالا داخل منطقهٔ صعودی هستی."
+      : youRow && youRow.rank <= 7
+        ? "فعلا در منطقهٔ امنی؛ با چند برد می‌توانی به صعود نزدیک شوی."
+        : "برای خروج از منطقهٔ خطر باید این هفته بیشتر XP جمع کنی.";
 
   return (
-    <div className="pitch-stripes min-h-dvh pb-32">
-      <header className="lb-header px-5 pt-6 text-center">
+    <div className="leaderboard-screen pitch-stripes min-h-dvh pb-32" dir="rtl">
+      <header className="lb-header px-5 pt-6 text-right">
         <h1 className="text-2xl font-extrabold text-white">رده‌بندی هفتگی</h1>
+        <p className="mt-1 text-sm text-white/50">
+          هر برد و هر جواب درست، جایگاه باشگاهت را در جدول این هفته تغییر می‌دهد.
+        </p>
         <div className="mt-3 flex items-center justify-between gap-2">
-          <span className="lb-season-pill">
-            <span aria-hidden>⏳</span>
-            ۳ روز تا پایان فصل
-          </span>
-          <span className="lb-league-pill">
-            <span aria-hidden>🏆</span>
-            {league}
-          </span>
+          <span className="lb-season-pill">۳ روز تا پایان فصل</span>
+          <span className="lb-league-pill">{league}</span>
         </div>
       </header>
 
-      {youRow && xpToPromo > 0 && (
-        <div className="mx-5 mt-4 lb-hint rounded-2xl px-4 py-3 text-right text-sm leading-6">
-          <span className="font-extrabold text-gold-400">رتبهٔ {faNum(youRow.rank)}</span>
-          <span className="text-white/65"> — </span>
-          <span className="text-white/70">
-            {faCount(xpToPromo)} XP تا منطقهٔ صعود
-          </span>
-        </div>
+      {youRow && (
+        <GameCard variant="hero" className="lb-summary mx-5 mt-4 rounded-3xl p-4">
+          <div className="lb-summary__top">
+            <div className="lb-summary__copy">
+              <p className="lb-summary__eyebrow">وضعیت باشگاه تو</p>
+              <h2 className="lb-summary__title">
+                رتبهٔ {faNum(youRow.rank)} از {faNum(rows.length)}
+              </h2>
+              <p className="lb-summary__sub">{seasonState}</p>
+            </div>
+            <div className="lb-summary__badge">
+              <span className="lb-summary__badge-rank">{faNum(youRow.rank)}</span>
+              <span className="lb-summary__badge-label">رتبه</span>
+            </div>
+          </div>
+
+          <div className="lb-summary__stats">
+            <div className="lb-summary__stat">
+              <span className="lb-summary__stat-value">{faCount(youRow.points)}</span>
+              <span className="lb-summary__stat-label">XP فعلی</span>
+            </div>
+            <div className="lb-summary__stat">
+              <span className="lb-summary__stat-value">
+                {xpToPromo > 0 ? faCount(xpToPromo) : faNum(0)}
+              </span>
+              <span className="lb-summary__stat-label">
+                {xpToPromo > 0 ? "تا صعود" : "داخل صعود"}
+              </span>
+            </div>
+          </div>
+
+          <div className="lb-summary__progress">
+            <div className="lb-summary__progress-labels">
+              <span>منطقهٔ صعود</span>
+              <span>{xpToPromo > 0 ? "نزدیک شو" : "رسیدی"}</span>
+            </div>
+            <ProgressBar
+              value={rankProgress}
+              max={100}
+              tone="info"
+              trackClassName="lb-summary__track h-2"
+            />
+          </div>
+        </GameCard>
       )}
 
       <div className="px-5 mt-5 space-y-2.5">
-        <Zone label="⬆ منطقهٔ صعود" kind="promo" />
+        <Zone label="منطقهٔ صعود" kind="promo" />
         {rows.map((r, i) => (
           <div key={r.rank}>
             <LeaderboardRow row={r} crest={club.crest} crestColor={club.color} />
             {i === 2 && <Zone label="منطقهٔ امن" kind="safe" />}
-            {i === 7 && <Zone label="⬇ منطقهٔ سقوط" kind="relegate" />}
+            {i === 7 && <Zone label="منطقهٔ سقوط" kind="relegate" />}
           </div>
         ))}
       </div>
