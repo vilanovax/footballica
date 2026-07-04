@@ -2709,6 +2709,327 @@ body {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
 }
 
+/* club path overview (step nodes) */
+.club-path-overview {
+  background: linear-gradient(135deg, rgba(47, 111, 237, 0.12), #152921 58%);
+  border: 1px solid rgba(47, 111, 237, 0.24);
+}
+
+.club-path-overview__eyebrow {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: rgba(138, 180, 255, 0.75);
+  letter-spacing: 0.02em;
+}
+
+.club-path-overview__title {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.club-path-overview__count {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #8ab4ff;
+  white-space: nowrap;
+}
+
+.club-path-overview__hint {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.42);
+  text-align: right;
+  line-height: 1.5;
+}
+
+.club-path-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.15rem;
+  padding: 0.15rem 0;
+}
+
+.club-path-step {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.club-path-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-50%);
+  z-index: 0;
+}
+
+.club-path-step--done:not(:last-child)::after {
+  background: rgba(47, 158, 95, 0.45);
+}
+
+.club-path-step__node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.club-path-step--done .club-path-step__node {
+  background: rgba(47, 158, 95, 0.2);
+  border-color: rgba(47, 158, 95, 0.45);
+  color: #5ee08a;
+  font-weight: 900;
+}
+
+.club-path-step--current .club-path-step__node {
+  background: rgba(47, 111, 237, 0.22);
+  border-color: rgba(138, 180, 255, 0.55);
+  box-shadow: 0 0 12px rgba(47, 111, 237, 0.35);
+  animation: pulse-soft 2.2s ease-in-out infinite;
+}
+
+.club-path-step--locked .club-path-step__node {
+  opacity: 0.45;
+  filter: grayscale(0.5);
+}
+
+/* daily — compact command board */
+.mission-daily-card {
+  padding: 0.75rem 0.85rem !important;
+  border-radius: 0.85rem !important;
+}
+
+.mission-daily-card--ready {
+  border-color: rgba(245, 197, 66, 0.45) !important;
+  box-shadow: 0 0 0 1px rgba(245, 197, 66, 0.08);
+}
+
+.mission-daily-card__icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.mission-daily-card__title {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.mission-daily-card__pct {
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.mission-daily-card__count {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.42);
+  text-align: left;
+}
+
+.mission-daily-card__track {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.mission-loot--compact {
+  margin-top: 0.25rem;
+  gap: 0.25rem;
+}
+
+.mission-loot--compact .mission-loot__chip {
+  font-size: 0.56rem;
+  padding: 0.1rem 0.35rem;
+}
+
+/* onboarding — step cards */
+.mission-step-card {
+  padding: 0.9rem 1rem !important;
+  border-radius: 1rem !important;
+}
+
+.mission-step-card--ready {
+  border-color: rgba(245, 197, 66, 0.42) !important;
+}
+
+.mission-step-card--done {
+  opacity: 0.62;
+}
+
+.mission-step-card__badge {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: rgba(47, 111, 237, 0.18);
+  border: 1.5px solid rgba(138, 180, 255, 0.35);
+  color: #8ab4ff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.mission-step-card__badge--done {
+  background: rgba(47, 158, 95, 0.18);
+  border-color: rgba(47, 158, 95, 0.4);
+  color: #5ee08a;
+}
+
+.mission-step-card__emoji {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.mission-step-card__title {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.mission-step-card__detail {
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.48);
+  line-height: 1.45;
+}
+
+.mission-step-card__count {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.42);
+  text-align: left;
+}
+
+/* achievements — medal gallery */
+.mission-medal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.mission-medal {
+  padding: 0.85rem 0.75rem !important;
+  border-radius: 1rem !important;
+  text-align: center;
+}
+
+.mission-medal--ready {
+  border-color: rgba(245, 197, 66, 0.42) !important;
+}
+
+.mission-medal--locked {
+  opacity: 0.55;
+}
+
+.mission-medal--earned {
+  border-color: rgba(47, 158, 95, 0.3) !important;
+  background: linear-gradient(180deg, rgba(47, 158, 95, 0.08), #152921 70%) !important;
+}
+
+.mission-medal__frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, rgba(245, 197, 66, 0.18), rgba(255, 255, 255, 0.04));
+  border: 2px solid rgba(245, 197, 66, 0.28);
+  box-shadow:
+    inset 0 -3px 8px rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.mission-medal--locked .mission-medal__frame {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 -2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.mission-medal--earned .mission-medal__frame {
+  border-color: rgba(47, 158, 95, 0.45);
+  background: radial-gradient(circle at 35% 30%, rgba(47, 158, 95, 0.2), rgba(255, 255, 255, 0.04));
+}
+
+.mission-medal__emoji {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.mission-medal__earned-mark {
+  position: absolute;
+  bottom: -0.15rem;
+  right: -0.15rem;
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: #2f9e5f;
+  border: 1.5px solid #0a1410;
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 900;
+}
+
+.mission-medal__lock {
+  position: absolute;
+  bottom: -0.1rem;
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+.mission-medal__title {
+  margin-top: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.35;
+}
+
+.mission-medal__detail {
+  margin-top: 0.15rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.42);
+  line-height: 1.4;
+}
+
+.mission-medal__count {
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.mission-medal__claim {
+  font-size: 0.72rem !important;
+  padding: 0.45rem 0.6rem !important;
+}
+
 .home-mission-banner {
   background: #1e3a2e;
   border: 1px solid rgba(245, 197, 66, 0.35);

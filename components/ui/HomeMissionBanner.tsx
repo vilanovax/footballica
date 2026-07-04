@@ -87,7 +87,7 @@ export function HomeMissionBanner({ onOpenMissions }: HomeMissionBannerProps) {
         onClick={onOpenMissions}
         className="mx-5 mt-3 w-[calc(100%-2.5rem)] rounded-xl py-2 text-xs font-bold text-white/45 text-center active:opacity-70 home-mission-link"
       >
-        🎯 ماموریت‌ها ›
+        🎯 مسیر باشگاه ›
       </button>
     );
   }
@@ -138,7 +138,7 @@ export function HomeMissionBanner({ onOpenMissions }: HomeMissionBannerProps) {
             )}
           </p>
           <p className="text-[11px] text-white/55 mt-0.5 truncate">
-            {first ? first.def.title : "ماموریت‌ها را ببین"}
+            {first ? first.def.title : "مسیر باشگاه را ببین"}
             {first && (
               <span className="text-gold-400/80">
                 {" "}

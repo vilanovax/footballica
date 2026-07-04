@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Footballica
 
-## Getting Started
+`Footballica` یک بازی مدیریتی/کوئیزی فوتبال با UI موبایل‌محور، RTL فارسی، اقتصاد باشگاهی، مأموریت روزانه و چند mode مختلف بازی است.
 
-First, run the development server:
+## Core Loop
+
+loop اصلی بازی این است:
+
+1. بازی کردن در modeهای مختلف مثل `quiz`, `duel`, `bomb`, `penalty`, `survival`
+2. گرفتن پاداش مثل `XP`, `fans`, `cards`, `treasury money`
+3. خرج کردن درآمد در بخش `Club`
+4. ارتقای ساختمان‌ها، خزانه و مدیرها
+5. تکمیل مأموریت‌ها و باز کردن progression بیشتر
+
+## Tech Stack
+
+- `Next.js 16`
+- `React 19`
+- `TypeScript`
+- `Tailwind 4`
+- `Zustand` برای state و persistence
+
+## App Structure
+
+نقطهٔ ورود UI در `app/page.tsx` است و screenها داخل `components/screens` رندر می‌شوند.
+
+بخش‌های اصلی:
+
+- `components/screens`: screen-level UI
+- `components/ui`: reusable UI pieces
+- `lib/store.ts`: state و اکشن‌های اصلی بازی
+- `lib/designSystem.ts`: mapهای مرکزی برای mode/rarity/theme
+- `app/globals.css`: theme tokens و screen styling
+
+## Design System Docs
+
+برای جزئیات rollout طراحی و primitiveهای مشترک این سند را ببین:
+
+- [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md)
+
+این سند توضیح می‌دهد:
+
+- چه tokenهایی اضافه شده‌اند
+- چه primitiveهایی ساخته شده‌اند
+- کدام screenها migrate شده‌اند
+- قواعد استفاده از `Button`, `GameCard`, `ProgressBar`, `BottomSheet`
+
+## Recent Implemented Changes
+
+تغییرات نهایی‌ای که در این فاز پیاده‌سازی شدند:
+
+- ساده‌سازی اقتصاد باشگاه با مدل `treasury as spendable money`
+- بهبود onboarding، home، club و manager flow
+- اضافه شدن `lib/designSystem.ts` برای mode/rarity/theme maps
+- اضافه شدن primitiveهای مشترک:
+  - `components/ui/Button.tsx`
+  - `components/ui/GameCard.tsx`
+  - `components/ui/ProgressBar.tsx`
+  - `components/ui/BottomSheet.tsx`
+- migration screenهای اصلی روی design system جدید:
+  - `Home`
+  - `Club`
+  - `Missions`
+  - `Shop`
+  - `Result`
+  - `UnitCard`
+  - `ManagerPanel`
+  - `ClubBankSheet`
+  - `HomeFeaturedMode`
+  - `HomeMissionBanner`
+  - `HomeStreakBar`
+  - `ClubHomeBanner`
+
+## Development
+
+برای اجرای پروژه:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+برای بررسی type safety:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx tsc --noEmit
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+برای lint:
 
-## Learn More
+```bash
+npm run lint
+```
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+سپس اپ را در `http://localhost:3000` باز کن.

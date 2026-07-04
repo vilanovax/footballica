@@ -141,7 +141,7 @@ export function Profile({ onOpenClub, onOpenMissions }: ProfileProps) {
           <div className="relative flex items-center gap-3">
             <span className="profile-quest-card__icon">🎯</span>
             <div className="flex-1 min-w-0">
-              <p className="profile-quest-card__title">ماموریت‌ها و افتخارات</p>
+              <p className="profile-quest-card__title">مسیر باشگاه</p>
               <p className="profile-quest-card__sub">
                 {missionBadge > 0
                   ? `${faNum(missionBadge)} جایزهٔ آماده — بگیر!`
