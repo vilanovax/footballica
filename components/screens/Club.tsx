@@ -72,8 +72,8 @@ function PromotionBar({
         <span>
           {gate.complete
             ? gate.terminal
-              ? "زیرساخت این فصل کامل شده"
-              : "باشگاه برای فصل بعد آماده است"
+              ? "مسیر اصلی کامل شده و باشگاه تثبیت شده است"
+              : "همه شرط‌ها کامل‌اند؛ فقط ثبت صعود مانده"
             : `${faNum(gate.totalCount - gate.completeCount)} شرط دیگر مانده`}
         </span>
       </div>

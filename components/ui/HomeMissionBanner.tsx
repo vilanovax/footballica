@@ -94,7 +94,7 @@ export function HomeMissionBanner({
         onClick={onOpenMissions}
         className="mx-5 mt-3 w-[calc(100%-2.5rem)] rounded-xl py-2 text-xs font-bold text-white/45 text-center active:opacity-70 home-mission-link"
       >
-        🎯 {seasonTitle} · {seasonFocus} ›
+        🎯 مأموریت‌های فصل · {seasonFocus} ›
       </button>
     );
   }
@@ -131,7 +131,7 @@ export function HomeMissionBanner({
           size="sm"
           className="home-mission-claim-btn shrink-0 px-3.5"
         >
-          دریافت
+          دریافت سریع
         </Button>
         <button
           type="button"
@@ -140,9 +140,9 @@ export function HomeMissionBanner({
         >
           <p className="home-loop-card__eyebrow">{seasonTitle}</p>
           <p className="font-extrabold text-white text-sm">
-            جایزه آماده است
+            جایزه آمادهٔ دریافت است
             {count > 1 && (
-              <span className="text-gold-400/90"> · {faNum(count)} ماموریت</span>
+              <span className="text-gold-400/90"> · {faNum(count)} مأموریت</span>
             )}
           </p>
           <p className="text-[11px] text-white/55 mt-0.5 truncate">

@@ -60,6 +60,9 @@ export function ClubHomeBanner({
   const blocked = snap.vaultFree <= 0 && snap.totalPending > 0 && !bank;
   const needsAttention =
     canCollect || blocked || snap.vaultFull;
+  const footerCtaLabel = advisorAction === "club"
+    ? `برو برای ${advisorFocus}`
+    : "باشگاه را برای بازی بعدی آماده کن";
 
   function collect(e: React.MouseEvent) {
     e.stopPropagation();
@@ -86,7 +89,7 @@ export function ClubHomeBanner({
           onClick={onOpenClub}
           className="home-club-panel__action shrink-0 pt-0.5 active:opacity-70"
         >
-          جزئیات ›
+          ورود ›
         </button>
         <div className="flex-1 min-w-0">
           <p className="home-loop-card__eyebrow">{seasonTitle}</p>
@@ -169,7 +172,7 @@ export function ClubHomeBanner({
             fullWidth
             className="mt-3 text-xs font-bold text-white/50"
           >
-            {advisorAction === "club" ? "ادامه فصل در باشگاه" : "مرور باشگاه و اقتصاد"}
+            {footerCtaLabel}
           </Button>
         </>
       )}

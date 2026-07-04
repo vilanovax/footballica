@@ -104,7 +104,7 @@ function SeasonPathOverview({
         {gate.complete
           ? gate.terminal
             ? `${divisionLabel} تثبیت شده است — حالا افتخارات را ادامه بده`
-            : "همه شرط‌ها کامل‌اند — صعود را claim کن"
+            : "همه شرط‌ها کامل‌اند — صعود را ثبت کن"
           : gate.nextRequirement
             ? `مرحلهٔ بعد: ${gate.nextRequirement.def.label}`
             : `${faNum(total - done)} مرحله باقی‌مانده`}
@@ -155,7 +155,7 @@ function ReadyRewardsBanner({
       <div className="mission-ready-banner__row">
         <div className="mission-ready-banner__copy">
           <p className="mission-ready-banner__title">
-            {faNum(count)} جایزه آماده دریافت داری
+            {faNum(count)} جایزه آمادهٔ دریافت داری
           </p>
           <p className="mission-ready-banner__sub">
             {first.def.title}
@@ -163,7 +163,7 @@ function ReadyRewardsBanner({
           </p>
         </div>
         <Button onClick={onClaim} variant="primary" size="sm" className="shrink-0">
-          دریافت
+          دریافت سریع
         </Button>
       </div>
     </GameCard>
@@ -591,6 +591,12 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
   const pathReady = onboarding.filter((s) => s.claimable).length;
   const trophyReady = achievements.filter((s) => s.claimable).length;
   const firstReady = firstClaimableMission(snap, seasonStep);
+  const seasonMissionSub = promotionGate.complete && !promotionGate.terminal
+    ? "همه‌چیز برای ثبت صعود آماده است"
+    : promotionGate.nextRequirement
+      ? `مستقیم روی ${promotionGate.nextRequirement.def.label} اثر می‌گذارند`
+      : `مستقیم روی ${promotionGate.title} اثر می‌گذارند`;
+  const dailyMissionSub = `هر شب از نو می‌شوند · همسو با ${promotionGate.seasonTitle}`;
 
   const activeOnboarding = onboarding.filter((s) => !s.claimed);
   const doneOnboarding = onboarding.filter((s) => s.claimed);
@@ -667,7 +673,7 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
         <section className="mission-section">
           <SectionHeader
             title="مأموریت‌های فصل"
-            sub={promotionGate.seasonTitle}
+            sub={seasonMissionSub}
             icon="🎯"
             ready={seasonReady}
           />
@@ -687,7 +693,7 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
         <section className="mission-section">
           <SectionHeader
             title="مأموریت‌های امروز"
-            sub="هر شب از نو می‌شوند"
+            sub={dailyMissionSub}
             icon="📅"
             ready={dailyReady}
           />

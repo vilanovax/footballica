@@ -289,6 +289,36 @@ export function Home({
       nextVaultUpgradeCost,
     ],
   );
+  const homeHeadline = promotionGate.complete
+    ? promotionGate.terminal
+      ? "باشگاه به لیگ حرفه‌ای رسیده است"
+      : "صعود آمادهٔ ثبت است"
+    : promotionGate.nextRequirement
+      ? `${promotionGate.nextRequirement.def.label} قدم بعدی توست`
+      : "الان مهم‌ترین قدم برای صعود چیست؟";
+  const homePrimaryAction = promotionGate.complete && !promotionGate.terminal
+    ? {
+        label: `⬆️ ${promotionGate.claimLabel ?? "ثبت صعود"}`,
+        hint: "همه شرط‌ها کامل‌اند؛ فقط ثبت صعود مانده",
+        onClick: onOpenClub,
+      }
+    : promotionGate.complete && promotionGate.terminal
+      ? {
+          label: "🏟️ مرور باشگاه حرفه‌ای",
+          hint: "مسیر اصلی کامل شده؛ حالا نوبت تثبیت افتخارات است",
+          onClick: onOpenClub,
+        }
+      : homeAdvisor.action === "play"
+        ? {
+            label: `⚽ برو برای ${homeAdvisor.focus}`,
+            hint: "بازی بعدی سریع‌ترین راه برای جلو بردن این فصل است",
+            onClick: onPlayQuick,
+          }
+        : {
+            label: `🏟️ برو برای ${homeAdvisor.focus}`,
+            hint: "قدم بعدی داخل اقتصاد و ساختمان‌های باشگاه است",
+            onClick: onOpenClub,
+          };
 
   return (
     <div className="pitch-stripes min-h-dvh pb-32">
@@ -350,7 +380,7 @@ export function Home({
         <span className="home-section-head__eyebrow">
           {promotionGate.seasonTitle} · {faNum(promotionGate.completeCount)} از {faNum(promotionGate.totalCount)} شرط
         </span>
-        <h2 className="home-section-head__title">الان مهم‌ترین قدم برای صعود چیست؟</h2>
+        <h2 className="home-section-head__title">{homeHeadline}</h2>
       </div>
 
       <HomeMissionBanner
@@ -379,18 +409,25 @@ export function Home({
           <span className="home-command-hero__chip">{homeAdvisor.focus}</span>
           <span className="home-command-hero__chip">{faNum(promotionGate.completeCount)} شرط کامل</span>
           <span className="home-command-hero__chip">
-            {homeAdvisor.action === "play" ? "حرکت در زمین" : "حرکت در باشگاه"}
+            {promotionGate.complete && !promotionGate.terminal
+              ? "ثبت صعود"
+              : homeAdvisor.action === "play"
+                ? "حرکت در زمین"
+                : "حرکت در باشگاه"}
           </span>
         </div>
         <Button
-          onClick={homeAdvisor.action === "play" ? onPlayQuick : onOpenClub}
+          onClick={homePrimaryAction.onClick}
           variant="primary"
           size="lg"
           fullWidth
           className="relative mt-4 text-lg"
         >
-          {homeAdvisor.action === "play" ? "⚽ شروع بازی" : "🏟️ برو به باشگاه"}
+          {homePrimaryAction.label}
         </Button>
+        <p className="mt-2 text-center text-[11px] font-bold text-white/55">
+          {homePrimaryAction.hint}
+        </p>
       </GameCard>
 
       <HomeFeaturedMode
