@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import {
   ProfileIdentityBadges,
@@ -15,6 +15,7 @@ import { ACHIEVEMENT_MISSIONS } from "@/lib/missions";
 import { CLUB } from "@/lib/club";
 import { useClubAvatar } from "@/lib/clubAvatar";
 import { ownedCollectibleCount } from "@/lib/collectibles";
+import { fairPlayScore } from "@/lib/leaderboards";
 import {
   PLAYER_FOCUS_OPTIONS,
   playerFocusLabel,
@@ -25,6 +26,9 @@ interface ProfileProps {
   onOpenClub: () => void;
   onOpenMissions: () => void;
   onOpenShop?: () => void;
+  /** باز کردن خودکار sheet هویت — مثلاً از CTA جدول جامعه */
+  initialIdentityOpen?: boolean;
+  onIdentityOpenHandled?: () => void;
 }
 
 function ProfileResourceCard({
@@ -76,8 +80,20 @@ function focusSummary(focus: PlayerFocus): string {
   return "Arena و Club با وزن برابر نمایش داده می‌شوند.";
 }
 
-export function Profile({ onOpenClub, onOpenMissions, onOpenShop }: ProfileProps) {
+export function Profile({
+  onOpenClub,
+  onOpenMissions,
+  onOpenShop,
+  initialIdentityOpen,
+  onIdentityOpenHandled,
+}: ProfileProps) {
   const [identityOpen, setIdentityOpen] = useState(false);
+
+  useEffect(() => {
+    if (!initialIdentityOpen) return;
+    setIdentityOpen(true);
+    onIdentityOpenHandled?.();
+  }, [initialIdentityOpen, onIdentityOpenHandled]);
   const cards = useGame((s) => s.cards);
   const xp = useGame((s) => s.xp);
   const fans = useGame((s) => s.fans);
@@ -85,6 +101,9 @@ export function Profile({ onOpenClub, onOpenMissions, onOpenShop }: ProfileProps
   const totalCorrect = useGame((s) => s.totalCorrect);
   const gamesPlayed = useGame((s) => s.gamesPlayed);
   const matchesWon = useGame((s) => s.matchesWon);
+  const arenaRating = useGame((s) => s.arenaRating);
+  const rankedWins = useGame((s) => s.rankedWins);
+  const rankedLosses = useGame((s) => s.rankedLosses);
   const club = useGame((s) => s.club);
   const ownedCollectibles = useGame((s) => s.ownedCollectibles);
   const clubAvatar = useClubAvatar();
@@ -102,7 +121,9 @@ export function Profile({ onOpenClub, onOpenMissions, onOpenShop }: ProfileProps
   const achievementCount = ACHIEVEMENT_MISSIONS.filter((m) => missionClaimed[m.id]).length;
   const collectionCount = ownedCollectibleCount(ownedCollectibles);
   const hasIdentity = Boolean(club.city || club.heartTeam || club.internationalTeam);
-  const rankValue = gamesPlayed > 0 ? faNum(CLUB.rank) : "-";
+  const rankedTotal = rankedWins + rankedLosses;
+  const rankedWinRate = rankedTotal > 0 ? Math.round((rankedWins / rankedTotal) * 100) : 0;
+  const fairPlayValue = fairPlayScore({ arenaRating, rankedWins, rankedLosses });
 
   return (
     <div className="pitch-stripes min-h-dvh pb-32">
@@ -173,7 +194,7 @@ export function Profile({ onOpenClub, onOpenMissions, onOpenShop }: ProfileProps
           <ProfileResourceCard value={faCount(fans)} label="هوادار" />
           <ProfileResourceCard value={faNum(cards)} label="کارت تاکتیکی" accent />
           <ProfileResourceCard value={faNum(achievementCount)} label="افتخار" />
-          <ProfileResourceCard value={rankValue} label="رتبهٔ هفتگی" />
+          <ProfileResourceCard value={faNum(arenaRating)} label="ریتینگ Arena" />
         </div>
       </section>
 
@@ -261,6 +282,39 @@ export function Profile({ onOpenClub, onOpenMissions, onOpenShop }: ProfileProps
           </div>
 
           <p className="profile-focus-card__hint mt-3">{focusSummary(playerFocus)}</p>
+        </div>
+      </section>
+
+      <section className="px-5 mt-6">
+        <div className="profile-section-head mb-3">
+          <span className="profile-section-eyebrow">skill-first</span>
+          <h2 className="profile-section-title">Arena و Fair Play</h2>
+        </div>
+        <div className="profile-arena-card">
+          <div className="flex items-start justify-between gap-3">
+            <span className="profile-arena-card__badge">بدون پاورآپ</span>
+            <div className="flex-1 text-right">
+              <p className="profile-card__eyebrow">دوئل رقابتی</p>
+              <p className="profile-arena-card__title">آمار رنکد و جدول Fair Play</p>
+              <p className="profile-arena-card__sub">
+                این مسیر فقط از دوئل رنکد تغذیه می‌شود و به اقتصاد باشگاه مزیت مستقیم
+                نمی‌دهد.
+              </p>
+            </div>
+          </div>
+
+          <div className="profile-resource-grid mt-4">
+            <ProfileResourceCard value={faNum(arenaRating)} label="ریتینگ Arena" accent />
+            <ProfileResourceCard value={faNum(fairPlayValue)} label="امتیاز Fair Play" />
+            <ProfileResourceCard value={faNum(rankedWins)} label="برد رنکد" accent />
+            <ProfileResourceCard value={faNum(rankedLosses)} label="باخت رنکد" />
+          </div>
+
+          <p className="profile-arena-card__hint">
+            {rankedTotal > 0
+              ? `${faNum(rankedWinRate)}٪ برد در ${faNum(rankedTotal)} دوئل رنکد`
+              : "هنوز وارد دوئل رنکد نشده‌ای؛ از Home یک رنکد بزن تا Fair Play فعال شود."}
+          </p>
         </div>
       </section>
 

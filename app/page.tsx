@@ -18,7 +18,10 @@ import { Survival } from "@/components/screens/Survival";
 import { Missions } from "@/components/screens/Missions";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { NoLivesModal } from "@/components/ui/NoLivesModal";
-import { isTab, type DuelKind, type MatchResult, type Screen } from "@/lib/types";
+import { isTab, type DuelKind, type MatchResult, type Screen, type Tab } from "@/lib/types";
+import type { LeaderboardKind } from "@/lib/communityLeaderboards";
+
+type LeaderboardArenaView = "weekly" | "fairplay";
 
 export default function Page() {
   const [screen, setScreen] = useState<Screen>("home");
@@ -29,6 +32,11 @@ export default function Page() {
   const [duelKind, setDuelKind] = useState<DuelKind | undefined>(undefined);
   const [duelKey, setDuelKey] = useState(0);
   const [noLives, setNoLives] = useState(false);
+  const [profileIdentityOpen, setProfileIdentityOpen] = useState(false);
+  const [leaderboardTab, setLeaderboardTab] = useState<LeaderboardKind | undefined>();
+  const [leaderboardArenaView, setLeaderboardArenaView] = useState<
+    LeaderboardArenaView | undefined
+  >();
   const setupDone = useGame((s) => s.setupDone);
   const lives = useGame((s) => s.lives);
   const livesUpdatedAt = useGame((s) => s.livesUpdatedAt);
@@ -69,6 +77,20 @@ export default function Page() {
     setScreen("duel");
   }
 
+  function navigateTab(tab: Tab) {
+    if (tab === "leaderboard") {
+      setLeaderboardTab(undefined);
+      setLeaderboardArenaView(undefined);
+    }
+    setScreen(tab);
+  }
+
+  function openFairPlayLeaderboard() {
+    setLeaderboardTab("arena");
+    setLeaderboardArenaView("fairplay");
+    setScreen("leaderboard");
+  }
+
   if (!mounted) return <div className="pitch-stripes min-h-dvh" />;
 
   if (!setupDone) {
@@ -87,6 +109,7 @@ export default function Page() {
           onPlayDuel={startDuel}
           onPlayPenalty={() => setScreen("penalty")}
           onPlaySurvival={() => setScreen("survival")}
+          onOpenFairPlayLeaderboard={openFairPlayLeaderboard}
         />
       )}
 
@@ -100,7 +123,16 @@ export default function Page() {
         />
       )}
 
-      {screen === "leaderboard" && <Leaderboard />}
+      {screen === "leaderboard" && (
+        <Leaderboard
+          initialTab={leaderboardTab}
+          initialArenaView={leaderboardArenaView}
+          onOpenProfile={() => {
+            setProfileIdentityOpen(true);
+            setScreen("profile");
+          }}
+        />
+      )}
 
       {screen === "shop" && <Shop />}
 
@@ -109,6 +141,8 @@ export default function Page() {
           onOpenClub={() => openClub("profile")}
           onOpenMissions={() => openMissions("profile")}
           onOpenShop={() => setScreen("shop")}
+          initialIdentityOpen={profileIdentityOpen}
+          onIdentityOpenHandled={() => setProfileIdentityOpen(false)}
         />
       )}
 
@@ -181,7 +215,7 @@ export default function Page() {
       {(isTab(screen) || (screen === "club" && playerFocus === "club")) && (
         <BottomNav
           active={screen === "club" ? "club" : screen}
-          onNavigate={setScreen}
+          onNavigate={navigateTab}
           onOpenClub={() => openClub("club")}
         />
       )}

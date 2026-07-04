@@ -101,6 +101,9 @@ interface GameState {
   playerFocus: PlayerFocus;
   /** رتبه Arena — فقط از دوئل رنکد و فعالیت skill-based */
   arenaRating: number;
+  /** آمار دوئل رنکد — پایهٔ جدول Fair Play */
+  rankedWins: number;
+  rankedLosses: number;
   /** کلکسیون باشگاه — cosmetic و prestige، بدون اثر رنکد */
   ownedCollectibles: OwnedCollectibles;
   equippedCosmetics: EquippedCosmetics;
@@ -124,6 +127,7 @@ interface GameState {
   unassignUnit: (unitId: string) => void;
   upgradeVault: () => UpgradeResult;
   recordWin: () => void;
+  recordRankedResult: (won: boolean) => void;
   applyArenaDelta: (delta: number) => void;
   completeSetup: (club: ClubIdentity, focus?: PlayerFocus) => void;
   setPlayerFocus: (focus: PlayerFocus) => void;
@@ -244,6 +248,8 @@ const initialState = {
   seasonStep: 1,
   playerFocus: "both" as PlayerFocus,
   arenaRating: 1000,
+  rankedWins: 0,
+  rankedLosses: 0,
   ownedCollectibles: {} as OwnedCollectibles,
   equippedCosmetics: {} as EquippedCosmetics,
 };
@@ -460,6 +466,12 @@ export const useGame = create<GameState>()(
       },
 
       recordWin: () => set((s) => ({ matchesWon: s.matchesWon + 1 })),
+      recordRankedResult: (won) =>
+        set((s) =>
+          won
+            ? { rankedWins: s.rankedWins + 1 }
+            : { rankedLosses: s.rankedLosses + 1 },
+        ),
       applyArenaDelta: (delta) =>
         set((s) => ({
           arenaRating: Math.max(0, Math.round(s.arenaRating + delta)),
@@ -673,7 +685,7 @@ export const useGame = create<GameState>()(
     }),
     {
       name: "footballica-save",
-      version: 10,
+      version: 11,
       migrate: (persisted, version) => {
         const s = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -743,6 +755,10 @@ export const useGame = create<GameState>()(
               ? s.equippedCosmetics
               : {};
         }
+        if (version < 11) {
+          s.rankedWins = typeof s.rankedWins === "number" ? s.rankedWins : 0;
+          s.rankedLosses = typeof s.rankedLosses === "number" ? s.rankedLosses : 0;
+        }
         return persisted;
       },
       storage: createJSONStorage(() => localStorage),
@@ -783,6 +799,8 @@ export const useGame = create<GameState>()(
         seasonStep: s.seasonStep,
         playerFocus: s.playerFocus,
         arenaRating: s.arenaRating,
+        rankedWins: s.rankedWins,
+        rankedLosses: s.rankedLosses,
         ownedCollectibles: s.ownedCollectibles,
         equippedCosmetics: s.equippedCosmetics,
       }),

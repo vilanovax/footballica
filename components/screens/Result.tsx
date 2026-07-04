@@ -50,6 +50,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
   const isRankedDuel = isDuel && result.duelKind === "ranked";
   const applyActivityReward = useGame((s) => s.applyActivityReward);
   const applyArenaDelta = useGame((s) => s.applyArenaDelta);
+  const recordRankedResult = useGame((s) => s.recordRankedResult);
   const addTotalCorrect = useGame((s) => s.addTotalCorrect);
   const recordDailyPlay = useGame((s) => s.recordDailyPlay);
   const recordWin = useGame((s) => s.recordWin);
@@ -88,6 +89,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
     });
     if (overflow > 0) setVaultOverflow(overflow);
     if (result.arenaDelta) applyArenaDelta(result.arenaDelta);
+    if (isRankedDuel) recordRankedResult(won);
     addTotalCorrect(correctCount);
     recordDailyPlay();
     if (won) recordWin();
@@ -97,6 +99,8 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
     correctCount,
     applyActivityReward,
     applyArenaDelta,
+    recordRankedResult,
+    isRankedDuel,
     addTotalCorrect,
     recordDailyPlay,
     recordWin,

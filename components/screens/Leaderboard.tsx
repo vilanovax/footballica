@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import { GameCard } from "@/components/ui/GameCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useGame } from "@/lib/store";
@@ -196,12 +197,50 @@ function LeaderboardTabs({
   );
 }
 
+type ArenaView = "weekly" | "fairplay";
+
+function ArenaModeToggle({
+  active,
+  onChange,
+}: {
+  active: ArenaView;
+  onChange: (view: ArenaView) => void;
+}) {
+  return (
+    <div className="lb-arena-mode mx-5 mt-3 flex gap-2">
+      <button
+        type="button"
+        onClick={() => onChange("weekly")}
+        className={`lb-arena-mode__btn ${active === "weekly" ? "lb-arena-mode__btn--active" : ""}`}
+      >
+        هفتگی
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("fairplay")}
+        className={`lb-arena-mode__btn ${active === "fairplay" ? "lb-arena-mode__btn--active" : ""}`}
+      >
+        Fair Play
+      </button>
+    </div>
+  );
+}
 function defaultTab(playerFocus: string): LeaderboardKind {
   if (playerFocus === "club") return "club";
   return "arena";
 }
 
-export function Leaderboard() {
+interface LeaderboardProps {
+  onOpenProfile?: () => void;
+  initialTab?: LeaderboardKind;
+  initialArenaView?: ArenaView;
+}
+
+export function Leaderboard({
+  onOpenProfile,
+  initialTab,
+  initialArenaView,
+}: LeaderboardProps) {
   const club = useGame((s) => s.club);
   const xp = useGame((s) => s.xp);
   const totalCorrect = useGame((s) => s.totalCorrect);
@@ -210,6 +249,8 @@ export function Leaderboard() {
   const survivalBest = useGame((s) => s.survivalBest);
   const streakDays = useGame((s) => s.streakDays);
   const arenaRating = useGame((s) => s.arenaRating);
+  const rankedWins = useGame((s) => s.rankedWins);
+  const rankedLosses = useGame((s) => s.rankedLosses);
   const fans = useGame((s) => s.fans);
   const budget = useGame((s) => s.budget);
   const vaultLevel = useGame((s) => s.vaultLevel);
@@ -217,7 +258,14 @@ export function Leaderboard() {
   const playerFocus = useGame((s) => s.playerFocus);
   const clubAvatar = useClubAvatar();
 
-  const [tab, setTab] = useState<LeaderboardKind>(() => defaultTab(playerFocus));
+  const [tab, setTab] = useState<LeaderboardKind>(
+    () => initialTab ?? defaultTab(playerFocus),
+  );
+  const [arenaView, setArenaView] = useState<ArenaView>(initialArenaView ?? "weekly");
+
+  const playerKind: PlayerLeaderboardKind =
+    tab === "club" ? "club" : arenaView === "fairplay" ? "fairplay" : "arena";
+  const isFairPlay = tab === "arena" && arenaView === "fairplay";
 
   const input = useMemo(
     () => ({
@@ -228,6 +276,8 @@ export function Leaderboard() {
       survivalBest,
       streakDays,
       arenaRating,
+      rankedWins,
+      rankedLosses,
       fans,
       budget,
       vaultLevel,
@@ -244,6 +294,8 @@ export function Leaderboard() {
       survivalBest,
       streakDays,
       arenaRating,
+      rankedWins,
+      rankedLosses,
       fans,
       budget,
       vaultLevel,
@@ -258,8 +310,8 @@ export function Leaderboard() {
     () =>
       isCommunityLeaderboard(tab)
         ? []
-        : buildLeaderboardRows(tab as PlayerLeaderboardKind, input),
-    [tab, input],
+        : buildLeaderboardRows(playerKind, input),
+    [tab, playerKind, input],
   );
 
   const communityRows = useMemo(() => {
@@ -282,7 +334,7 @@ export function Leaderboard() {
   const youClubValue = clubValue(input);
   const league = leagueForXp(xp);
   const division = currentDivisionLabel(seasonStep);
-  const pointsLabel = leaderboardPointsLabel(tab);
+  const pointsLabel = isFairPlay ? "امتیاز Fair Play" : leaderboardPointsLabel(tab);
   const communityIdentity = isCommunityLeaderboard(tab)
     ? communityIdentityLabel(tab, club.city, club.heartTeam)
     : null;
@@ -306,6 +358,14 @@ export function Leaderboard() {
         : "پیشرفت باشگاهت به قدرت تیم محبوبت اضافه می‌شود.";
     }
     if (tab === "arena") {
+      if (isFairPlay && rankedWins + rankedLosses === 0) {
+        return "هنوز دوئل رنکد نزدی؛ برای ورود به جدول Fair Play یک رنکد بزن.";
+      }
+      if (isFairPlay) {
+        return youRow && youRow.rank <= 3
+          ? "در جدول skill-first هستی — بدون کمک و بدون پاورآپ."
+          : "با برد در دوئل رنکد امتیاز Fair Play بالاتر می‌رود.";
+      }
       return youRow && youRow.rank <= 3
         ? "تو همین حالا داخل منطقهٔ صعودی Arena هستی."
         : youRow && youRow.rank <= 7
@@ -321,7 +381,9 @@ export function Leaderboard() {
 
   const headerPill =
     tab === "arena"
-      ? "۳ روز تا پایان هفته"
+      ? isFairPlay
+        ? "رنکد هفتگی"
+        : "۳ روز تا پایان هفته"
       : tab === "club"
         ? "فصل فعال"
         : tab === "city"
@@ -330,7 +392,9 @@ export function Leaderboard() {
 
   const headerBadge =
     tab === "arena"
-      ? league
+      ? isFairPlay
+        ? `رتبه ${faNum(arenaRating)}`
+        : league
       : tab === "club"
         ? division
         : communityIdentity ?? "ثبت نشده";
@@ -339,7 +403,11 @@ export function Leaderboard() {
     <div className="leaderboard-screen pitch-stripes min-h-dvh pb-32" dir="rtl">
       <header className="lb-header px-5 pt-6 text-right">
         <h1 className="text-2xl font-extrabold text-white">رده‌بندی</h1>
-        <p className="mt-1 text-sm text-white/50">{leaderboardSubtitle(tab)}</p>
+        <p className="mt-1 text-sm text-white/50">
+          {isFairPlay
+            ? "فقط دوئل رنکد — بدون پاورآپ و بدون مزیت اقتصادی باشگاه."
+            : leaderboardSubtitle(tab)}
+        </p>
         <div className="mt-3 flex items-center justify-between gap-2">
           <span className="lb-season-pill">{headerPill}</span>
           <span className="lb-league-pill">{headerBadge}</span>
@@ -347,6 +415,10 @@ export function Leaderboard() {
       </header>
 
       <LeaderboardTabs active={tab} onChange={setTab} />
+
+      {tab === "arena" && (
+        <ArenaModeToggle active={arenaView} onChange={setArenaView} />
+      )}
 
       {needsIdentity && (
         <GameCard variant="asset" className="lb-identity-cta mx-5 mt-4 rounded-2xl p-4 text-right">
@@ -356,6 +428,16 @@ export function Leaderboard() {
           <p className="lb-identity-cta__sub">
             از پروفایل می‌توانی هویت باشگاه را تکمیل کنی و در جدول جامعه دیده شوی.
           </p>
+          {onOpenProfile && (
+            <Button
+              onClick={onOpenProfile}
+              variant="primary"
+              size="sm"
+              className="lb-identity-cta__btn mt-3"
+            >
+              {tab === "city" ? "ثبت شهر در پروفایل" : "انتخاب تیم در پروفایل"}
+            </Button>
+          )}
         </GameCard>
       )}
 
@@ -365,7 +447,9 @@ export function Leaderboard() {
             <div className="lb-summary__copy">
               <p className="lb-summary__eyebrow">
                 {tab === "arena"
-                  ? "وضعیت Arena تو"
+                  ? isFairPlay
+                    ? "وضعیت Fair Play تو"
+                    : "وضعیت Arena تو"
                   : tab === "club"
                     ? "وضعیت باشگاه تو"
                     : tab === "city"
@@ -415,7 +499,9 @@ export function Leaderboard() {
 
           <p className="lb-hint mt-3 text-[11px] font-bold text-white/45 text-right">
             {tab === "arena"
-              ? `امتیاز Arena: ${faCount(youArenaScore)} · بدون مزیت اقتصادی باشگاه`
+              ? isFairPlay
+                ? `رتبه Arena: ${faNum(arenaRating)} · ${faNum(rankedWins)} برد / ${faNum(rankedLosses)} باخت رنکد`
+                : `امتیاز Arena: ${faCount(youArenaScore)} · بدون مزیت اقتصادی باشگاه`
               : tab === "club"
                 ? `ارزش باشگاه: ${faCount(youClubValue)} · ${division}`
                 : tab === "city"
@@ -427,7 +513,7 @@ export function Leaderboard() {
 
       <div className="px-5 mt-3">
         <p className="text-[11px] font-bold text-white/40 text-right">
-          {leaderboardTitle(tab)}
+          {isFairPlay ? "جدول Fair Play هفتگی" : leaderboardTitle(tab)}
         </p>
       </div>
 

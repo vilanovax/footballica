@@ -1,21 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Avatar } from "@/components/ui/Avatar";
 import { ClubBankSheet } from "@/components/ui/ClubBankSheet";
 import { Button } from "@/components/ui/Button";
-import { ClubHomeBanner } from "@/components/ui/ClubHomeBanner";
 import { GameCard } from "@/components/ui/GameCard";
-import { HomeStreakBar } from "@/components/ui/HomeStreakBar";
-import { HomeFeaturedMode } from "@/components/ui/HomeFeaturedMode";
-import { HomeMissionBanner } from "@/components/ui/HomeMissionBanner";
 import { MODE_THEME_MAP } from "@/lib/designSystem";
 import { unitDef, unitUpgradeCost } from "@/lib/units";
 import { unitIncomeSnapshot } from "@/lib/clubEconomy";
 import { useGame } from "@/lib/store";
 import { faNum, faVaultM } from "@/lib/format";
 import { levelInfo, formatRegenCountdown, msUntilNextLife } from "@/lib/player";
-import { featuredModeForDate, type FeaturedModeId } from "@/lib/home";
 import { vaultCapacity, vaultUpgradeCost, isBank } from "@/lib/vault";
 import {
   buildPromotionSnapshot,
@@ -23,8 +17,14 @@ import {
   promotionGateStatus,
   seasonAdvisorMessage,
 } from "@/lib/promotion";
-import { arenaScore } from "@/lib/leaderboards";
-import { useClubAvatar } from "@/lib/clubAvatar";
+import { fairPlayScore } from "@/lib/leaderboards";
+import {
+  buildMissionSnapshot,
+  DAILY_MISSION_IDS,
+  firstClaimableMission,
+  rewardLabel,
+} from "@/lib/missions";
+import type { DuelKind } from "@/lib/types";
 
 interface HomeProps {
   onPlayQuick: () => void;
@@ -32,9 +32,262 @@ interface HomeProps {
   onOpenMissions: () => void;
   onPlayBomb: () => void;
   onOpenGames: () => void;
-  onPlayDuel: () => void;
+  onPlayDuel: (kind?: DuelKind) => void;
   onPlayPenalty: () => void;
   onPlaySurvival: () => void;
+  onOpenFairPlayLeaderboard?: () => void;
+}
+
+const MODE_DEFS = [
+  {
+    id: "bomb" as const,
+    title: "حالت بمب",
+    subtitle: "سرعتی · XP",
+    emoji: MODE_THEME_MAP.bomb.emoji,
+    from: MODE_THEME_MAP.bomb.from,
+    to: MODE_THEME_MAP.bomb.to,
+    play: "bomb" as const,
+  },
+  {
+    id: "duel" as const,
+    title: "دوئل ۱به۱",
+    subtitle: "۵ سؤال · ۱ ❤️",
+    emoji: MODE_THEME_MAP.duel.emoji,
+    from: MODE_THEME_MAP.duel.from,
+    to: MODE_THEME_MAP.duel.to,
+    play: "duel" as const,
+  },
+  {
+    id: "penalty" as const,
+    title: "پنالتی",
+    subtitle: "۵ ضربه",
+    emoji: MODE_THEME_MAP.penalty.emoji,
+    from: MODE_THEME_MAP.penalty.from,
+    to: MODE_THEME_MAP.penalty.to,
+    play: "penalty" as const,
+  },
+  {
+    id: "survival" as const,
+    title: "مود بقا",
+    subtitle: "رکورد",
+    emoji: MODE_THEME_MAP.survival.emoji,
+    from: MODE_THEME_MAP.survival.from,
+    to: MODE_THEME_MAP.survival.to,
+    play: "survival" as const,
+  },
+] as const;
+
+function HomeCompactHeader({
+  clubName,
+  level,
+  divisionLabel,
+  vaultLabel,
+  cards,
+  lives,
+  onOpenVault,
+}: {
+  clubName: string;
+  level: number;
+  divisionLabel: string;
+  vaultLabel: string;
+  cards: number;
+  lives: number;
+  onOpenVault: () => void;
+}) {
+  return (
+    <header className="home-v2-header px-5 pt-5 text-right">
+      <div className="home-v2-header__shell">
+        <div className="home-v2-header__top">
+          <div className="home-v2-header__identity">
+            <p className="home-v2-header__eyebrow">باشگاه تو</p>
+            <h1 className="home-v2-header__title">{clubName}</h1>
+            <div className="home-v2-header__meta">
+              <span className="home-v2-header__chip">سطح {faNum(level)}</span>
+              <span className="home-v2-header__chip home-v2-header__chip--accent">{divisionLabel}</span>
+            </div>
+          </div>
+
+          <button type="button" onClick={onOpenVault} className="home-v2-header__vault">
+            <span className="home-v2-header__vault-label">خزانه</span>
+            <span className="home-v2-header__vault-value text-gold-400 tabular-nums">{vaultLabel}</span>
+          </button>
+        </div>
+
+        <div className="home-v2-header__stats">
+          <div className="home-v2-stat">
+            <span className="home-v2-stat__label">کارت</span>
+            <span className="home-v2-stat__value tabular-nums">{faNum(cards)}</span>
+          </div>
+          <div className="home-v2-stat">
+            <span className="home-v2-stat__label">جان</span>
+            <span className="home-v2-stat__value tabular-nums">{faNum(lives)}/۵</span>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function HomeLoopHeroes({
+  arenaFirst,
+  arenaRating,
+  fairPlayValue,
+  streakDays,
+  canRanked,
+  divisionLabel,
+  vaultLabel,
+  pendingIncome,
+  onPlayQuick,
+  onPlayRanked,
+  onOpenClub,
+  onOpenFairPlayLeaderboard,
+}: {
+  arenaFirst: boolean;
+  arenaRating: number;
+  fairPlayValue: number;
+  streakDays: number;
+  canRanked: boolean;
+  divisionLabel: string;
+  vaultLabel: string;
+  pendingIncome: string | null;
+  onPlayQuick: () => void;
+  onPlayRanked: () => void;
+  onOpenClub: () => void;
+  onOpenFairPlayLeaderboard?: () => void;
+}) {
+  const arenaCard = (
+    <GameCard variant="asset" className="home-loop-hero__card home-loop-hero__card--arena rounded-2xl p-3.5">
+      <p className="home-loop-hero__eyebrow">زمین مسابقه</p>
+      <p className="home-loop-hero__title">بازی سریع، رنک، دوئل</p>
+      <p className="home-loop-hero__meta">
+        رنک {faNum(arenaRating)} · Fair Play {faNum(fairPlayValue)} · استریک {faNum(streakDays)}
+      </p>
+      <div className="home-loop-hero__actions">
+        <Button onClick={onPlayQuick} variant="primary" size="sm" fullWidth className="home-loop-hero__cta">
+          بازی سریع
+        </Button>
+        <button
+          type="button"
+          onClick={onPlayRanked}
+          disabled={!canRanked}
+          className="home-loop-hero__secondary"
+        >
+          {canRanked ? "دوئل رنکد" : "نیاز ۱ ❤️"}
+        </button>
+        {onOpenFairPlayLeaderboard && (
+          <button type="button" onClick={onOpenFairPlayLeaderboard} className="home-loop-hero__link">
+            جدول
+          </button>
+        )}
+      </div>
+    </GameCard>
+  );
+
+  const clubCard = (
+    <GameCard variant="asset" className="home-loop-hero__card home-loop-hero__card--club rounded-2xl p-3.5">
+      <p className="home-loop-hero__eyebrow">باشگاه من</p>
+      <p className="home-loop-hero__title">{divisionLabel}</p>
+      <p className="home-loop-hero__meta">
+        خزانه {vaultLabel}
+        {pendingIncome ? ` · درآمد آماده ${pendingIncome}` : ""}
+      </p>
+      <div className="home-loop-hero__actions">
+        <Button onClick={onOpenClub} variant="primary" size="sm" fullWidth className="home-loop-hero__cta">
+          ورود به باشگاه
+        </Button>
+      </div>
+    </GameCard>
+  );
+
+  return (
+    <div className="home-loop-hero mx-5 mt-4 grid grid-cols-2 gap-2.5">
+      {arenaFirst ? (
+        <>
+          {arenaCard}
+          {clubCard}
+        </>
+      ) : (
+        <>
+          {clubCard}
+          {arenaCard}
+        </>
+      )}
+    </div>
+  );
+}
+
+function HomeNextStep({
+  title,
+  detail,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  detail: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <GameCard variant="asset" className="home-next-step mx-5 mt-3 rounded-2xl p-3.5 text-right">
+      <p className="home-next-step__eyebrow">قدم بعدی تو</p>
+      <p className="home-next-step__title">{title}</p>
+      <p className="home-next-step__detail">{detail}</p>
+      <Button onClick={onAction} variant="primary" size="sm" fullWidth className="home-next-step__cta mt-3">
+        {actionLabel}
+      </Button>
+    </GameCard>
+  );
+}
+
+function HomeRewardReady({
+  count,
+  missionTitle,
+  reward,
+  onClaim,
+  onOpenMissions,
+}: {
+  count: number;
+  missionTitle: string;
+  reward: string;
+  onClaim: () => void;
+  onOpenMissions: () => void;
+}) {
+  return (
+    <GameCard variant="asset" className="home-reward-ready mx-5 mt-3 rounded-2xl p-3 text-right">
+      <div className="flex items-center gap-3">
+        <Button onClick={onClaim} variant="primary" size="sm" className="shrink-0">
+          دریافت
+        </Button>
+        <button type="button" onClick={onOpenMissions} className="min-w-0 flex-1 text-right">
+          <p className="home-reward-ready__title">جایزه آماده دریافت است</p>
+          <p className="home-reward-ready__sub truncate">
+            {missionTitle} · {reward}
+          </p>
+        </button>
+        <span className="home-reward-ready__count">{faNum(count)}</span>
+      </div>
+    </GameCard>
+  );
+}
+
+function HomeTodayStrip({
+  claimableCount,
+  dailyCount,
+  arenaRating,
+}: {
+  claimableCount: number;
+  dailyCount: number;
+  arenaRating: number;
+}) {
+  return (
+    <div className="home-today-strip mx-5 mt-3 rounded-xl px-3 py-2.5 text-right">
+      <p className="home-today-strip__label">امروز</p>
+      <p className="home-today-strip__value">
+        {faNum(claimableCount)} جایزه آماده · {faNum(dailyCount)} مأموریت روزانه · رنک Arena{" "}
+        {faNum(arenaRating)}
+      </p>
+    </div>
+  );
 }
 
 function ModeCard({
@@ -60,21 +313,12 @@ function ModeCard({
     return (
       <GameCard
         variant="locked"
-        className="home-mode-card home-mode-card--disabled h-32 rounded-2xl p-3.5 text-right flex flex-col justify-between"
+        className="home-mode-tile home-mode-tile--disabled rounded-2xl p-3 text-right"
       >
-        <div className="flex items-start justify-between gap-2">
-          <span className="home-mode-card__emoji opacity-40 grayscale">{emoji}</span>
-          {disabledBadge && (
-            <span className="rounded-full home-mode-soon-badge px-2 py-0.5 text-[10px] font-bold">
-              {disabledBadge}
-            </span>
-          )}
-        </div>
-        <div>
-          <p className="home-mode-card__eyebrow">فعلا بسته</p>
-          <h3 className="text-base font-extrabold text-white/45">{title}</h3>
-          <p className="mt-1 text-[11px] text-white/35 leading-5">{subtitle}</p>
-        </div>
+        <span className="home-mode-tile__emoji opacity-40 grayscale">{emoji}</span>
+        <p className="home-mode-tile__title text-white/45">{title}</p>
+        <p className="home-mode-tile__sub">{subtitle}</p>
+        {disabledBadge && <span className="home-mode-tile__badge">{disabledBadge}</span>}
       </GameCard>
     );
   }
@@ -84,180 +328,12 @@ function ModeCard({
       as="button"
       variant="hero"
       onClick={onClick}
-      className="home-mode-card h-32 rounded-2xl p-3.5 text-right flex flex-col justify-between"
+      className="home-mode-tile rounded-2xl p-3 text-right"
       style={{ background: `linear-gradient(150deg, ${from}, ${to})` }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="home-mode-card__emoji drop-shadow">{emoji}</span>
-        <span className="home-mode-card__cta">بازی کن</span>
-      </div>
-      <div>
-        <p className="home-mode-card__eyebrow">حالت بازی</p>
-        <h3 className="text-base font-extrabold text-white">{title}</h3>
-        <p className="mt-1 text-[11px] text-white/80 leading-5">{subtitle}</p>
-      </div>
-    </GameCard>
-  );
-}
-
-const MODE_DEFS = [
-  {
-    id: "bomb" as const,
-    title: "حالت بمب",
-    subtitle: "سرعتی · XP بیشتر",
-    emoji: MODE_THEME_MAP.bomb.emoji,
-    from: MODE_THEME_MAP.bomb.from,
-    to: MODE_THEME_MAP.bomb.to,
-    play: "bomb" as const,
-  },
-  {
-    id: "duel" as const,
-    title: "دوئل ۱به۱",
-    subtitle: "۵ سؤال · ۱ ❤️",
-    emoji: MODE_THEME_MAP.duel.emoji,
-    from: MODE_THEME_MAP.duel.from,
-    to: MODE_THEME_MAP.duel.to,
-    play: "duel" as const,
-  },
-  {
-    id: "penalty" as const,
-    title: "پنالتی",
-    subtitle: "۵ ضربه · بدون جان",
-    emoji: MODE_THEME_MAP.penalty.emoji,
-    from: MODE_THEME_MAP.penalty.from,
-    to: MODE_THEME_MAP.penalty.to,
-    play: "penalty" as const,
-  },
-  {
-    id: "survival" as const,
-    title: "مود بقا",
-    subtitle: "بدون جان · رکورد",
-    emoji: MODE_THEME_MAP.survival.emoji,
-    from: MODE_THEME_MAP.survival.from,
-    to: MODE_THEME_MAP.survival.to,
-    play: "survival" as const,
-  },
-] as const;
-
-function HomeDualEntry({
-  onPlayQuick,
-  onOpenClub,
-}: {
-  onPlayQuick: () => void;
-  onOpenClub: () => void;
-}) {
-  return (
-    <div className="home-dual-entry mx-5 mt-4 grid grid-cols-2 gap-2.5">
-      <GameCard
-        as="button"
-        variant="hero"
-        onClick={onPlayQuick}
-        className="home-dual-entry__card home-dual-entry__card--arena rounded-2xl p-3.5 text-right"
-      >
-        <p className="home-dual-entry__eyebrow">Quiz Arena</p>
-        <p className="home-dual-entry__title">بازی سریع</p>
-        <p className="home-dual-entry__sub">رقابت، امتیاز و جدول</p>
-      </GameCard>
-      <GameCard
-        as="button"
-        variant="asset"
-        onClick={onOpenClub}
-        className="home-dual-entry__card home-dual-entry__card--club rounded-2xl p-3.5 text-right"
-      >
-        <p className="home-dual-entry__eyebrow">Club Career</p>
-        <p className="home-dual-entry__title">باشگاه من</p>
-        <p className="home-dual-entry__sub">اقتصاد، صعود و کریر</p>
-      </GameCard>
-    </div>
-  );
-}
-
-function HomeSummaryRow({
-  arenaScoreValue,
-  streakDays,
-  lives,
-  divisionLabel,
-  gateComplete,
-  gateTotal,
-  fans,
-}: {
-  arenaScoreValue: number;
-  streakDays: number;
-  lives: number;
-  divisionLabel: string;
-  gateComplete: number;
-  gateTotal: number;
-  fans: number;
-}) {
-  return (
-    <div className="home-summary-row mx-5 mt-3 grid grid-cols-2 gap-2.5">
-      <GameCard variant="asset" className="home-summary-row__card rounded-2xl p-3 text-right">
-        <p className="home-summary-row__eyebrow">زمین مسابقه</p>
-        <p className="home-summary-row__value">{faNum(arenaScoreValue)}</p>
-        <p className="home-summary-row__sub">
-          استریک {faNum(streakDays)} · جان {faNum(lives)}
-        </p>
-      </GameCard>
-      <GameCard variant="asset" className="home-summary-row__card rounded-2xl p-3 text-right">
-        <p className="home-summary-row__eyebrow">باشگاه من</p>
-        <p className="home-summary-row__value">{divisionLabel}</p>
-        <p className="home-summary-row__sub">
-          {faNum(gateComplete)}/{faNum(gateTotal)} شرط · {faNum(fans)} هوادار
-        </p>
-      </GameCard>
-    </div>
-  );
-}
-
-function AdvisorHero({
-  advisor,
-  promotionGate,
-  primaryAction,
-}: {
-  advisor: ReturnType<typeof seasonAdvisorMessage>;
-  promotionGate: ReturnType<typeof promotionGateStatus>;
-  primaryAction: { label: string; hint: string; onClick: () => void };
-}) {
-  return (
-    <GameCard
-      variant="hero"
-      className="home-hero home-hero--primary home-command-hero mx-5 mt-4 rounded-3xl p-5"
-    >
-      <span className="absolute -left-4 -bottom-4 text-[7rem] opacity-12 leading-none pointer-events-none">
-        ⚽
-      </span>
-      <div className="relative">
-        <p className="home-command-hero__eyebrow">{advisor.eyebrow}</p>
-        <h2 className="text-2xl font-extrabold text-white text-right mt-1">
-          {advisor.title}
-        </h2>
-        <p className="mt-1.5 text-sm text-white/70 text-right leading-6">
-          {advisor.detail}
-        </p>
-      </div>
-      <div className="home-command-hero__chips">
-        <span className="home-command-hero__chip">{advisor.focus}</span>
-        <span className="home-command-hero__chip">{faNum(promotionGate.completeCount)} شرط کامل</span>
-        <span className="home-command-hero__chip">
-          {promotionGate.complete && !promotionGate.terminal
-            ? "ثبت صعود"
-            : advisor.action === "play"
-              ? "حرکت در زمین"
-              : "حرکت در باشگاه"}
-        </span>
-      </div>
-      <Button
-        onClick={primaryAction.onClick}
-        variant="primary"
-        size="lg"
-        fullWidth
-        className="relative mt-4 text-lg"
-      >
-        {primaryAction.label}
-      </Button>
-      <p className="mt-2 text-center text-[11px] font-bold text-white/55">
-        {primaryAction.hint}
-      </p>
+      <span className="home-mode-tile__emoji">{emoji}</span>
+      <p className="home-mode-tile__title">{title}</p>
+      <p className="home-mode-tile__sub">{subtitle}</p>
     </GameCard>
   );
 }
@@ -271,6 +347,7 @@ export function Home({
   onPlayDuel,
   onPlayPenalty,
   onPlaySurvival,
+  onOpenFairPlayLeaderboard,
 }: HomeProps) {
   const [bankOpen, setBankOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -280,7 +357,6 @@ export function Home({
   const vaultLevel = useGame((s) => s.vaultLevel);
   const xp = useGame((s) => s.xp);
   const club = useGame((s) => s.club);
-  const clubAvatar = useClubAvatar();
   const units = useGame((s) => s.units);
   const itemLevels = useGame((s) => s.itemLevels);
   const assign = useGame((s) => s.assign);
@@ -291,32 +367,36 @@ export function Home({
   const lives = useGame((s) => s.lives);
   const livesUpdatedAt = useGame((s) => s.livesUpdatedAt);
   const survivalBest = useGame((s) => s.survivalBest);
+  const bombBest = useGame((s) => s.bombBest);
   const syncLives = useGame((s) => s.syncLives);
   const ensureDailyMissions = useGame((s) => s.ensureDailyMissions);
   const showVaultTutorial = useGame((s) => s.showVaultTutorial);
   const playerFocus = useGame((s) => s.playerFocus);
-  const totalCorrect = useGame((s) => s.totalCorrect);
-  const bombBest = useGame((s) => s.bombBest);
   const streakDays = useGame((s) => s.streakDays);
   const arenaRating = useGame((s) => s.arenaRating);
+  const rankedWins = useGame((s) => s.rankedWins);
+  const rankedLosses = useGame((s) => s.rankedLosses);
+  const gamesPlayed = useGame((s) => s.gamesPlayed);
+  const totalCorrect = useGame((s) => s.totalCorrect);
+  const unitCollectCount = useGame((s) => s.unitCollectCount);
+  const vaultFillCount = useGame((s) => s.vaultFillCount);
+  const setupDone = useGame((s) => s.setupDone);
+  const dailyProgress = useGame((s) => s.dailyProgress);
+  const dailyDate = useGame((s) => s.dailyDate);
+  const missionClaimed = useGame((s) => s.missionClaimed);
+  const claimMission = useGame((s) => s.claimMission);
+  const claimableMissions = useGame((s) => s.claimableMissions);
 
   const { level } = levelInfo(xp);
   const regenIn = formatRegenCountdown(msUntilNextLife(lives, livesUpdatedAt));
   const canDuel = lives > 0;
-  const featured = featuredModeForDate();
   const bank = isBank(vaultLevel);
   const safeBudget = Number.isFinite(budget) ? budget : 0;
   const vaultCap = vaultCapacity(vaultLevel);
-  const shopLevel = units.shop?.level ?? 1;
-  const hiredCount = Object.values(hired).filter(Boolean).length;
-  const assignedCount = Object.values(assign).filter(Boolean).length;
-  const shopUpgradeCost = unitUpgradeCost(unitDef("shop"), shopLevel);
-  const foodUpgradeCost = unitUpgradeCost(unitDef("food"), units.food?.level ?? 1);
-  const parkingUpgradeCost = unitUpgradeCost(unitDef("parking"), units.parking?.level ?? 1);
-  const ticketsUpgradeCost = unitUpgradeCost(unitDef("tickets"), units.tickets?.level ?? 1);
-  const academyUpgradeCost = unitUpgradeCost(unitDef("academy"), units.academy?.level ?? 1);
-  const sponsorUpgradeCost = unitUpgradeCost(unitDef("sponsor"), units.sponsor?.level ?? 1);
-  const nextVaultUpgradeCost = vaultUpgradeCost(vaultLevel);
+  const vaultLabel = bank
+    ? `${faVaultM(safeBudget)}م+`
+    : `${faVaultM(safeBudget)}/${faVaultM(vaultCap)}م`;
+
   const clubSnap = unitIncomeSnapshot({
     units,
     itemLevels,
@@ -330,6 +410,10 @@ export function Home({
   const canCollectFromHome =
     clubSnap.readyCount > 0 && clubSnap.vaultFree > 0 && !bank && clubSnap.totalPending > 0;
   const homeVaultFull = clubSnap.vaultFull && !bank;
+  const pendingIncome =
+    canCollectFromHome && clubSnap.totalPending > 0
+      ? `${faVaultM(clubSnap.totalPending)}م`
+      : null;
 
   useEffect(() => {
     syncLives();
@@ -342,30 +426,6 @@ export function Home({
     };
   }, [syncLives, ensureDailyMissions]);
 
-  function playFeatured(id: FeaturedModeId) {
-    if (id === "bomb") onPlayBomb();
-    else if (id === "duel") onPlayDuel();
-    else if (id === "penalty") onPlayPenalty();
-    else onPlaySurvival();
-  }
-
-  function playMode(id: (typeof MODE_DEFS)[number]["play"]) {
-    if (id === "bomb") onPlayBomb();
-    else if (id === "duel") onPlayDuel();
-    else if (id === "penalty") onPlayPenalty();
-    else onPlaySurvival();
-  }
-
-  const featuredDisabled = featured.id === "duel" && !canDuel;
-  const featuredDisabledReason =
-    featured.id === "duel" && !canDuel
-      ? regenIn
-        ? `نیاز ۱ ❤️ · ${regenIn}`
-        : "نیاز ۱ ❤️"
-      : undefined;
-
-  const gridModes = MODE_DEFS.filter((m) => m.id !== featured.id);
-  const playableModes = MODE_DEFS.filter((m) => m.id !== "duel" || canDuel).length;
   const promotionSnapshot = useMemo(
     () =>
       buildPromotionSnapshot({
@@ -379,10 +439,20 @@ export function Home({
       }),
     [fans, vaultLevel, matchesWon, xp, units, hired, assign],
   );
+
   const promotionGate = useMemo(
     () => promotionGateStatus(seasonStep, promotionSnapshot),
     [seasonStep, promotionSnapshot],
   );
+
+  const shopUpgradeCost = unitUpgradeCost(unitDef("shop"), units.shop?.level ?? 1);
+  const foodUpgradeCost = unitUpgradeCost(unitDef("food"), units.food?.level ?? 1);
+  const parkingUpgradeCost = unitUpgradeCost(unitDef("parking"), units.parking?.level ?? 1);
+  const ticketsUpgradeCost = unitUpgradeCost(unitDef("tickets"), units.tickets?.level ?? 1);
+  const academyUpgradeCost = unitUpgradeCost(unitDef("academy"), units.academy?.level ?? 1);
+  const sponsorUpgradeCost = unitUpgradeCost(unitDef("sponsor"), units.sponsor?.level ?? 1);
+  const nextVaultUpgradeCost = vaultUpgradeCost(vaultLevel);
+
   const homeAdvisor = useMemo(
     () =>
       seasonAdvisorMessage({
@@ -420,120 +490,180 @@ export function Home({
       nextVaultUpgradeCost,
     ],
   );
-  const homeHeadline = promotionGate.complete
-    ? promotionGate.terminal
-      ? "باشگاه به لیگ حرفه‌ای رسیده است"
-      : "صعود آمادهٔ ثبت است"
-    : promotionGate.nextRequirement
-      ? `${promotionGate.nextRequirement.def.label} قدم بعدی توست`
-      : "الان مهم‌ترین قدم برای صعود چیست؟";
-  const homePrimaryAction = promotionGate.complete && !promotionGate.terminal
-    ? {
-        label: `⬆️ ${promotionGate.claimLabel ?? "ثبت صعود"}`,
-        hint: "همه شرط‌ها کامل‌اند؛ فقط ثبت صعود مانده",
+
+  const missionSnap = useMemo(
+    () =>
+      buildMissionSnapshot({
+        gamesPlayed,
+        totalCorrect,
+        unitCollectCount,
+        vaultFillCount,
+        matchesWon,
+        streakDays,
+        bombBest,
+        fans,
+        setupDone,
+        units,
+        hired,
+        assign,
+        vaultLevel,
+        dailyProgress,
+        dailyDate,
+        missionClaimed,
+      }),
+    [
+      gamesPlayed,
+      totalCorrect,
+      unitCollectCount,
+      vaultFillCount,
+      matchesWon,
+      streakDays,
+      bombBest,
+      fans,
+      setupDone,
+      units,
+      hired,
+      assign,
+      vaultLevel,
+      dailyProgress,
+      dailyDate,
+      missionClaimed,
+    ],
+  );
+
+  const claimableCount = claimableMissions();
+  const firstClaimable = firstClaimableMission(missionSnap, seasonStep);
+  const fairPlayValue = fairPlayScore({ arenaRating, rankedWins, rankedLosses });
+  const divisionLabel = currentDivisionLabel(seasonStep);
+  const arenaFirst = playerFocus !== "club";
+
+  const nextStepAction = (() => {
+    if (promotionGate.complete && !promotionGate.terminal) {
+      return {
+        title: "صعود آمادهٔ ثبت است",
+        detail: "همه شرط‌های این فصل کامل شده‌اند.",
+        label: promotionGate.claimLabel ?? "ثبت صعود",
         onClick: onOpenClub,
-      }
-    : promotionGate.complete && promotionGate.terminal
-      ? {
-          label: "🏟️ مرور باشگاه حرفه‌ای",
-          hint: "مسیر اصلی کامل شده؛ حالا نوبت تثبیت افتخارات است",
-          onClick: onOpenClub,
-        }
-      : homeAdvisor.action === "play"
-        ? {
-            label: `⚽ برو برای ${homeAdvisor.focus}`,
-            hint: "بازی بعدی سریع‌ترین راه برای جلو بردن این فصل است",
-            onClick: onPlayQuick,
-          }
-        : {
-            label: `🏟️ برو برای ${homeAdvisor.focus}`,
-            hint: "قدم بعدی داخل اقتصاد و ساختمان‌های باشگاه است",
-            onClick: onOpenClub,
-          };
+      };
+    }
+    if (canCollectFromHome) {
+      return {
+        title: "درآمد فروشگاه آماده است",
+        detail: "جمع‌آوری کن و خزانه را برای قدم بعدی پر کن.",
+        label: "رفتن به باشگاه",
+        onClick: onOpenClub,
+      };
+    }
+    if (homeVaultFull) {
+      return {
+        title: "خزانه جا کم آورده است",
+        detail: "درآمد را جمع کن یا ظرفیت خزانه را ارتقا بده.",
+        label: "مدیریت خزانه",
+        onClick: () => setBankOpen(true),
+      };
+    }
+    if (homeAdvisor.action === "play") {
+      return {
+        title: homeAdvisor.title,
+        detail: homeAdvisor.detail,
+        label: `برو برای ${homeAdvisor.focus}`,
+        onClick: onPlayQuick,
+      };
+    }
+    return {
+      title: homeAdvisor.title,
+      detail: homeAdvisor.detail,
+      label: `برو برای ${homeAdvisor.focus}`,
+      onClick: onOpenClub,
+    };
+  })();
 
-  const arenaScoreValue = arenaScore({
-    xp,
-    totalCorrect,
-    matchesWon,
-    bombBest,
-    survivalBest,
-    streakDays,
-    arenaRating,
-    fans,
-    budget: safeBudget,
-    vaultLevel,
-    seasonStep,
-    clubName: club.name,
-  });
+  function playMode(id: (typeof MODE_DEFS)[number]["play"]) {
+    if (id === "bomb") onPlayBomb();
+    else if (id === "duel") onPlayDuel();
+    else if (id === "penalty") onPlayPenalty();
+    else onPlaySurvival();
+  }
 
-  const showClubBlock = playerFocus !== "arena";
-  const showArenaBlock = playerFocus !== "club";
-  const clubHeavy = playerFocus === "club";
-  const arenaHeavy = playerFocus === "arena";
+  function quickClaim() {
+    if (!firstClaimable) {
+      onOpenMissions();
+      return;
+    }
+    const result = claimMission(firstClaimable.def.id);
+    if (result !== "ok") onOpenMissions();
+  }
 
-  const clubSection = showClubBlock ? (
-    <>
-      <div className="home-section-head px-5 mt-5">
-        <span className="home-section-head__eyebrow">
-          {promotionGate.seasonTitle} · {faNum(promotionGate.completeCount)} از {faNum(promotionGate.totalCount)} شرط
-        </span>
-        <h2 className="home-section-head__title">{homeHeadline}</h2>
-      </div>
-      <HomeMissionBanner
-        onOpenMissions={onOpenMissions}
-        seasonTitle={promotionGate.seasonTitle}
-        seasonFocus={homeAdvisor.focus}
+  return (
+    <div className="pitch-stripes min-h-dvh pb-28" dir="rtl">
+      <HomeCompactHeader
+        clubName={club.name}
+        level={level}
+        divisionLabel={divisionLabel}
+        vaultLabel={vaultLabel}
+        cards={cards}
+        lives={lives}
+        onOpenVault={() => setBankOpen(true)}
       />
-      <AdvisorHero
-        advisor={homeAdvisor}
-        promotionGate={promotionGate}
-        primaryAction={homePrimaryAction}
-      />
-      <ClubHomeBanner
+
+      <ClubBankSheet open={bankOpen} onClose={() => setBankOpen(false)} />
+
+      <HomeLoopHeroes
+        arenaFirst={arenaFirst}
+        arenaRating={arenaRating}
+        fairPlayValue={fairPlayValue}
+        streakDays={streakDays}
+        canRanked={canDuel}
+        divisionLabel={divisionLabel}
+        vaultLabel={vaultLabel}
+        pendingIncome={pendingIncome}
+        onPlayQuick={onPlayQuick}
+        onPlayRanked={() => onPlayDuel("ranked")}
         onOpenClub={onOpenClub}
-        seasonTitle={promotionGate.seasonTitle}
-        advisorTitle={homeAdvisor.title}
-        advisorAction={homeAdvisor.action}
-        advisorFocus={homeAdvisor.focus}
+        onOpenFairPlayLeaderboard={onOpenFairPlayLeaderboard}
       />
-    </>
-  ) : null;
 
-  const arenaSection = showArenaBlock ? (
-    <>
-      <HomeFeaturedMode
-        mode={featured}
-        disabled={featuredDisabled}
-        disabledReason={featuredDisabledReason}
-        onPlay={playFeatured}
+      <HomeNextStep
+        title={nextStepAction.title}
+        detail={nextStepAction.detail}
+        actionLabel={nextStepAction.label}
+        onAction={nextStepAction.onClick}
       />
-      <HomeStreakBar />
-    </>
-  ) : null;
 
-  const modesSection = (
-    <>
-      <div className="home-section-head home-section-head--games px-5 mt-6 mb-2">
-        <button
-          type="button"
-          onClick={onOpenGames}
-          className="home-section-head__link active:opacity-70"
-        >
+      {claimableCount > 0 && firstClaimable && (
+        <HomeRewardReady
+          count={claimableCount}
+          missionTitle={firstClaimable.def.title}
+          reward={rewardLabel(firstClaimable.def.reward)}
+          onClaim={quickClaim}
+          onOpenMissions={onOpenMissions}
+        />
+      )}
+
+      <HomeTodayStrip
+        claimableCount={claimableCount}
+        dailyCount={DAILY_MISSION_IDS.length}
+        arenaRating={arenaRating}
+      />
+
+      <div className="home-section-head home-section-head--games px-5 mt-5 mb-2">
+        <button type="button" onClick={onOpenGames} className="home-section-head__link active:opacity-70">
           همه مودها ›
         </button>
         <div className="text-right">
-          <span className="home-section-head__eyebrow">{faNum(playableModes)} مود قابل بازی</span>
-          <h3 className="home-section-head__title">مودهای بازی</h3>
+          <span className="home-section-head__eyebrow">مودهای بیشتر</span>
+          <h3 className="home-section-head__title">بازی‌ها</h3>
         </div>
       </div>
-      <div className="px-5 grid grid-cols-2 gap-2.5">
-        {gridModes.map((m) => {
+
+      <div className="home-modes-grid px-5 grid grid-cols-2 gap-2.5">
+        {MODE_DEFS.map((m) => {
           const subtitle =
             m.id === "survival"
-              ? `بدون جان · رکورد ${faNum(survivalBest)}`
+              ? `رکورد ${faNum(survivalBest)}`
               : m.id === "duel" && !canDuel
                 ? regenIn
-                  ? `نیاز ۱ ❤️ · ${regenIn}`
+                  ? `۱ ❤️ · ${regenIn}`
                   : "نیاز ۱ ❤️"
                 : m.subtitle;
 
@@ -565,114 +695,6 @@ export function Home({
           );
         })}
       </div>
-    </>
-  );
-
-  return (
-    <div className="pitch-stripes min-h-dvh pb-32">
-      <header className="px-5 pt-5">
-        <button
-          type="button"
-          onClick={onOpenClub}
-          className="home-topbar w-full text-right active:scale-[0.98] transition-transform"
-        >
-          <Avatar label={clubAvatar.label} color={clubAvatar.color} size={52} />
-          <div className="flex-1 min-w-0">
-            <p className="home-topbar__eyebrow">اتاق فرمان امروز</p>
-            <p className="text-lg font-extrabold leading-tight truncate text-white">
-              {club.name}
-            </p>
-            <p className="text-xs text-gold-400 font-bold truncate mt-0.5">
-              سطح {faNum(level)} · {currentDivisionLabel(seasonStep)}
-            </p>
-          </div>
-          <span className="home-topbar__action">ورود به باشگاه</span>
-        </button>
-
-        <div className="mt-3 home-header-stats">
-          <button
-            type="button"
-            onClick={() => setBankOpen(true)}
-            className="home-header-stat home-header-stat--wide flex-1 min-w-0 rounded-xl px-3 py-2.5 text-right active:scale-[0.98]"
-          >
-            <p className="home-header-stat__label">خزانه</p>
-            <p className="home-header-stat__value text-gold-400 tabular-nums truncate">
-              {bank ? (
-                <>🏦 {faVaultM(safeBudget)}م+</>
-              ) : (
-                <>
-                  🔐 {faVaultM(safeBudget)}/{faVaultM(vaultCap)}م
-                </>
-              )}
-            </p>
-          </button>
-          <div className="home-header-stat rounded-xl px-3 py-2.5 text-center shrink-0 min-w-16">
-            <p className="home-header-stat__label">کارت</p>
-            <p className="home-header-stat__value">🃏 {faNum(cards)}</p>
-          </div>
-          <div
-            className="home-header-stat rounded-xl px-3 py-2.5 text-center shrink-0 min-w-16"
-            title={regenIn && lives < 5 ? `جان بعدی: ${regenIn}` : undefined}
-          >
-            <p className="home-header-stat__label">جان</p>
-            <p className="home-header-stat__value">
-              ❤️ {faNum(lives)}/۵
-            </p>
-          </div>
-        </div>
-      </header>
-
-      <ClubBankSheet open={bankOpen} onClose={() => setBankOpen(false)} />
-
-      <HomeDualEntry onPlayQuick={onPlayQuick} onOpenClub={onOpenClub} />
-
-      <HomeSummaryRow
-        arenaScoreValue={arenaScoreValue}
-        streakDays={streakDays}
-        lives={lives}
-        divisionLabel={currentDivisionLabel(seasonStep)}
-        gateComplete={promotionGate.completeCount}
-        gateTotal={promotionGate.totalCount}
-        fans={fans}
-      />
-
-      {clubHeavy ? (
-        <>
-          {clubSection}
-          {arenaSection}
-          {modesSection}
-        </>
-      ) : arenaHeavy ? (
-        <>
-          {arenaSection}
-          {modesSection}
-          {clubSection}
-        </>
-      ) : (
-        <>
-          {arenaSection}
-          {clubSection}
-          {modesSection}
-        </>
-      )}
-
-      <GameCard
-        as="button"
-        variant="locked"
-        onClick={onOpenGames}
-        className="home-soon-link home-soon-card mx-5 mt-5 mb-2 w-[calc(100%-2.5rem)] rounded-2xl p-4 text-right"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <span className="home-soon-card__lock">🔒</span>
-          <div className="flex-1 min-w-0">
-            <p className="home-soon-card__eyebrow">به‌زودی</p>
-            <p className="home-soon-card__title">تورنمنت و رقابت آنلاین</p>
-            <p className="home-soon-card__sub">
-              لیگ زنده، جدول هم‌زمان و رقابت مستقیم با بازیکن‌های دیگر.
-            </p>
-          </div>
-        </div>
-      </GameCard>
     </div>
   );
 }

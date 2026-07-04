@@ -5,10 +5,12 @@ import { OngoingRow, ONGOING_GAMES } from "@/components/ui/OngoingRow";
 import { MODE_THEME_MAP } from "@/lib/designSystem";
 import { faNum } from "@/lib/format";
 
+import type { DuelKind } from "@/lib/types";
+
 interface GamesProps {
   onPlayQuick: () => void;
   onPlayBomb: () => void;
-  onPlayDuel: () => void;
+  onPlayDuel: (kind?: DuelKind) => void;
   onPlayPenalty: () => void;
   onPlaySurvival: () => void;
 }
