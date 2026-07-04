@@ -273,6 +273,68 @@ const PROMOTION_TIERS: PromotionTierDef[] = [
         hint: "در این مرحله، فقط زیرساخت کافی نیست؛ باید تیم واقعاً نتیجه هم بگیرد.",
       },
     ],
+    reward: { xp: 500, fans: 100, vaultMoney: 5_000_000, cards: 2 },
+    claimLabel: "ورود به فصل ۴",
+  },
+  {
+    id: "club_empire",
+    title: "فصل ۴: امپراتوری باشگاه",
+    seasonTitle: "فصل ۴: امپراتوری باشگاه",
+    narrative:
+      "باشگاه حالا یک برند است؛ آخرین جهش این است که خزانه، مدیریت و درآمد پایدار را با هم به سطح لیگ حرفه‌ای برسانی.",
+    requirements: [
+      {
+        id: "fans_5000",
+        label: "هوادار",
+        type: "fans",
+        target: 5000,
+        hint: "امپراتوری باشگاه بدون جمعیت واقعی فقط روی کاغذ می‌ماند.",
+      },
+      {
+        id: "vault_lv5",
+        label: "خزانه",
+        type: "vaultLevel",
+        target: 5,
+        hint: "برای رشد پایدار، خزانه باید از مرحلهٔ «پر شدن مداوم» عبور کند.",
+      },
+      {
+        id: "sponsor_lv3",
+        label: "اسپانسر",
+        type: "unitLevel",
+        unitId: "sponsor",
+        target: 3,
+        hint: "قراردادهای بزرگ باید به درآمد ثابت تبدیل شوند، نه فقط یک جهش.",
+      },
+      {
+        id: "academy_lv3",
+        label: "آکادمی",
+        type: "unitLevel",
+        unitId: "academy",
+        target: 3,
+        hint: "آینده‌سازی باید از پروژهٔ کوچک به موتور واقعی رشد تبدیل شود.",
+      },
+      {
+        id: "hire_3",
+        label: "استخدام مدیر",
+        type: "hiredCount",
+        target: 3,
+        hint: "باشگاه بزرگ بدون تیم مدیریتی پایدار نمی‌ماند.",
+      },
+      {
+        id: "assign_3",
+        label: "انتصاب مدیر",
+        type: "assignedCount",
+        target: 3,
+        hint: "مدیران باید واقعاً روی چند واحد درآمدی فعال باشند.",
+      },
+      {
+        id: "wins_35",
+        label: "برد",
+        type: "matchesWon",
+        target: 35,
+        hint: "برای تثبیت در لیگ حرفه‌ای، نتیجهٔ بلندمدت هم لازم است.",
+      },
+    ],
     terminal: true,
   },
 ];
@@ -297,6 +359,7 @@ export function buildPromotionSnapshot(state: PromotionSourceState): PromotionSn
 }
 
 export function currentDivisionLabel(seasonStep: number): string {
+  if (seasonStep >= 4) return "لیگ حرفه‌ای";
   if (seasonStep >= 3) return "دستهٔ یک";
   if (seasonStep >= 2) return "دستهٔ دو";
   return "دستهٔ سه";
@@ -447,6 +510,22 @@ export function promotionCelebrationForTier(tierId: string): PromotionCelebratio
         { emoji: "🎓", label: "آکادمی فوتبال", hint: "سرمایه‌گذاری روی آینده" },
         { emoji: "🤝", label: "اسپانسر پیراهن", hint: "قراردادهای بزرگ‌تر باشگاه" },
         { emoji: "🎟️", label: "گیشهٔ قوی‌تر", hint: "جمعیت بیشتر و فروش بهتر" },
+      ],
+    };
+  }
+  if (tierId === "division_one") {
+    return {
+      eyebrow: "صعود رسمی",
+      title: "برند باشگاه جا افتاد",
+      detail:
+        "حالا وقت آن است که باشگاه را به یک امپراتوری پایدار تبدیل کنی؛ خزانه، مدیریت و درآمد باید هم‌زمان بزرگ شوند.",
+      nextSeasonTitle: "فصل ۴: امپراتوری باشگاه",
+      divisionFrom: "دستهٔ یک",
+      divisionTo: "لیگ حرفه‌ای",
+      unlocks: [
+        { emoji: "🏦", label: "بانک اسپانسر", hint: "خزانه بدون سقف" },
+        { emoji: "👥", label: "تیم مدیریت", hint: "مدیران بیشتر روی واحدها" },
+        { emoji: "🤝", label: "قراردادهای بزرگ", hint: "درآمد پایدار بلندمدت" },
       ],
     };
   }
@@ -701,134 +780,258 @@ export function seasonAdvisorMessage(input: SeasonAdvisorInput): AdvisorMessage 
     };
   }
 
-  if (!snapshot.unitUnlocked.academy) {
+  if (seasonStep === 3) {
+    if (!snapshot.unitUnlocked.academy) {
+      return {
+        eyebrow: "فصل ۳: برند و آینده",
+        title: "آکادمی هنوز قفل است",
+        detail: `برای باز شدن آکادمی باید به سطح ${faNum(unitDef("academy").requiresLevel)} برسی تا رشد باشگاه فقط به امروز وابسته نباشد.`,
+        action: "play",
+        focus: "باز شدن آکادمی",
+      };
+    }
+
+    if (snapshot.unitLevels.academy < 2) {
+      return budget >= (input.upgradeCosts.academy ?? Number.MAX_SAFE_INTEGER)
+        ? {
+            eyebrow: "فصل ۳: برند و آینده",
+            title: "آکادمی را جان بده",
+            detail:
+              "باشگاه بزرگ فقط با فروش روز مسابقه نمی‌ماند؛ آکادمی را به سطح ۲ برسان تا آینده‌سازی شروع شود.",
+            action: "club",
+            focus: "آکادمی",
+          }
+        : {
+            eyebrow: "فصل ۳: برند و آینده",
+            title: "برای آکادمی هنوز بودجه کم است",
+            detail:
+              "چند بازی و درآمد دیگر لازم است تا روی آیندهٔ باشگاه سرمایه‌گذاری کنی.",
+            action: "play",
+            focus: "بودجهٔ آکادمی",
+          };
+    }
+
+    if (!snapshot.unitUnlocked.sponsor) {
+      return {
+        eyebrow: "فصل ۳: برند و آینده",
+        title: "هنوز به قراردادهای بزرگ نرسیده‌ای",
+        detail: `برای باز شدن اسپانسر باید به سطح ${faNum(unitDef("sponsor").requiresLevel)} برسی و باشگاه را به ویترین جذاب‌تری تبدیل کنی.`,
+        action: "play",
+        focus: "باز شدن اسپانسر",
+      };
+    }
+
+    if (snapshot.unitLevels.sponsor < 2) {
+      return budget >= (input.upgradeCosts.sponsor ?? Number.MAX_SAFE_INTEGER)
+        ? {
+            eyebrow: "فصل ۳: برند و آینده",
+            title: "اولین قرارداد بزرگ را جدی کن",
+            detail:
+              "اسپانسرِ پیراهن را به سطح ۲ برسان تا برند باشگاه وارد چرخهٔ درآمدهای سنگین‌تر شود.",
+            action: "club",
+            focus: "اسپانسر",
+          }
+        : {
+            eyebrow: "فصل ۳: برند و آینده",
+            title: "برای قرارداد بزرگ، باید کمی دیگر رشد کنیم",
+            detail:
+              "برند قوی بدون پشتوانهٔ مالی جلو نمی‌رود؛ چند برد و collect دیگر لازم است.",
+            action: "play",
+            focus: "بودجهٔ اسپانسر",
+          };
+    }
+
+    if (snapshot.unitLevels.tickets < 3) {
+      return budget >= (input.upgradeCosts.tickets ?? Number.MAX_SAFE_INTEGER)
+        ? {
+            eyebrow: "فصل ۳: برند و آینده",
+            title: "گیشه را یک پله دیگر بالا ببر",
+            detail:
+              "وقتی جمعیت بیشتر می‌شود، بلیت‌فروشی هم باید در مقیاس بزرگ‌تر کار کند. آن را به سطح ۳ برسان.",
+            action: "club",
+            focus: "بلیت‌فروشی",
+          }
+        : {
+            eyebrow: "فصل ۳: برند و آینده",
+            title: "برای گیشهٔ بزرگ‌تر، پول بیشتری لازم داریم",
+            detail:
+              "قبل از موج هوادار بعدی، باید بودجهٔ ارتقای بلیت‌فروشی را جور کنیم.",
+            action: "play",
+            focus: "بودجهٔ بلیت",
+          };
+    }
+
+    if (snapshot.vaultLevel < 4) {
+      return budget >= (input.upgradeCosts.vault ?? Number.MAX_SAFE_INTEGER)
+        ? {
+            eyebrow: "فصل ۳: برند و آینده",
+            title: "خزانه باید در حد قراردادهای بزرگ شود",
+            detail:
+              "آکادمی، اسپانسر و گیشهٔ قوی‌تر، خزانهٔ کوچک را خفه می‌کنند. آن را به سطح ۴ برسان.",
+            action: "club",
+            focus: "خزانهٔ سطح ۴",
+          }
+        : {
+            eyebrow: "فصل ۳: برند و آینده",
+            title: "قبل از جهش بعدی، خزانه بودجه می‌خواهد",
+            detail:
+              "کمی درآمد دیگر لازم است تا زیرساخت مالی باشگاه در حد دسته یک شود.",
+            action: "play",
+            focus: "بودجهٔ خزانه",
+          };
+    }
+
+    if (snapshot.matchesWon < 20) {
+      return {
+        eyebrow: "فصل ۳: برند و آینده",
+        title: "اعتبار این سطح را باید در زمین ثابت کنی",
+        detail:
+          "باشگاه بزرگ‌تر شده، اما برای تثبیت جایگاهش در دسته یک به بردهای بیشتری نیاز دارد.",
+        action: "play",
+        focus: "بردهای بیشتر",
+      };
+    }
+
+    if (snapshot.fans < 2500) {
+      return {
+        eyebrow: "فصل ۳: برند و آینده",
+        title: "برند باشگاه هنوز جمعیت بیشتری می‌خواهد",
+        detail:
+          "وقتی هوادارها از چند هزار نفر عبور کنند، آکادمی و اسپانسر واقعاً اثرشان را نشان می‌دهند.",
+        action: "play",
+        focus: "هوادار بیشتر",
+      };
+    }
+
     return {
-      eyebrow: "فصل ۳: برند و آینده",
-      title: "آکادمی هنوز قفل است",
-      detail: `برای باز شدن آکادمی باید به سطح ${faNum(unitDef("academy").requiresLevel)} برسی تا رشد باشگاه فقط به امروز وابسته نباشد.`,
-      action: "play",
-      focus: "باز شدن آکادمی",
+      eyebrow: "پایان فصل ۳",
+      title: "باشگاه آمادهٔ جهش نهایی است",
+      detail:
+        "برند و آینده جا افتاده‌اند. حالا می‌توانی فصل ۴ و امپراتوری پایدار باشگاه را باز کنی.",
+      action: "club",
+      focus: "صعود",
     };
   }
 
-  if (snapshot.unitLevels.academy < 2) {
-    return budget >= (input.upgradeCosts.academy ?? Number.MAX_SAFE_INTEGER)
-      ? {
-          eyebrow: "فصل ۳: برند و آینده",
-          title: "آکادمی را جان بده",
-          detail:
-            "باشگاه بزرگ فقط با فروش روز مسابقه نمی‌ماند؛ آکادمی را به سطح ۲ برسان تا آینده‌سازی شروع شود.",
-          action: "club",
-          focus: "آکادمی",
-        }
-      : {
-          eyebrow: "فصل ۳: برند و آینده",
-          title: "برای آکادمی هنوز بودجه کم است",
-          detail:
-            "چند بازی و درآمد دیگر لازم است تا روی آیندهٔ باشگاه سرمایه‌گذاری کنی.",
-          action: "play",
-          focus: "بودجهٔ آکادمی",
-        };
-  }
-
-  if (!snapshot.unitUnlocked.sponsor) {
-    return {
-      eyebrow: "فصل ۳: برند و آینده",
-      title: "هنوز به قراردادهای بزرگ نرسیده‌ای",
-      detail: `برای باز شدن اسپانسر باید به سطح ${faNum(unitDef("sponsor").requiresLevel)} برسی و باشگاه را به ویترین جذاب‌تری تبدیل کنی.`,
-      action: "play",
-      focus: "باز شدن اسپانسر",
-    };
-  }
-
-  if (snapshot.unitLevels.sponsor < 2) {
-    return budget >= (input.upgradeCosts.sponsor ?? Number.MAX_SAFE_INTEGER)
-      ? {
-          eyebrow: "فصل ۳: برند و آینده",
-          title: "اولین قرارداد بزرگ را جدی کن",
-          detail:
-            "اسپانسرِ پیراهن را به سطح ۲ برسان تا برند باشگاه وارد چرخهٔ درآمدهای سنگین‌تر شود.",
-          action: "club",
-          focus: "اسپانسر",
-        }
-      : {
-          eyebrow: "فصل ۳: برند و آینده",
-          title: "برای قرارداد بزرگ، باید کمی دیگر رشد کنیم",
-          detail:
-            "برند قوی بدون پشتوانهٔ مالی جلو نمی‌رود؛ چند برد و collect دیگر لازم است.",
-          action: "play",
-          focus: "بودجهٔ اسپانسر",
-        };
-  }
-
-  if (snapshot.unitLevels.tickets < 3) {
-    return budget >= (input.upgradeCosts.tickets ?? Number.MAX_SAFE_INTEGER)
-      ? {
-          eyebrow: "فصل ۳: برند و آینده",
-          title: "گیشه را یک پله دیگر بالا ببر",
-          detail:
-            "وقتی جمعیت بیشتر می‌شود، بلیت‌فروشی هم باید در مقیاس بزرگ‌تر کار کند. آن را به سطح ۳ برسان.",
-          action: "club",
-          focus: "بلیت‌فروشی",
-        }
-      : {
-          eyebrow: "فصل ۳: برند و آینده",
-          title: "برای گیشهٔ بزرگ‌تر، پول بیشتری لازم داریم",
-          detail:
-            "قبل از موج هوادار بعدی، باید بودجهٔ ارتقای بلیت‌فروشی را جور کنیم.",
-          action: "play",
-          focus: "بودجهٔ بلیت",
-        };
-  }
-
-  if (snapshot.vaultLevel < 4) {
+  if (snapshot.vaultLevel < 5) {
     return budget >= (input.upgradeCosts.vault ?? Number.MAX_SAFE_INTEGER)
       ? {
-          eyebrow: "فصل ۳: برند و آینده",
-          title: "خزانه باید در حد قراردادهای بزرگ شود",
+          eyebrow: "فصل ۴: امپراتوری باشگاه",
+          title: "خزانه را به سطح نهایی نزدیک کن",
           detail:
-            "آکادمی، اسپانسر و گیشهٔ قوی‌تر، خزانهٔ کوچک را خفه می‌کنند. آن را به سطح ۴ برسان.",
+            "برای امپراتوری پایدار، خزانه باید از حالت پر و خالی مداوم خارج شود. آن را به سطح ۵ برسان.",
           action: "club",
-          focus: "خزانهٔ سطح ۴",
+          focus: "خزانهٔ سطح ۵",
         }
       : {
-          eyebrow: "فصل ۳: برند و آینده",
-          title: "قبل از جهش بعدی، خزانه بودجه می‌خواهد",
+          eyebrow: "فصل ۴: امپراتوری باشگاه",
+          title: "جهش نهایی هنوز بودجه می‌خواهد",
           detail:
-            "کمی درآمد دیگر لازم است تا زیرساخت مالی باشگاه در حد دسته یک شود.",
+            "قبل از رسیدن به بانک اسپانسر، باید چند چرخهٔ درآمد و ارتقای دیگر جمع شود.",
           action: "play",
           focus: "بودجهٔ خزانه",
         };
   }
 
-  if (snapshot.matchesWon < 20) {
+  if (snapshot.unitLevels.sponsor < 3) {
+    return budget >= (input.upgradeCosts.sponsor ?? Number.MAX_SAFE_INTEGER)
+      ? {
+          eyebrow: "فصل ۴: امپراتوری باشگاه",
+          title: "قراردادهای بزرگ را پایدار کن",
+          detail:
+            "اسپانسر باید از قرارداد اولیه به منبع درآمد ثابت تبدیل شود. آن را به سطح ۳ برسان.",
+          action: "club",
+          focus: "اسپانسر سطح ۳",
+        }
+      : {
+          eyebrow: "فصل ۴: امپراتوری باشگاه",
+          title: "برای قرارداد پایدار، پول بیشتری لازم است",
+          detail:
+            "چند بازی و collect دیگر لازم است تا درآمد بلندمدت باشگاه جدی‌تر شود.",
+          action: "play",
+          focus: "بودجهٔ اسپانسر",
+        };
+  }
+
+  if (snapshot.unitLevels.academy < 3) {
+    return budget >= (input.upgradeCosts.academy ?? Number.MAX_SAFE_INTEGER)
+      ? {
+          eyebrow: "فصل ۴: امپراتوری باشگاه",
+          title: "آکادمی را به موتور رشد تبدیل کن",
+          detail:
+            "آینده‌سازی باید از پروژهٔ جانبی به بخش واقعی اقتصاد باشگاه تبدیل شود. آکادمی را به سطح ۳ برسان.",
+          action: "club",
+          focus: "آکادمی سطح ۳",
+        }
+      : {
+          eyebrow: "فصل ۴: امپراتوری باشگاه",
+          title: "سرمایه‌گذاری روی آینده هنوز کامل نشده",
+          detail:
+            "برای تثبیت امپراتوری، باید بودجهٔ ارتقای آکادمی را هم جور کنیم.",
+          action: "play",
+          focus: "بودجهٔ آکادمی",
+        };
+  }
+
+  if (snapshot.hiredCount < 3) {
+    return budget >= CHEAPEST_MANAGER_COST
+      ? {
+          eyebrow: "فصل ۴: امپراتوری باشگاه",
+          title: "تیم مدیریتی را گسترش بده",
+          detail:
+            "باشگاه بزرگ با یک مدیر نمی‌ماند. حداقل سه مدیر لازم است تا چرخهٔ درآمد واقعاً پایدار شود.",
+          action: "club",
+          focus: "تیم مدیریت",
+        }
+      : {
+          eyebrow: "فصل ۴: امپراتوری باشگاه",
+          title: "برای تیم مدیریتی، بودجهٔ بیشتری لازم است",
+          detail:
+            "چند بازی و collect دیگر ما را به استخدام مدیران بعدی نزدیک‌تر می‌کند.",
+          action: "play",
+          focus: "بودجهٔ مدیر",
+        };
+  }
+
+  if (snapshot.assignedCount < 3) {
     return {
-      eyebrow: "فصل ۳: برند و آینده",
-      title: "اعتبار این سطح را باید در زمین ثابت کنی",
+      eyebrow: "فصل ۴: امپراتوری باشگاه",
+      title: "مدیران را روی کل باشگاه پخش کن",
       detail:
-        "باشگاه بزرگ‌تر شده، اما برای تثبیت جایگاهش در دسته یک به بردهای بیشتری نیاز دارد.",
+        "استخدام کافی نیست؛ باید حداقل سه مدیر واقعاً روی واحدهای درآمدی فعال باشند.",
+      action: "club",
+      focus: "انتصاب مدیران",
+    };
+  }
+
+  if (snapshot.matchesWon < 35) {
+    return {
+      eyebrow: "فصل ۴: امپراتوری باشگاه",
+      title: "اعتبار لیگ حرفه‌ای هنوز کامل نشده",
+      detail:
+        "زیرساخت آماده است، اما برای تثبیت در لیگ حرفه‌ای به بردهای بیشتری در بلندمدت نیاز داریم.",
       action: "play",
       focus: "بردهای بیشتر",
     };
   }
 
-  if (snapshot.fans < 2500) {
+  if (snapshot.fans < 5000) {
     return {
-      eyebrow: "فصل ۳: برند و آینده",
-      title: "برند باشگاه هنوز جمعیت بیشتری می‌خواهد",
+      eyebrow: "فصل ۴: امپراتوری باشگاه",
+      title: "امپراتوری بدون جمعیت واقعی ممکن نیست",
       detail:
-        "وقتی هوادارها از چند هزار نفر عبور کنند، آکادمی و اسپانسر واقعاً اثرشان را نشان می‌دهند.",
+        "وقتی هوادارها از پنج هزار نفر عبور کنند، برند، اسپانسر و خزانه واقعاً به هم وصل می‌شوند.",
       action: "play",
       focus: "هوادار بیشتر",
     };
   }
 
   return {
-    eyebrow: "پایان فصل ۳",
-    title: "برند باشگاه جا افتاده است",
+    eyebrow: "پایان مسیر",
+    title: "امپراتوری باشگاه تثبیت شد",
     detail:
-      "باشگاه حالا هم از امروز پول درمی‌آورد، هم برای فردایش برنامه دارد. لایهٔ بعدی را می‌توان بعداً روی همین پایه ساخت.",
+      "باشگاه حالا از بازی، جمعیت، مدیریت و درآمد پایدار باهم پول درمی‌آورد. مسیر career arc کامل شده است.",
     action: "club",
-    focus: "پایان فصل ۳",
+    focus: "پایان فصل ۴",
   };
 }
