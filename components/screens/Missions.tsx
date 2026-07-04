@@ -49,17 +49,17 @@ function ClubPathOverview({ items }: { items: MissionStatus[] }) {
 
   return (
     <GameCard variant="hero" className="club-path-overview mt-4 rounded-2xl p-3.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="club-path-overview__count">
-          {faNum(done)} از {faNum(total)}
-        </span>
-        <div className="text-right">
+      <div className="club-path-overview__head">
+        <div className="club-path-overview__copy">
           <p className="club-path-overview__eyebrow">فصل ۱</p>
           <p className="club-path-overview__title">ساخت باشگاه</p>
         </div>
+        <span className="club-path-overview__count">
+          {faNum(done)} از {faNum(total)}
+        </span>
       </div>
 
-      <div className="club-path-steps mt-3" aria-hidden>
+      <div className="club-path-steps" aria-hidden>
         {items.map((s, i) => {
           const state = s.claimed
             ? "done"
@@ -78,7 +78,7 @@ function ClubPathOverview({ items }: { items: MissionStatus[] }) {
         })}
       </div>
 
-      <p className="club-path-overview__hint mt-2.5">
+      <p className="club-path-overview__hint">
         {done >= total
           ? "مسیر شروع تکمیل شد — تالار افتخارات را ادامه بده"
           : currentIdx >= 0
@@ -108,16 +108,16 @@ function DailyMissionCard({
         shake ? "animate-shake" : ""
       }`}
     >
-      <div className="flex items-center gap-2.5">
+      <div className="mission-daily-card__row">
         <span className="mission-daily-card__icon" aria-hidden>
           {def.emoji}
         </span>
-        <div className="flex-1 min-w-0 text-right">
-          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+        <div className="mission-daily-card__main">
+          <div className="mission-daily-card__title-row">
+            <h4 className="mission-daily-card__title">{def.title}</h4>
             {claimable && (
               <span className="mission-badge mission-badge--ready">آماده</span>
             )}
-            <h4 className="mission-daily-card__title">{def.title}</h4>
           </div>
           <RewardLoot reward={def.reward} compact />
         </div>
@@ -135,7 +135,7 @@ function DailyMissionCard({
         )}
       </div>
       {!claimed && (
-        <div className="mt-2">
+        <div className="mission-daily-card__progress">
           <ProgressBar
             value={progress}
             max={def.target}
@@ -143,7 +143,7 @@ function DailyMissionCard({
             trackClassName="mission-daily-card__track h-1.5"
             fillClassName={complete ? "mission-progress__fill--done" : undefined}
           />
-          <p className="mission-daily-card__count mt-1">
+          <p className="mission-daily-card__count">
             {faNum(progress)} از {faNum(def.target)}
           </p>
         </div>
@@ -173,20 +173,22 @@ function OnboardingStepCard({
         claimed ? "mission-step-card--done" : ""
       } ${shake ? "animate-shake" : ""}`}
     >
-      <div className="flex items-start gap-3">
-        <div className={`mission-step-card__badge ${claimed ? "mission-step-card__badge--done" : ""}`}>
+      <div className="mission-step-card__row">
+        <div
+          className={`mission-step-card__badge ${claimed ? "mission-step-card__badge--done" : ""}`}
+        >
           {claimed ? "✓" : faNum(step)}
         </div>
-        <div className="flex-1 min-w-0 text-right">
-          <div className="flex items-center justify-end gap-2">
-            <span className="mission-step-card__emoji" aria-hidden>{def.emoji}</span>
-            <h4 className="mission-step-card__title">{def.title}</h4>
-          </div>
+        <span className="mission-step-card__emoji" aria-hidden>
+          {def.emoji}
+        </span>
+        <div className="mission-step-card__main">
+          <h4 className="mission-step-card__title">{def.title}</h4>
           <p className="mission-step-card__detail">{def.detail}</p>
           <RewardLoot reward={def.reward} compact />
 
           {!claimed && (
-            <div className="mt-2.5">
+            <div className="mission-step-card__progress">
               <ProgressBar
                 value={progress}
                 max={def.target}
@@ -194,7 +196,7 @@ function OnboardingStepCard({
                 trackClassName="h-1.5"
                 fillClassName={complete ? "mission-progress__fill--done" : undefined}
               />
-              <p className="mission-step-card__count mt-1">
+              <p className="mission-step-card__count">
                 {faNum(progress)} از {faNum(def.target)}
               </p>
             </div>
@@ -208,7 +210,7 @@ function OnboardingStepCard({
           variant="primary"
           size="sm"
           fullWidth
-          className="mt-3"
+          className="mission-step-card__claim"
         >
           دریافت جایزه
         </Button>
@@ -237,26 +239,29 @@ function AchievementMedalCard({
         claimable ? "mission-medal--ready" : ""
       } ${locked ? "mission-medal--locked" : ""} ${shake ? "animate-shake" : ""}`}
     >
-      <div className="mission-medal__frame">
-        <span className="mission-medal__emoji" aria-hidden>
-          {def.emoji}
-        </span>
-        {claimed && <span className="mission-medal__earned-mark">✓</span>}
-        {locked && <span className="mission-medal__lock">🔒</span>}
+      <div className="mission-medal__row">
+        <div className="mission-medal__frame">
+          <span className="mission-medal__emoji" aria-hidden>
+            {def.emoji}
+          </span>
+          {claimed && <span className="mission-medal__earned-mark">✓</span>}
+          {locked && <span className="mission-medal__lock">🔒</span>}
+        </div>
+        <div className="mission-medal__copy">
+          <h4 className="mission-medal__title">{def.title}</h4>
+          <p className="mission-medal__detail">{def.detail}</p>
+        </div>
       </div>
 
-      <h4 className="mission-medal__title">{def.title}</h4>
-      <p className="mission-medal__detail">{def.detail}</p>
-
       {!claimed && !locked && (
-        <div className="mission-medal__progress mt-2">
+        <div className="mission-medal__progress">
           <ProgressBar
             value={progress}
             max={def.target}
             tone={complete ? "money" : "success"}
             trackClassName="h-1"
           />
-          <p className="mission-medal__count mt-1">
+          <p className="mission-medal__count">
             {faNum(progress)} از {faNum(def.target)}
           </p>
         </div>
@@ -268,7 +273,7 @@ function AchievementMedalCard({
           variant="primary"
           size="sm"
           fullWidth
-          className="mission-medal__claim mt-2"
+          className="mission-medal__claim"
         >
           دریافت
         </Button>
@@ -290,12 +295,12 @@ function SectionHeader({
 }) {
   return (
     <div className="mission-section__head">
-      <div className="text-right flex-1 min-w-0">
+      <span className="mission-section__icon" aria-hidden>
+        {icon}
+      </span>
+      <div className="mission-section__copy">
         <h3 className="mission-section__title">{title}</h3>
         {sub && <p className="mission-section__sub">{sub}</p>}
-      </div>
-      <div className="mission-section__icon" aria-hidden>
-        {icon}
       </div>
       {ready != null && ready > 0 && (
         <span className="mission-section__ready">{faNum(ready)}</span>
@@ -402,41 +407,40 @@ export function Missions({ onBack }: MissionsProps) {
   }
 
   return (
-    <div className="quiz-screen pitch-stripes min-h-dvh pb-10">
+    <div className="missions-screen quiz-screen pitch-stripes min-h-dvh pb-10" dir="rtl">
       <header className="mission-header sticky top-0 z-10 px-5 pt-5 pb-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="mission-header__bar">
           <button
             type="button"
             onClick={onBack}
             className="mission-back-btn"
             aria-label="بازگشت"
           >
-            ›
+            ‹
           </button>
-          <div className="flex-1 text-center">
+          <div className="mission-header__copy">
             <h1 className="mission-header__title">مسیر باشگاه</h1>
             <p className="mission-header__sub">مأموریت، جایزه، افتخار</p>
           </div>
           {claimable > 0 ? (
             <span className="mission-header-badge">{faNum(claimable)}</span>
           ) : (
-            <span className="w-10" aria-hidden />
+            <span className="mission-header__spacer" aria-hidden />
           )}
         </div>
 
         <ClubPathOverview items={onboarding} />
       </header>
 
-      <div className="px-5 mt-5 space-y-7">
-        {/* Daily missions — compact command board */}
+      <div className="missions-screen__body px-5 mt-5 space-y-7">
         <section className="mission-section">
           <SectionHeader
             title="مأموریت‌های امروز"
-            sub="هر شب reset می‌شوند"
+            sub="هر شب از نو می‌شوند"
             icon="📅"
             ready={dailyReady}
           />
-          <div className="mt-3 space-y-2">
+          <div className="mission-section__list">
             {daily.map((s) => (
               <DailyMissionCard
                 key={s.def.id}
@@ -448,7 +452,6 @@ export function Missions({ onBack }: MissionsProps) {
           </div>
         </section>
 
-        {/* Onboarding path — step-based campaign */}
         {activeOnboarding.length > 0 && (
           <section className="mission-section">
             <SectionHeader
@@ -457,7 +460,7 @@ export function Missions({ onBack }: MissionsProps) {
               icon="🚀"
               ready={pathReady}
             />
-            <div className="mt-3 space-y-2.5">
+            <div className="mission-section__list mission-section__list--steps">
               {activeOnboarding.map((s) => (
                 <OnboardingStepCard
                   key={s.def.id}
@@ -474,7 +477,7 @@ export function Missions({ onBack }: MissionsProps) {
         {doneOnboarding.length > 0 && (
           <section className="mission-section">
             <SectionHeader title="مراحل تکمیل‌شده" icon="✅" />
-            <div className="mt-3 space-y-2">
+            <div className="mission-section__list mission-section__list--steps">
               {doneOnboarding.map((s) => (
                 <OnboardingStepCard
                   key={s.def.id}
@@ -488,7 +491,6 @@ export function Missions({ onBack }: MissionsProps) {
           </section>
         )}
 
-        {/* Achievements — medal gallery */}
         <section className="mission-section">
           <SectionHeader
             title="تالار افتخارات"
@@ -496,7 +498,7 @@ export function Missions({ onBack }: MissionsProps) {
             icon="🏅"
             ready={trophyReady}
           />
-          <div className="mission-medal-grid mt-3">
+          <div className="mission-medal-grid">
             {achievements.map((s) => (
               <AchievementMedalCard
                 key={s.def.id}

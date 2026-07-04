@@ -2462,6 +2462,13 @@ body {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  direction: rtl;
+}
+
+.mission-section__copy {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
 }
 
 .mission-section__title {
@@ -2490,7 +2497,7 @@ body {
 }
 
 .mission-section__ready {
-  margin-right: auto;
+  margin-inline-start: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2503,6 +2510,17 @@ body {
   color: #f5c542;
   font-size: 0.62rem;
   font-weight: 900;
+}
+
+.mission-section__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.mission-section__list--steps {
+  gap: 0.65rem;
 }
 
 .mission-card {
@@ -2587,7 +2605,7 @@ body {
 .mission-loot {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 0.35rem;
   margin-top: 0.55rem;
 }
@@ -2709,10 +2727,51 @@ body {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
 }
 
+.mission-header__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  direction: rtl;
+}
+
+.mission-header__copy {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+.mission-header__spacer {
+  width: 2.5rem;
+  flex-shrink: 0;
+}
+
+.missions-screen {
+  direction: rtl;
+  text-align: right;
+}
+
+.missions-screen .ui-progress__track {
+  direction: rtl;
+}
+
 /* club path overview (step nodes) */
 .club-path-overview {
   background: linear-gradient(135deg, rgba(47, 111, 237, 0.12), #152921 58%);
   border: 1px solid rgba(47, 111, 237, 0.24);
+}
+
+.club-path-overview__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  direction: rtl;
+}
+
+.club-path-overview__copy {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
 }
 
 .club-path-overview__eyebrow {
@@ -2733,9 +2792,11 @@ body {
   font-weight: 900;
   color: #8ab4ff;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .club-path-overview__hint {
+  margin-top: 0.65rem;
   font-size: 0.62rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.42);
@@ -2744,39 +2805,34 @@ body {
 }
 
 .club-path-steps {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.15rem;
-  padding: 0.15rem 0;
-}
-
-.club-path-step {
-  flex: 1;
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.2rem;
+  margin-top: 0.75rem;
+  padding: 0.35rem 0;
   position: relative;
+  isolation: isolate;
 }
 
-.club-path-step:not(:last-child)::after {
+.club-path-steps::before {
   content: "";
   position: absolute;
   top: 50%;
-  left: -50%;
-  width: 100%;
+  inset-inline: 0.45rem;
   height: 2px;
   background: rgba(255, 255, 255, 0.1);
   transform: translateY(-50%);
   z-index: 0;
 }
 
-.club-path-step--done:not(:last-child)::after {
-  background: rgba(47, 158, 95, 0.45);
+.club-path-step {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .club-path-step__node {
-  position: relative;
-  z-index: 1;
   display: grid;
   place-items: center;
   width: 1.85rem;
@@ -2818,6 +2874,27 @@ body {
   box-shadow: 0 0 0 1px rgba(245, 197, 66, 0.08);
 }
 
+.mission-daily-card__row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  direction: rtl;
+}
+
+.mission-daily-card__main {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+.mission-daily-card__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
 .mission-daily-card__icon {
   display: grid;
   place-items: center;
@@ -2840,13 +2917,20 @@ body {
   font-size: 0.68rem;
   font-weight: 900;
   color: rgba(255, 255, 255, 0.38);
+  min-width: 2rem;
+  text-align: center;
+}
+
+.mission-daily-card__progress {
+  margin-top: 0.55rem;
 }
 
 .mission-daily-card__count {
+  margin-top: 0.25rem;
   font-size: 0.58rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.42);
-  text-align: left;
+  text-align: right;
 }
 
 .mission-daily-card__track {
@@ -2877,6 +2961,19 @@ body {
   opacity: 0.62;
 }
 
+.mission-step-card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  direction: rtl;
+}
+
+.mission-step-card__main {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
 .mission-step-card__badge {
   display: grid;
   place-items: center;
@@ -2898,8 +2995,9 @@ body {
 }
 
 .mission-step-card__emoji {
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .mission-step-card__title {
@@ -2916,11 +3014,20 @@ body {
   line-height: 1.45;
 }
 
+.mission-step-card__progress {
+  margin-top: 0.55rem;
+}
+
 .mission-step-card__count {
+  margin-top: 0.25rem;
   font-size: 0.58rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.42);
-  text-align: left;
+  text-align: right;
+}
+
+.mission-step-card__claim {
+  margin-top: 0.75rem;
 }
 
 /* achievements — medal gallery */
@@ -2928,12 +3035,14 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
+  margin-top: 0.75rem;
+  direction: rtl;
 }
 
 .mission-medal {
-  padding: 0.85rem 0.75rem !important;
+  padding: 0.8rem 0.75rem !important;
   border-radius: 1rem !important;
-  text-align: center;
+  min-width: 0;
 }
 
 .mission-medal--ready {
@@ -2949,19 +3058,32 @@ body {
   background: linear-gradient(180deg, rgba(47, 158, 95, 0.08), #152921 70%) !important;
 }
 
+.mission-medal__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  direction: rtl;
+}
+
+.mission-medal__copy {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
 .mission-medal__frame {
   position: relative;
   display: grid;
   place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
-  margin: 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 999px;
   background: radial-gradient(circle at 35% 30%, rgba(245, 197, 66, 0.18), rgba(255, 255, 255, 0.04));
   border: 2px solid rgba(245, 197, 66, 0.28);
   box-shadow:
     inset 0 -3px 8px rgba(0, 0, 0, 0.25),
     0 4px 12px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
 }
 
 .mission-medal--locked .mission-medal__frame {
@@ -2976,14 +3098,14 @@ body {
 }
 
 .mission-medal__emoji {
-  font-size: 1.55rem;
+  font-size: 1.25rem;
   line-height: 1;
 }
 
 .mission-medal__earned-mark {
   position: absolute;
   bottom: -0.15rem;
-  right: -0.15rem;
+  inset-inline-end: -0.15rem;
   display: grid;
   place-items: center;
   width: 1.1rem;
@@ -3004,8 +3126,7 @@ body {
 }
 
 .mission-medal__title {
-  margin-top: 0.55rem;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 900;
   color: rgba(255, 255, 255, 0.9);
   line-height: 1.35;
@@ -3019,13 +3140,20 @@ body {
   line-height: 1.4;
 }
 
+.mission-medal__progress {
+  margin-top: 0.55rem;
+}
+
 .mission-medal__count {
+  margin-top: 0.25rem;
   font-size: 0.56rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.4);
+  text-align: right;
 }
 
 .mission-medal__claim {
+  margin-top: 0.55rem;
   font-size: 0.72rem !important;
   padding: 0.45rem 0.6rem !important;
 }
