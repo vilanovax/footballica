@@ -101,25 +101,38 @@ export function QuizProgressDots({
   results?: ("goal" | "save" | null)[];
 }) {
   return (
-    <div className="flex justify-center gap-2 pt-4 px-5">
+    <div className="quiz-progress-dots">
       {Array.from({ length: total }).map((_, i) => {
         const r = results?.[i];
         const active = i === current;
+        const tone =
+          r === "goal"
+            ? "goal"
+            : r === "save"
+              ? "save"
+              : active
+                ? "active"
+                : "pending";
+
         return (
-          <span
+          <div
             key={i}
-            className={`quiz-kick-dot grid h-10 w-10 place-items-center rounded-xl text-lg ${
+            className={`quiz-progress-dot quiz-progress-dot--${tone}`}
+            aria-label={
               r === "goal"
-                ? "quiz-kick-dot--goal"
+                ? `سؤال ${faNum(i + 1)} درست`
                 : r === "save"
-                  ? "quiz-kick-dot--save"
+                  ? `سؤال ${faNum(i + 1)} غلط`
                   : active
-                    ? "quiz-kick-dot--active"
-                    : "quiz-kick-dot--pending"
-            }`}
+                    ? `سؤال ${faNum(i + 1)} فعال`
+                    : `سؤال ${faNum(i + 1)}`
+            }
           >
-            {r === "goal" ? "⚽" : r === "save" ? "🧤" : active ? "·" : ""}
-          </span>
+            <span className="quiz-progress-dot__index">{faNum(i + 1)}</span>
+            <span className="quiz-progress-dot__mark" aria-hidden>
+              {r === "goal" ? "✓" : r === "save" ? "✕" : active ? "·" : ""}
+            </span>
+          </div>
         );
       })}
     </div>

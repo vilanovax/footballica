@@ -3,64 +3,113 @@
 import { Button } from "@/components/ui/Button";
 import { GameCard } from "@/components/ui/GameCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { ClubBankSheet } from "@/components/ui/ClubBankSheet";
 import { UnitCard, LockedUnitRow } from "@/components/ui/UnitCard";
-import { UNITS } from "@/lib/units";
+import { UNITS, unitDef, unitUpgradeCost } from "@/lib/units";
 import { CLUB } from "@/lib/club";
 import { fanIncomeMultiplier } from "@/lib/economy";
 import { isUnitUnlocked, unitIncomeSnapshot } from "@/lib/clubEconomy";
-import { levelInfo, leagueForXp } from "@/lib/player";
+import { levelInfo } from "@/lib/player";
 import { vaultCapacity, vaultUpgradeCost, VAULT_MAX, isBank } from "@/lib/vault";
 import { useGame } from "@/lib/store";
-import { faNum, faShort, faCount, faMoney, faTreasuryShort, faVaultM } from "@/lib/format";
+import { faNum, faShort, faMoney, faTreasuryShort, faVaultM } from "@/lib/format";
+import { rewardLabel } from "@/lib/missions";
+import {
+  buildPromotionSnapshot,
+  currentDivisionLabel,
+  promotionGateStatus,
+  seasonAdvisorMessage,
+  type AdvisorMessage,
+  type PromotionGateStatus,
+} from "@/lib/promotion";
 
 interface ClubProps {
   onBack: () => void;
 }
 
-function PromotionBar() {
-  const fans = useGame((s) => s.fans);
-  const { promotion } = CLUB;
-  const pct = Math.min(100, (fans / promotion.need) * 100);
-  const remaining = Math.max(0, promotion.need - fans);
-
+function PromotionBar({
+  gate,
+  advisor,
+  canClaim,
+  onClaim,
+}: {
+  gate: PromotionGateStatus;
+  advisor: AdvisorMessage;
+  canClaim: boolean;
+  onClaim: () => void;
+}) {
   return (
     <GameCard
       variant="hero"
-      className="club-season-goal mx-5 mt-6 rounded-3xl px-4 py-4"
+      className="club-season-goal club-season-gate mx-5 mt-6 rounded-3xl px-4 py-4"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="text-left shrink-0">
           <p className="text-lg font-black text-gold-400 tabular-nums">
-            {faCount(fans)} / {faCount(promotion.need)}
+            {faNum(gate.completeCount)} / {faNum(gate.totalCount)}
           </p>
-          <p className="text-[10px] font-bold text-white/40">هوادار برای صعود</p>
+          <p className="text-[10px] font-bold text-white/40">شرط کامل</p>
         </div>
         <div className="flex-1 text-right">
-          <p className="text-[10px] font-bold tracking-wide text-gold-400/75">
-            هدف فصل
-          </p>
-          <p className="mt-1 text-lg font-extrabold text-white">
-            صعود به {promotion.target}
-          </p>
-          <p className="mt-1 text-[11px] text-white/55 leading-5">
-            باشگاهت را بساز و هوادار جمع کن تا از این لیگ عبور کنی.
-          </p>
+          <p className="club-season-gate__eyebrow">{gate.seasonTitle}</p>
+          <p className="mt-1 text-lg font-extrabold text-white">{gate.title}</p>
+          <p className="club-season-gate__sub">{gate.narrative}</p>
         </div>
       </div>
       <ProgressBar
-        value={fans}
-        max={promotion.need}
+        value={gate.completeCount}
+        max={gate.totalCount}
         tone="success"
         className="mt-3"
         trackClassName="h-2"
       />
-      {remaining > 0 && (
-        <p className="mt-2 text-[11px] text-white/42 text-right">
-          هنوز {faCount(remaining)} هوادار تا صعود باقی مانده.
-        </p>
+
+      <div className="club-season-gate__summary mt-2">
+        <span>{faNum(gate.pct)}٪ مسیر تکمیل شده</span>
+        <span>
+          {gate.complete
+            ? gate.terminal
+              ? "زیرساخت این فصل کامل شده"
+              : "باشگاه برای فصل بعد آماده است"
+            : `${faNum(gate.totalCount - gate.completeCount)} شرط دیگر مانده`}
+        </span>
+      </div>
+
+      <div className="club-season-gate__list mt-4">
+        {gate.requirements.map((req) => (
+          <div key={req.def.id} className={`club-season-gate__item club-season-gate__item--${req.state}`}>
+            <div className="flex items-start justify-between gap-3">
+              <span className={`club-season-gate__chip club-season-gate__chip--${req.state}`}>
+                {req.complete ? "تکمیل شد" : req.state === "near" ? "نزدیک است" : "مانده"}
+              </span>
+              <div className="flex-1 min-w-0 text-right">
+                <p className="club-season-gate__item-title">{req.def.label}</p>
+                <p className="club-season-gate__item-progress">{req.progressLabel}</p>
+                <p className="club-season-gate__item-hint">{req.def.hint}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="club-season-gate__advisor mt-4">
+        <p className="club-season-gate__advisor-eyebrow">{advisor.eyebrow}</p>
+        <p className="club-season-gate__advisor-title">{advisor.title}</p>
+        <p className="club-season-gate__advisor-sub">{advisor.detail}</p>
+      </div>
+
+      {canClaim && gate.claimLabel && (
+        <Button
+          onClick={onClaim}
+          variant="primary"
+          size="md"
+          fullWidth
+          className="mt-4 club-season-gate__claim"
+        >
+          {gate.claimLabel}
+        </Button>
       )}
     </GameCard>
   );
@@ -72,6 +121,10 @@ export function Club({ onBack }: ClubProps) {
   const [flashCollect, setFlashCollect] = useState(false);
   const [floatAmt, setFloatAmt] = useState<number | null>(null);
   const [shakeUpgrade, setShakeUpgrade] = useState(false);
+  const [promotionToast, setPromotionToast] = useState<{
+    title: string;
+    detail: string;
+  } | null>(null);
 
   const cards = useGame((s) => s.cards);
   const fans = useGame((s) => s.fans);
@@ -80,11 +133,15 @@ export function Club({ onBack }: ClubProps) {
   const units = useGame((s) => s.units);
   const itemLevels = useGame((s) => s.itemLevels);
   const assign = useGame((s) => s.assign);
+  const hired = useGame((s) => s.hired);
+  const matchesWon = useGame((s) => s.matchesWon);
   const xp = useGame((s) => s.xp);
   const club = useGame((s) => s.club);
   const showVaultTutorial = useGame((s) => s.showVaultTutorial);
+  const seasonStep = useGame((s) => s.seasonStep);
   const collectAllUnits = useGame((s) => s.collectAllUnits);
   const upgradeVault = useGame((s) => s.upgradeVault);
+  const claimPromotion = useGame((s) => s.claimPromotion);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 3000);
@@ -105,7 +162,6 @@ export function Club({ onBack }: ClubProps) {
 
   const bank = isBank(vaultLevel);
   const { level } = levelInfo(xp);
-  const league = leagueForXp(xp);
   const fanMult = fanIncomeMultiplier(fans);
   const vaultCap = vaultCapacity(vaultLevel);
   const unlockedUnits = UNITS.filter((u) => isUnitUnlocked(u.id, xp));
@@ -115,9 +171,66 @@ export function Club({ onBack }: ClubProps) {
   const canCollectAll =
     snap.readyCount > 0 && snap.vaultFree > 0 && !bank && snap.totalPending > 0;
   const vaultFull = snap.vaultFull && !bank;
+  const shopLevel = units.shop?.level ?? 1;
+  const hiredCount = Object.values(hired).filter(Boolean).length;
+  const assignedCount = Object.values(assign).filter(Boolean).length;
   const upgradeCost = vaultUpgradeCost(vaultLevel);
   const canUpgradeVault = vaultLevel < VAULT_MAX && safeBudget >= upgradeCost;
+  const shopUpgradeCost = unitUpgradeCost(unitDef("shop"), shopLevel);
+  const foodUpgradeCost = unitUpgradeCost(unitDef("food"), units.food?.level ?? 1);
+  const parkingUpgradeCost = unitUpgradeCost(unitDef("parking"), units.parking?.level ?? 1);
+  const canUpgradeShop = shopLevel < unitDef("shop").maxLevel && safeBudget >= shopUpgradeCost;
   const nextLockedNeed = nextLockedUnit ? Math.max(0, nextLockedUnit.requiresLevel - level) : 0;
+  const promotionSnapshot = useMemo(
+    () =>
+      buildPromotionSnapshot({
+        fans,
+        vaultLevel,
+        matchesWon,
+        xp,
+        units,
+        hired,
+        assign,
+      }),
+    [fans, vaultLevel, matchesWon, xp, units, hired, assign],
+  );
+
+  const promotionGate = useMemo(
+    () => promotionGateStatus(seasonStep, promotionSnapshot),
+    [seasonStep, promotionSnapshot],
+  );
+
+  const seasonAdvisor = useMemo(
+    () =>
+      seasonAdvisorMessage({
+        seasonStep,
+        snapshot: promotionSnapshot,
+        budget: safeBudget,
+        pendingIncome: snap.totalPending,
+        canCollect: canCollectAll,
+        vaultFull,
+        showVaultTutorial,
+        upgradeCosts: {
+          shop: shopUpgradeCost,
+          food: foodUpgradeCost,
+          parking: parkingUpgradeCost,
+          vault: upgradeCost,
+        },
+      }),
+    [
+      seasonStep,
+      promotionSnapshot,
+      safeBudget,
+      snap.totalPending,
+      canCollectAll,
+      vaultFull,
+      showVaultTutorial,
+      shopUpgradeCost,
+      foodUpgradeCost,
+      parkingUpgradeCost,
+      upgradeCost,
+    ],
+  );
 
   const economyAction = canCollectAll
     ? {
@@ -146,6 +259,18 @@ export function Club({ onBack }: ClubProps) {
             cta: "ارتقای خزانه",
             onClick: tryUpgradeVault,
           }
+        : shopLevel < 2 && canUpgradeShop
+          ? {
+              tone: "upgrade" as const,
+              eyebrow: "حرکت مشاور",
+              title: "وقت ارتقای فروشگاه است",
+              detail: "فروشگاه اولین موتور درآمد پایدار ماست؛ سطح ۲ آن، فصل اول را جلو می‌برد.",
+              cta: "فروشگاه سطح ۲",
+              onClick: () =>
+                document
+                  .getElementById("club-building-shop")
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+            }
         : nextLockedUnit
           ? {
               tone: "build" as const,
@@ -188,6 +313,18 @@ export function Club({ onBack }: ClubProps) {
     setBankOpen(true);
   }
 
+  function claimSeasonPromotion() {
+    const reward = promotionGate.claimReward;
+    const result = claimPromotion(promotionGate.id);
+    if (result === "ok") {
+      setPromotionToast({
+        title: "✓ فصل بعدی باز شد",
+        detail: reward ? `پاداش صعود: ${rewardLabel(reward)}` : "اقتصاد جدید باشگاه فعال شد",
+      });
+      setTimeout(() => setPromotionToast(null), 2600);
+    }
+  }
+
   return (
     <div className="pitch-stripes min-h-dvh pb-12">
       <header className="flex items-center gap-3 px-5 pt-6 pb-2">
@@ -204,7 +341,7 @@ export function Club({ onBack }: ClubProps) {
             {club.name}
           </h1>
           <p className="text-[11px] font-bold text-gold-400/90">
-            سطح {faNum(level)} · {league}
+            سطح {faNum(level)} · {currentDivisionLabel(seasonStep)}
           </p>
         </div>
         <Avatar label={club.crest} color={club.color} size={48} />
@@ -388,6 +525,20 @@ export function Club({ onBack }: ClubProps) {
             )}
           </div>
         </GameCard>
+
+        {promotionToast && (
+          <div className="mt-3 rounded-2xl border border-grass-300/30 bg-grass-500/18 px-4 py-3 text-center shadow-[0_12px_28px_rgba(35,191,96,0.16)]">
+            <p className="text-[12px] font-black text-white">{promotionToast.title}</p>
+            <p className="mt-1 text-[10px] font-bold text-white/72">{promotionToast.detail}</p>
+          </div>
+        )}
+
+        <PromotionBar
+          gate={promotionGate}
+          advisor={seasonAdvisor}
+          canClaim={promotionGate.complete && !promotionGate.terminal}
+          onClaim={claimSeasonPromotion}
+        />
       </div>
 
       <ClubBankSheet
@@ -410,7 +561,9 @@ export function Club({ onBack }: ClubProps) {
         </div>
         <div className="space-y-3">
           {unlockedUnits.map((u) => (
-            <UnitCard key={u.id} id={u.id} vaultFull={snap.vaultFull && !bank} />
+            <div key={u.id} id={u.id === "shop" ? "club-building-shop" : undefined}>
+              <UnitCard id={u.id} vaultFull={snap.vaultFull && !bank} />
+            </div>
           ))}
         </div>
       </div>
@@ -453,8 +606,6 @@ export function Club({ onBack }: ClubProps) {
           ))}
         </div>
       )}
-
-      <PromotionBar />
     </div>
   );
 }

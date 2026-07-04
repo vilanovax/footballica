@@ -13,9 +13,15 @@ import {
 
 interface HomeMissionBannerProps {
   onOpenMissions: () => void;
+  seasonTitle: string;
+  seasonFocus: string;
 }
 
-export function HomeMissionBanner({ onOpenMissions }: HomeMissionBannerProps) {
+export function HomeMissionBanner({
+  onOpenMissions,
+  seasonTitle,
+  seasonFocus,
+}: HomeMissionBannerProps) {
   const gamesPlayed = useGame((s) => s.gamesPlayed);
   const totalCorrect = useGame((s) => s.totalCorrect);
   const unitCollectCount = useGame((s) => s.unitCollectCount);
@@ -87,7 +93,7 @@ export function HomeMissionBanner({ onOpenMissions }: HomeMissionBannerProps) {
         onClick={onOpenMissions}
         className="mx-5 mt-3 w-[calc(100%-2.5rem)] rounded-xl py-2 text-xs font-bold text-white/45 text-center active:opacity-70 home-mission-link"
       >
-        🎯 مسیر باشگاه ›
+        🎯 {seasonTitle} · {seasonFocus} ›
       </button>
     );
   }
@@ -131,7 +137,7 @@ export function HomeMissionBanner({ onOpenMissions }: HomeMissionBannerProps) {
           onClick={onOpenMissions}
           className="flex-1 min-w-0 text-right active:opacity-85"
         >
-          <p className="home-loop-card__eyebrow">جایزه امروز</p>
+          <p className="home-loop-card__eyebrow">{seasonTitle}</p>
           <p className="font-extrabold text-white text-sm">
             جایزه آماده است
             {count > 1 && (

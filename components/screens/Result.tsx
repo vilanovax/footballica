@@ -59,6 +59,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
 
   const total = result.outcomes.length;
   const correctCount = result.outcomes.filter((o) => o.youCorrect).length;
+  const wrongCount = Math.max(0, total - correctCount);
   const accuracyPct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
   const scoreDiff = result.youScore - result.foeScore;
   const bank = isBank(vaultLevel);
@@ -123,6 +124,9 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
             won ? "result-hero--win" : "result-hero--loss"
           }`}
         >
+          <p className="result-hero__eyebrow">
+            {isDuel ? "پایان دوئل" : "پایان بازی سریع"}
+          </p>
           <div className="text-5xl animate-pop">{won ? "🏆" : "💪"}</div>
           <h1 className="mt-2 text-2xl font-extrabold text-white">
             {won ? (isDuel ? "دوئل را بردی!" : "بردی!") : "این‌بار نشد"}
@@ -134,6 +138,39 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
                 ? `${faNum(correctCount)} از ${faNum(total)} درست — یک بار دیگر امتحان کن`
                 : `${faNum(correctCount)} از ${faNum(total)} درست — نزدیک بود، دوباره بزن`}
           </p>
+
+          <div className="result-summary-grid mt-4">
+            <div className="result-summary-stat">
+              <span className="result-summary-stat__label">حالت بازی</span>
+              <span className="result-summary-stat__value result-summary-stat__value--mode">
+                {isDuel ? "⚔️ دوئل" : "⚽ سریع"}
+              </span>
+            </div>
+            <div className="result-summary-stat">
+              <span className="result-summary-stat__label">دقت</span>
+              <span className="result-summary-stat__value result-summary-stat__value--accuracy">
+                {faNum(accuracyPct)}٪
+              </span>
+            </div>
+            <div className="result-summary-stat">
+              <span className="result-summary-stat__label">اختلاف</span>
+              <span
+                className={`result-summary-stat__value ${
+                  scoreDiff > 0
+                    ? "result-summary-stat__value--lead"
+                    : scoreDiff < 0
+                      ? "result-summary-stat__value--trail"
+                      : "result-summary-stat__value--draw"
+                }`}
+              >
+                {scoreDiff > 0
+                  ? `+${faNum(winMargin)}`
+                  : scoreDiff < 0
+                    ? `−${faNum(lossMargin)}`
+                    : "مساوی"}
+              </span>
+            </div>
+          </div>
 
           <div className="result-accuracy mt-4 mx-auto max-w-[220px]">
             <div className="flex justify-between text-[11px] font-bold text-white/65 mb-1.5">
@@ -209,7 +246,10 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
 
         {/* rewards */}
         <div className="result-rewards-block">
-          <p className="mb-2 text-right text-xs font-bold text-white/55">پاداش</p>
+          <div className="mb-2 text-right">
+            <p className="text-xs font-bold text-white/55">پاداش</p>
+            <p className="mt-0.5 text-[11px] text-white/40">خروجی این راند برای پیشروی باشگاه</p>
+          </div>
           {hasRewards ? (
             <GameCard
               variant="asset"
@@ -270,8 +310,12 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
         <div className="result-review">
           <div className="flex items-center justify-between mb-3">
             <div className="flex gap-2.5 text-[10px] font-bold text-white/50">
-              <span className="result-legend-chip result-legend-chip--ok">✓ درست</span>
-              <span className="result-legend-chip result-legend-chip--miss">✕ غلط</span>
+              <span className="result-legend-chip result-legend-chip--ok">
+                ✓ درست {faNum(correctCount)}
+              </span>
+              <span className="result-legend-chip result-legend-chip--miss">
+                ✕ غلط {faNum(wrongCount)}
+              </span>
             </div>
             <p className="text-sm font-extrabold text-white/85">
               مرور سؤال‌ها ({faNum(total)})
@@ -330,7 +374,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
             fullWidth
             className="text-lg flex flex-col items-center gap-0.5"
           >
-            <span>⚽ بازیِ دوباره</span>
+            <span>{isDuel ? "⚔️ دوئل دوباره" : "⚽ بازیِ دوباره"}</span>
             {!won && (
               <span className="text-[11px] font-bold opacity-75">فرصت جبران داری</span>
             )}
@@ -343,7 +387,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
             fullWidth
             className="font-bold text-white/80"
           >
-            ⚽ بازیِ دوباره
+            {isDuel ? "⚔️ دوئل دوباره" : "⚽ بازیِ دوباره"}
           </Button>
         )}
         <Button

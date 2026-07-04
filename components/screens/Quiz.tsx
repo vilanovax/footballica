@@ -2,10 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import { ReactionOverlay, type Reaction } from "@/components/ui/ReactionOverlay";
 import { ReportButton } from "@/components/ui/ReportButton";
 import { PowerUpBar } from "@/components/ui/PowerUpBar";
-import { QuizQuestionCard, QuizOptionButton } from "@/components/ui/QuizUi";
+import {
+  QuizProgressDots,
+  QuizQuestionCard,
+  QuizOptionButton,
+} from "@/components/ui/QuizUi";
 import { drawRound, drawOneExcluding, type Question } from "@/lib/questions";
 import { scoreAnswer, SCORING, rewardQuickQuiz, rewardDuel } from "@/lib/economy";
 import {
@@ -55,12 +60,16 @@ export function Quiz({
   const [awaitingVar, setAwaitingVar] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
   const [shakePu, setShakePu] = useState<string | null>(null);
+  const [progressMarks, setProgressMarks] = useState<(null | "goal" | "save")[]>(
+    () => Array(round.length).fill(null),
+  );
 
   const youRef = useRef(0);
   const foeRef = useRef(0);
   const streakRef = useRef(0);
   const outcomes = useRef<AnswerOutcome[]>([]);
   const nextTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const q = round[index];
   const isLast = index === round.length - 1;
@@ -72,12 +81,34 @@ export function Quiz({
     }
   }
 
+  function clearHintTimer() {
+    if (hintTimer.current) {
+      clearTimeout(hintTimer.current);
+      hintTimer.current = null;
+    }
+  }
+
   function scheduleNext(ms: number) {
     clearNextTimer();
     nextTimer.current = setTimeout(next, ms);
   }
 
-  useEffect(() => () => clearNextTimer(), []);
+  function flashHint(message: string, ms = 1200) {
+    clearHintTimer();
+    setHint(message);
+    hintTimer.current = setTimeout(() => {
+      setHint(null);
+      hintTimer.current = null;
+    }, ms);
+  }
+
+  useEffect(
+    () => () => {
+      clearNextTimer();
+      clearHintTimer();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (revealed || awaitingVar) return;
@@ -112,8 +143,7 @@ export function Quiz({
     ) {
       if (usePowerUp("glove")) {
         setGloveUsedMatch(true);
-        setHint("🥅 دستکش طلایی! دوباره تلاش کن");
-        setTimeout(() => setHint(null), 1400);
+        flashHint("🥅 دستکش طلایی! دوباره تلاش کن", 1400);
         return;
       }
     }
@@ -136,6 +166,11 @@ export function Quiz({
       setFoeScore(foeRef.current);
     }
     outcomes.current.push({ youCorrect, foeCorrect, label: q.text });
+    setProgressMarks((marks) => {
+      const next = [...marks];
+      next[index] = youCorrect ? "goal" : "save";
+      return next;
+    });
 
     let react: Reaction;
     if (youCorrect) {
@@ -149,7 +184,7 @@ export function Quiz({
 
     if (!youCorrect && !varUsedMatch && powerUpCount(powerups, "var") > 0) {
       setAwaitingVar(true);
-      setHint("📺 VAR فعال است — دوباره جواب بده");
+      flashHint("📺 VAR فعال است — دوباره جواب بده", 5000);
       scheduleNext(5000);
       return;
     }
@@ -167,8 +202,14 @@ export function Quiz({
     clearNextTimer();
     setVarUsedMatch(true);
     setAwaitingVar(false);
+    clearHintTimer();
     setHint(null);
     outcomes.current.pop();
+    setProgressMarks((marks) => {
+      const next = [...marks];
+      next[index] = null;
+      return next;
+    });
     resetQuestionUi();
   }
 
@@ -198,15 +239,13 @@ export function Quiz({
       const pick = wrong[Math.floor(Math.random() * wrong.length)];
       setHiddenOptions((prev) => new Set(prev).add(pick));
       setUsedOnQuestion((u) => ({ ...u, half: true }));
-      setHint("🧤 یک گزینهٔ غلط حذف شد");
-      setTimeout(() => setHint(null), 1200);
+      flashHint("🧤 یک گزینهٔ غلط حذف شد");
     } else if (pid === "time") {
       const bonus = POWERUP_CONFIG.timeBonusSeconds;
       setSecondsLeft((s) => s + bonus);
       setTimeLimit((t) => t + bonus);
       setUsedOnQuestion((u) => ({ ...u, time: true }));
-      setHint(`⏱️ +${faNum(bonus)} ثانیه`);
-      setTimeout(() => setHint(null), 1200);
+      flashHint(`⏱️ +${faNum(bonus)} ثانیه`);
     } else if (pid === "swap") {
       const ids = round.map((r) => r.id);
       const replacement = drawOneExcluding(ids);
@@ -219,8 +258,7 @@ export function Quiz({
       setReaction(null);
       setAwaitingVar(false);
       setUsedOnQuestion({ half: false, time: false, swap: true });
-      setHint("🔄 سؤال عوض شد");
-      setTimeout(() => setHint(null), 1200);
+      flashHint("🔄 سؤال عوض شد");
     }
   }
 
@@ -279,9 +317,36 @@ export function Quiz({
     var: !awaitingVar,
   };
 
+  const powerUpReasons: Partial<Record<string, string>> = {};
+  for (const p of QUIZ_POWERUP_DEFS) {
+    const count = powerUpCount(powerups, p.id);
+    if (p.id === "var") {
+      if (varUsedMatch) powerUpReasons.var = "مصرف شد";
+      else if (awaitingVar && count > 0) powerUpReasons.var = "آماده";
+      else if (count <= 0) powerUpReasons.var = "نداری";
+      continue;
+    }
+    if (usedOnQuestion[p.id as keyof typeof usedOnQuestion]) {
+      powerUpReasons[p.id] = "مصرف شد";
+    } else if (revealed || awaitingVar) {
+      powerUpReasons[p.id] = "قفل";
+    } else if (count <= 0) {
+      powerUpReasons[p.id] = "نداری";
+    } else {
+      powerUpReasons[p.id] = "آماده";
+    }
+  }
+
+  const supportCount = QUIZ_POWERUP_DEFS.reduce(
+    (sum, p) => sum + powerUpCount(powerups, p.id),
+    0,
+  );
+
   return (
     <div className="quiz-screen pitch-stripes min-h-dvh flex flex-col pb-8">
-      {reaction && !awaitingVar && <ReactionOverlay reaction={reaction} onDone={() => {}} />}
+      {reaction && !awaitingVar && (
+        <ReactionOverlay reaction={reaction} onDone={() => setReaction(null)} />
+      )}
 
       <div className="flex justify-center gap-2 pt-5 px-5">
         {mode === "duel" ? (
@@ -295,96 +360,121 @@ export function Quiz({
         )}
       </div>
 
-      <div className="quiz-scoreboard mx-5 mt-4 rounded-2xl p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <Avatar label="تو" color="you" size={44} />
-          <div className="text-right leading-tight">
-            <p className="text-[11px] text-white/50">شما</p>
-            <p className="text-2xl font-extrabold text-gold-400">{faNum(youScore)}</p>
+      <div className="quiz-scoreboard mx-5 mt-4 rounded-[1.7rem] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar label="تو" color="you" size={44} />
+            <div className="text-right leading-tight">
+              <p className="text-[11px] text-white/50">شما</p>
+              <p className="text-2xl font-extrabold text-gold-400">{faNum(youScore)}</p>
+            </div>
+          </div>
+          <span className="quiz-scoreboard__vs rounded-lg px-3 py-1 text-sm font-extrabold">
+            VS
+          </span>
+          <div className="flex items-center gap-2.5 flex-row-reverse min-w-0">
+            <Avatar label={opponent.short} color="foe" size={44} />
+            <div className="text-left leading-tight">
+              <p className="text-[11px] text-white/50 truncate max-w-[5rem]">{opponent.name}</p>
+              <p className="text-2xl font-extrabold">{faNum(foeScore)}</p>
+            </div>
           </div>
         </div>
-        <span className="rounded-lg border border-gold-500/40 bg-black/20 px-3 py-1 text-sm font-extrabold text-gold-400">
-          VS
-        </span>
-        <div className="flex items-center gap-2.5 flex-row-reverse min-w-0">
-          <Avatar label={opponent.short} color="foe" size={44} />
-          <div className="text-left leading-tight">
-            <p className="text-[11px] text-white/50 truncate max-w-[5rem]">{opponent.name}</p>
-            <p className="text-2xl font-extrabold">{faNum(foeScore)}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center gap-2 pt-3 text-sm text-white/55">
-        <span>
-          سؤال {faNum(index + 1)} از {faNum(round.length)}
-        </span>
-        <div className="flex gap-1.5">
-          {round.map((_, i) => (
-            <span
-              key={i}
-              className={`h-2 w-2 rounded-full ${
-                i < index
-                  ? "bg-grass-400"
-                  : i === index
-                    ? "bg-gold-400 ring-2 ring-gold-400/30"
-                    : "bg-white/15"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="flex justify-center py-3">
-        <div className={`relative ${danger ? "animate-danger rounded-full" : ""}`}>
-          <svg width="108" height="108" className="-rotate-90">
-            <circle
-              cx="54"
-              cy="54"
-              r={R}
-              fill="none"
-              stroke="rgba(255,255,255,0.08)"
-              strokeWidth="9"
-            />
-            <circle
-              cx="54"
-              cy="54"
-              r={R}
-              fill="none"
-              stroke={ringColor}
-              strokeWidth="9"
-              strokeLinecap="round"
-              strokeDasharray={C}
-              strokeDashoffset={C * (1 - ratio)}
-              style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s" }}
-            />
-          </svg>
-          <span
-            className="absolute inset-0 grid place-items-center text-3xl font-extrabold"
-            style={{ color: ringColor }}
-          >
-            {faNum(secondsLeft)}
+        <div className="quiz-scoreboard__footer mt-3">
+          <span className="quiz-scoreboard__tip">
+            {danger
+              ? "الان جواب را نهایی کن"
+              : mode === "duel"
+                ? "جواب سریع‌تر، فشار بیشتر روی حریف"
+                : "هر جواب سریع، XP بیشتری می‌سازد"}
+          </span>
+          <span className="quiz-scoreboard__support">
+            {faNum(supportCount)} کمک تاکتیکی
           </span>
         </div>
       </div>
 
-      {hint && (
-        <p className="mx-5 -mt-1 mb-1 text-center text-sm font-bold text-gold-400 animate-pop">
-          {hint}
+      <div className="quiz-round-strip mx-5 mt-3 rounded-2xl px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-right">
+            <p className="quiz-round-strip__eyebrow">روند مسابقه</p>
+            <p className="quiz-round-strip__title">
+              سؤال {faNum(index + 1)} از {faNum(round.length)}
+            </p>
+          </div>
+          <span className="quiz-round-strip__meta">
+            {awaitingVar ? "VAR باز است" : danger ? "فشار آخر" : "ریتم نرمال"}
+          </span>
+        </div>
+        <QuizProgressDots total={round.length} current={index} results={progressMarks} />
+      </div>
+
+      <div className="quiz-timer-panel mx-5 mt-3 rounded-[1.7rem] px-4 py-4">
+        <p className="quiz-timer-panel__eyebrow">زمان پاسخ</p>
+        <div className="flex justify-center py-2">
+          <div className={`quiz-timer-shell relative ${danger ? "animate-danger" : ""}`}>
+            <svg width="120" height="120" className="-rotate-90">
+              <circle
+                cx="60"
+                cy="60"
+                r={R}
+                fill="none"
+                stroke="rgba(255,255,255,0.08)"
+                strokeWidth="9"
+              />
+              <circle
+                cx="60"
+                cy="60"
+                r={R}
+                fill="none"
+                stroke={ringColor}
+                strokeWidth="9"
+                strokeLinecap="round"
+                strokeDasharray={C}
+                strokeDashoffset={C * (1 - ratio)}
+                style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s" }}
+              />
+            </svg>
+            <span
+              className="quiz-timer-shell__value absolute inset-0 grid place-items-center text-3xl font-extrabold"
+              style={{ color: ringColor }}
+            >
+              {faNum(secondsLeft)}
+            </span>
+          </div>
+        </div>
+        <p className="quiz-timer-panel__sub">
+          {danger
+            ? "همین حالا انتخاب کن"
+            : secondsLeft <= 6
+              ? "جواب را نهایی کن تا امتیاز از دست نرود"
+              : "جواب سریع‌تر امتیاز بیشتری می‌دهد"}
         </p>
-      )}
+      </div>
+
+      {hint && <p className="quiz-hint-banner mx-5 mt-3 rounded-2xl px-4 py-3 text-center">{hint}</p>}
+
+      <div className="quiz-toolbox mx-5 mt-3">
+        <div className="quiz-toolbox__head">
+          <p className="quiz-toolbox__title">کمک‌های تاکتیکی</p>
+          <p className="quiz-toolbox__sub">
+            {awaitingVar ? "الان می‌توانی VAR را فعال کنی" : "هر سؤال فقط یک‌بار از هر کمک استفاده می‌شود"}
+          </p>
+        </div>
+      </div>
 
       <PowerUpBar
         defs={QUIZ_POWERUP_DEFS}
         inventory={powerups}
         disabled={puDisabled}
+        reasons={powerUpReasons}
         hidden={puHidden}
         onUse={handlePowerUp}
         shakeId={shakePu}
       />
 
       <QuizQuestionCard
-        meta={`⚽ ${q.league} · ${q.difficulty}`}
+        meta={`${q.league} · ${q.difficulty}`}
         report={<ReportButton questionId={q.id} />}
       >
         <p className="text-xl font-extrabold leading-8 text-right text-pitch-900">{q.text}</p>
@@ -406,12 +496,15 @@ export function Quiz({
         })}
 
         {awaitingVar && (
-          <button
+          <Button
             onClick={activateVar}
-            className="w-full rounded-2xl border-2 border-gold-400 bg-gold-500/15 py-4 text-center font-extrabold text-gold-400 animate-pulse-soft"
+            variant="primary"
+            size="lg"
+            fullWidth
+            className="quiz-var-btn"
           >
-            📺 استفاده از VAR — یک جوابِ دیگر
-          </button>
+            📺 استفاده از VAR — یک جواب دیگر
+          </Button>
         )}
       </div>
     </div>

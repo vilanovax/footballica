@@ -1,6 +1,10 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
+import { BottomSheet, BottomSheetHandle, BottomSheetHeader } from "@/components/ui/BottomSheet";
+import { Button } from "@/components/ui/Button";
+import { GameCard } from "@/components/ui/GameCard";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useGame } from "@/lib/store";
 import { faCount, faMoney, faNum } from "@/lib/format";
 import { fanIncomeMultiplier } from "@/lib/economy";
@@ -13,18 +17,27 @@ import {
   itemEffectPerLevel,
   nextItemUnlockLevel,
   activeItemCount,
+  unitUpgradeCost,
   ITEM_EFFECT_ICON,
   ITEM_EFFECT_NAME,
   type ItemDef,
 } from "@/lib/units";
 
-function SectionTitle({ title, sub }: { title: string; sub?: string }) {
+function SectionHead({ title, sub }: { title: string; sub?: string }) {
   return (
-    <div className="pt-2 pb-1">
-      <p className="text-sm font-extrabold text-white/90">{title}</p>
-      {sub && <p className="mt-0.5 text-[11px] text-white/50">{sub}</p>}
+    <div className="unit-detail-section-head">
+      <h4 className="unit-detail-section-head__title">{title}</h4>
+      {sub && <p className="unit-detail-section-head__sub">{sub}</p>}
     </div>
   );
+}
+
+function effectTone(effect: ItemDef["effect"]) {
+  return effect === "income"
+    ? "income"
+    : effect === "speed"
+      ? "speed"
+      : "capacity";
 }
 
 function ItemCard({
@@ -46,123 +59,103 @@ function ItemCard({
   const maxed = lvl >= item.maxLevel;
   const cost = itemUpgradeCost(item, lvl);
   const canBuy = unlocked && !maxed && budget >= cost;
-  const shortfall = cost - budget;
-
-  const effectClass =
-    item.effect === "income"
-      ? "unit-item-effect--income"
-      : item.effect === "speed"
-        ? "unit-item-effect--speed"
-        : "unit-item-effect--capacity";
+  const shortfall = Math.max(0, cost - budget);
+  const tone = effectTone(item.effect);
 
   if (!unlocked) {
     const levelsAway = item.unlockLevel - unitLevel;
     return (
-      <div className="unit-item-card unit-item-card--locked rounded-2xl p-3.5">
-        <div className="flex items-start gap-3">
-          <div className="unit-item-icon unit-item-icon--locked grid h-12 w-12 shrink-0 place-items-center rounded-xl text-2xl">
+      <GameCard variant="locked" className="unit-item-card unit-item-card--locked">
+        <div className="unit-item-card__top">
+          <div className={`unit-item-icon unit-item-icon--locked unit-item-effect--${tone}`}>
             {item.emoji}
           </div>
-          <div className="flex-1 min-w-0 text-right">
-            <div className="flex items-center justify-end gap-2 flex-wrap">
-              <span className="unit-item-lock-badge rounded-md px-2 py-0.5 text-[10px] font-bold">
-                🔒 Lv.{faNum(item.unlockLevel)}
-              </span>
-              <p className="font-extrabold text-white/55">{item.name}</p>
+          <div className="unit-item-card__body">
+            <div className="unit-item-card__title-row">
+              <span className="unit-item-lock-badge">سطح {faNum(item.unlockLevel)}</span>
+              <h5 className="unit-item-card__name">{item.name}</h5>
             </div>
-            <p className="mt-1.5 text-[11px] text-white/45 leading-5">
+            <p className="unit-item-card__effect">
               {ITEM_EFFECT_ICON[item.effect]} {ITEM_EFFECT_NAME[item.effect]} ·{" "}
               {itemEffectPerLevel(item)} در هر سطح
             </p>
-            <p className="mt-1 text-[10px] text-white/35">
+            <ProgressBar
+              value={unitLevel}
+              max={item.unlockLevel}
+              tone="info"
+              className="mt-2.5"
+              trackClassName="h-1.5 unit-item-progress-track"
+              fillClassName={`unit-item-effect--${tone}`}
+            />
+            <p className="unit-item-card__unlock-note">
               {levelsAway === 1
                 ? "یک ارتقای واحد تا باز شدن"
-                : `${faNum(levelsAway)} ارتقا تا باز شدن`}
+                : `${faNum(levelsAway)} ارتقای واحد مانده`}
             </p>
           </div>
         </div>
-      </div>
+      </GameCard>
     );
   }
 
   const pct = maxed ? 100 : Math.round((lvl / item.maxLevel) * 100);
 
-  let action: ReactNode;
-  if (maxed) {
-    action = (
-      <button disabled className="unit-item-btn unit-item-btn--maxed w-full rounded-xl py-3 text-sm font-extrabold">
-        ✓ حداکثر — {itemEffectDescribe(item, lvl)}
-      </button>
-    );
-  } else if (canBuy) {
-    action = (
-      <button
-        onClick={onBuy}
-        className="unit-item-btn unit-item-btn--buy btn-gold w-full rounded-xl py-3 text-sm font-extrabold active:scale-[0.98] transition"
-      >
-        {lvl === 0 ? "باز کردن" : "ارتقا"} · {faMoney(cost)}
-      </button>
-    );
-  } else {
-    action = (
-      <button
-        disabled
-        className="unit-item-btn unit-item-btn--disabled w-full rounded-xl py-3 text-sm font-extrabold"
-      >
-        نیاز {faMoney(cost)} · {faMoney(shortfall)} کم داری
-      </button>
-    );
-  }
-
   return (
-    <div
-      className={`unit-item-card rounded-2xl p-3.5 ${lvl > 0 ? "unit-item-card--active" : ""} ${
+    <GameCard
+      variant="asset"
+      highlight={canBuy && lvl === 0}
+      className={`unit-item-card ${lvl > 0 ? "unit-item-card--active" : ""} ${
         shake ? "animate-shake" : ""
       }`}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className={`unit-item-icon grid h-12 w-12 shrink-0 place-items-center rounded-xl text-2xl ${effectClass}`}
-        >
-          {item.emoji}
-        </div>
-        <div className="flex-1 min-w-0 text-right">
-          <div className="flex items-center justify-end gap-2 flex-wrap">
-            <span
-              className={`unit-item-level rounded-md px-2 py-0.5 text-[10px] font-bold ${
-                lvl > 0 ? "unit-item-level--active" : ""
-              }`}
-            >
-              {lvl > 0 ? `سطح ${faNum(lvl)}/${faNum(item.maxLevel)}` : "آماده"}
+      <div className="unit-item-card__top">
+        <div className={`unit-item-icon unit-item-effect--${tone}`}>{item.emoji}</div>
+        <div className="unit-item-card__body">
+          <div className="unit-item-card__title-row">
+            <span className={`unit-item-level ${lvl > 0 ? "unit-item-level--active" : ""}`}>
+              {lvl > 0 ? `سطح ${faNum(lvl)}/${faNum(item.maxLevel)}` : "آمادهٔ خرید"}
             </span>
-            <p className="font-extrabold text-white">{item.name}</p>
+            <h5 className="unit-item-card__name">{item.name}</h5>
           </div>
-
-          <div className="mt-2 flex flex-wrap justify-end gap-1.5">
-            <span className={`unit-item-effect-pill ${effectClass}`}>
-              {ITEM_EFFECT_ICON[item.effect]} {ITEM_EFFECT_NAME[item.effect]}
-            </span>
-            <span className="unit-item-effect-pill">
-              {lvl > 0 ? itemEffectDescribe(item, lvl) : itemEffectPerLevel(item)}
-            </span>
+          <p className="unit-item-card__effect">
+            {lvl > 0 ? itemEffectDescribe(item, lvl) : itemEffectPerLevel(item)}
             {!maxed && lvl > 0 && (
-              <span className="unit-item-effect-pill unit-item-effect-pill--next">
+              <span className="unit-item-card__next">
+                {" "}
                 → {itemEffectDescribe(item, lvl + 1)}
               </span>
             )}
-          </div>
-
-          <div className="mt-2.5 h-1.5 overflow-hidden rounded-full unit-item-progress-track">
-            <div
-              className={`h-full rounded-full transition-all ${effectClass}`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
+          </p>
+          <ProgressBar
+            value={pct}
+            max={100}
+            tone={tone === "income" ? "money" : tone === "speed" ? "info" : "success"}
+            className="mt-2.5"
+            trackClassName="h-1.5 unit-item-progress-track"
+          />
         </div>
       </div>
 
-      <div className="mt-3">{action}</div>
-    </div>
+      {maxed ? (
+        <Button disabled variant="success" size="sm" fullWidth className="unit-item-btn--maxed mt-3">
+          حداکثر — {itemEffectDescribe(item, lvl)}
+        </Button>
+      ) : canBuy ? (
+        <Button
+          onClick={onBuy}
+          variant="primary"
+          size="sm"
+          fullWidth
+          className="unit-item-btn--buy mt-3"
+        >
+          {lvl === 0 ? "باز کردن" : "ارتقا"} · {faMoney(cost)}
+        </Button>
+      ) : (
+        <Button disabled variant="muted" size="sm" fullWidth className="unit-item-btn--disabled mt-3">
+          نیاز {faMoney(cost)} · {faMoney(shortfall)} کم داری
+        </Button>
+      )}
+    </GameCard>
   );
 }
 
@@ -180,8 +173,10 @@ export function UnitDetail({
   const fans = useGame((s) => s.fans);
   const managerId = useGame((s) => s.assign[unitId]);
   const upgradeItem = useGame((s) => s.upgradeItem);
+  const upgradeUnit = useGame((s) => s.upgradeUnit);
 
   const [shakeId, setShakeId] = useState<string | null>(null);
+  const [upgradeShake, setUpgradeShake] = useState(false);
 
   const manager = managerId ? managerDef(managerId) : null;
   const income = manager?.incomeMult ?? 1;
@@ -204,6 +199,14 @@ export function UnitDetail({
 
   const nextUnlock = nextItemUnlockLevel(def, unitLevel);
   const activeCount = activeItemCount(def, itemLevels);
+  const unitMaxed = unitLevel >= def.maxLevel;
+  const upgradeCost = unitUpgradeCost(def, unitLevel);
+  const canUpgradeUnit = !unitMaxed && budget >= upgradeCost;
+  const upgradeShortfall = Math.max(0, upgradeCost - budget);
+
+  const nextReady = grouped.ready[0] ?? null;
+  const nextReadyCost = nextReady ? itemUpgradeCost(nextReady, 0) : 0;
+  const canBuyNextReady = Boolean(nextReady && budget >= nextReadyCost);
 
   function buy(itemId: string) {
     if (upgradeItem(unitId, itemId) !== "ok") {
@@ -212,129 +215,182 @@ export function UnitDetail({
     }
   }
 
+  function upgrade() {
+    if (upgradeUnit(unitId) !== "ok") {
+      setUpgradeShake(true);
+      setTimeout(() => setUpgradeShake(false), 400);
+    }
+  }
+
+  const nextAction =
+    canBuyNextReady && nextReady
+      ? {
+          tone: "buy" as const,
+          eyebrow: "حرکت بعدی",
+          title: `باز کردن «${nextReady.name}»`,
+          detail: `با ${faMoney(nextReadyCost)} اولین آیتم این ساختمان را فعال کن.`,
+          cta: `باز کردن · ${faMoney(nextReadyCost)}`,
+          onClick: () => buy(nextReady.id),
+        }
+      : nextReady
+        ? {
+            tone: "budget" as const,
+            eyebrow: "نیاز به بودجه",
+            title: `برای «${nextReady.name}» ${faMoney(nextReadyCost)} لازم است`,
+            detail: `${faMoney(nextReadyCost - budget)} دیگر تا باز کردن اولین آیتم.`,
+            cta: null,
+            onClick: null,
+          }
+        : nextUnlock !== null
+          ? canUpgradeUnit
+            ? {
+                tone: "upgrade" as const,
+                eyebrow: "حرکت بعدی",
+                title: `ارتقای واحد به سطح ${faNum(nextUnlock)}`,
+                detail:
+                  nextUnlock - unitLevel === 1
+                    ? "یک ارتقا تا باز شدن آیتم بعدی."
+                    : `${faNum(nextUnlock - unitLevel)} ارتقا تا باز شدن آیتم بعدی.`,
+                cta: `ارتقای واحد · ${faMoney(upgradeCost)}`,
+                onClick: upgrade,
+              }
+            : {
+                tone: "budget" as const,
+                eyebrow: "برای باز کردن آیتم‌ها",
+                title: `ارتقای واحد به سطح ${faNum(nextUnlock)}`,
+                detail: `${faMoney(upgradeShortfall)} دیگر برای ارتقای واحد لازم است.`,
+                cta: null,
+                onClick: null,
+              }
+          : null;
+
   return (
-    <div
-      className="manager-sheet-backdrop fixed inset-0 z-[60] mx-auto flex max-w-[460px] flex-col justify-end"
-      onClick={onClose}
+    <BottomSheet
+      onClose={onClose}
+      backdropClassName="manager-sheet-backdrop"
+      panelClassName="unit-detail-sheet animate-rise pb-10 no-scrollbar"
     >
-      <div
-        className="manager-sheet animate-rise max-h-[88dvh] overflow-y-auto rounded-t-[28px] pb-10 no-scrollbar"
-        onClick={(e) => e.stopPropagation()}
-        dir="rtl"
-      >
-        <div className="sticky top-0 z-10 manager-sheet-header px-5 pt-4 pb-4">
-          <div className="manager-sheet-handle mx-auto mb-4" />
-          <div className="flex items-start justify-between gap-3">
-            <button
-              onClick={onClose}
-              className="manager-sheet-close shrink-0 rounded-xl px-3.5 py-2 text-xs font-bold active:scale-95"
-            >
-              بستن
-            </button>
-            <div className="flex-1 text-right min-w-0">
-              <h3 className="text-lg font-extrabold leading-tight text-white">
-                آیتم‌های {def.name} {def.emoji}
-              </h3>
-              <p className="mt-1.5 text-xs text-white/65 leading-5">
-                {faNum(activeCount)}/{faNum(def.items.length)} فعال · هر آیتم اثرِ
-                مستقیم روی درآمد، سرعت یا بافر
-              </p>
-            </div>
-          </div>
-
-          <div className="unit-item-stats-bar mt-4 grid grid-cols-3 gap-2 rounded-2xl p-3">
-            <div className="text-center">
-              <p className="text-[10px] text-white/50">درآمد/دوره</p>
-              <p className="mt-0.5 text-sm font-extrabold text-gold-400">
-                +{faMoney(stats.payout)}
-              </p>
-            </div>
-            <div className="text-center border-x border-white/10">
-              <p className="text-[10px] text-white/50">دوره</p>
-              <p className="mt-0.5 text-sm font-extrabold text-white/90">
-                {faNum(Math.round(stats.cycle))}ث
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-white/50">سقف بافر</p>
-              <p className="mt-0.5 text-sm font-extrabold text-grass-400">
-                {faMoney(stats.cap)}
-              </p>
-            </div>
-          </div>
-
-          <div className="manager-budget-bar mt-3 flex items-center justify-between rounded-2xl px-4 py-3">
-            <span className="text-xs font-bold text-white/70">💰 بودجه</span>
-            <span className="text-base font-extrabold text-gold-400">
-              {faCount(budget)}
-              <span className="text-xs text-white/55 mr-1">تومان</span>
-            </span>
-          </div>
-
-          {nextUnlock !== null && (
-            <p className="mt-3 rounded-xl unit-item-hint px-3 py-2 text-[11px] text-white/60 leading-5">
-              💡 آیتمِ بعدی با <strong className="text-white/85">Lv.{faNum(nextUnlock)}</strong>{" "}
-              واحد باز می‌شود — اول واحد را ارتقا بده.
+      <BottomSheetHeader className="unit-detail-header px-5 pt-4 pb-4">
+        <BottomSheetHandle className="manager-sheet-handle mb-4" />
+        <div className="flex items-start justify-between gap-3">
+          <Button
+            onClick={onClose}
+            variant="secondary"
+            size="sm"
+            className="manager-sheet-close shrink-0 px-3.5 text-xs font-bold"
+          >
+            بستن
+          </Button>
+          <div className="flex-1 text-right min-w-0">
+            <p className="unit-detail-header__eyebrow">آیتم‌های ساختمان</p>
+            <h3 className="unit-detail-header__title">
+              {def.name} {def.emoji}
+            </h3>
+            <p className="unit-detail-header__sub">
+              {faNum(activeCount)} از {faNum(def.items.length)} فعال · اثر روی درآمد، سرعت و بافر
             </p>
-          )}
+          </div>
         </div>
 
-        <div className="px-5 pb-2 space-y-3">
-          {grouped.active.length > 0 && (
-            <>
-              <SectionTitle title="فعال" sub="در حال اعمال اثر روی واحد" />
-              {grouped.active.map((it) => (
-                <ItemCard
-                  key={it.id}
-                  item={it}
-                  lvl={itemLevels[it.id] ?? 0}
-                  unitLevel={unitLevel}
-                  budget={budget}
-                  shake={shakeId === it.id}
-                  onBuy={() => buy(it.id)}
-                />
-              ))}
-            </>
-          )}
+        <div className="unit-detail-stats mt-4">
+          <div className="unit-detail-stat unit-detail-stat--income">
+            <p className="unit-detail-stat__label">درآمد/دوره</p>
+            <p className="unit-detail-stat__value">+{faMoney(stats.payout)}</p>
+          </div>
+          <div className="unit-detail-stat unit-detail-stat--cycle">
+            <p className="unit-detail-stat__label">دوره</p>
+            <p className="unit-detail-stat__value">{faNum(Math.round(stats.cycle))}ث</p>
+          </div>
+          <div className="unit-detail-stat unit-detail-stat--cap">
+            <p className="unit-detail-stat__label">سقف بافر</p>
+            <p className="unit-detail-stat__value">{faMoney(stats.cap)}</p>
+          </div>
+        </div>
 
-          {grouped.ready.length > 0 && (
-            <>
-              <SectionTitle title="آمادهٔ خرید" sub="باز شده — هنوز فعال نشده" />
-              {grouped.ready.map((it) => (
-                <ItemCard
-                  key={it.id}
-                  item={it}
-                  lvl={0}
-                  unitLevel={unitLevel}
-                  budget={budget}
-                  shake={shakeId === it.id}
-                  onBuy={() => buy(it.id)}
-                />
-              ))}
-            </>
-          )}
+        <div className="unit-detail-budget mt-3">
+          <span className="unit-detail-budget__label">بودجهٔ خرید</span>
+          <span className="unit-detail-budget__value">
+            {faCount(budget)}
+            <span className="unit-detail-budget__unit">تومان</span>
+          </span>
+        </div>
 
-          {grouped.locked.length > 0 && (
-            <>
-              <SectionTitle
-                title="قفل"
-                sub="با ارتقای سطحِ واحد باز می‌شوند"
+        {nextAction && (
+          <GameCard
+            variant="asset"
+            highlight={nextAction.tone === "buy" || nextAction.tone === "upgrade"}
+            className={`unit-detail-next-action unit-detail-next-action--${nextAction.tone} mt-3 rounded-2xl p-3.5 ${
+              upgradeShake ? "animate-shake" : ""
+            }`}
+          >
+            <div className="unit-detail-next-action__row">
+              <div className="unit-detail-next-action__copy">
+                <p className="unit-detail-next-action__eyebrow">{nextAction.eyebrow}</p>
+                <p className="unit-detail-next-action__title">{nextAction.title}</p>
+                <p className="unit-detail-next-action__sub">{nextAction.detail}</p>
+              </div>
+              {nextAction.cta && nextAction.onClick && (
+                <Button onClick={nextAction.onClick} variant="primary" size="sm">
+                  {nextAction.cta}
+                </Button>
+              )}
+            </div>
+          </GameCard>
+        )}
+      </BottomSheetHeader>
+
+      <div className="unit-detail-body px-5 pb-2 space-y-3">
+        {grouped.active.length > 0 && (
+          <>
+            <SectionHead title="فعال" sub="در حال اعمال اثر روی واحد" />
+            {grouped.active.map((it) => (
+              <ItemCard
+                key={it.id}
+                item={it}
+                lvl={itemLevels[it.id] ?? 0}
+                unitLevel={unitLevel}
+                budget={budget}
+                shake={shakeId === it.id}
+                onBuy={() => buy(it.id)}
               />
-              {grouped.locked.map((it) => (
-                <ItemCard
-                  key={it.id}
-                  item={it}
-                  lvl={0}
-                  unitLevel={unitLevel}
-                  budget={budget}
-                  shake={false}
-                  onBuy={() => {}}
-                />
-              ))}
-            </>
-          )}
-        </div>
+            ))}
+          </>
+        )}
+
+        {grouped.ready.length > 0 && (
+          <>
+            <SectionHead title="آمادهٔ خرید" sub="باز شده — هنوز فعال نشده" />
+            {grouped.ready.map((it) => (
+              <ItemCard
+                key={it.id}
+                item={it}
+                lvl={0}
+                unitLevel={unitLevel}
+                budget={budget}
+                shake={shakeId === it.id}
+                onBuy={() => buy(it.id)}
+              />
+            ))}
+          </>
+        )}
+
+        {grouped.locked.length > 0 && (
+          <>
+            <SectionHead title="قفل" sub="با ارتقای سطح واحد باز می‌شوند" />
+            {grouped.locked.map((it) => (
+              <ItemCard
+                key={it.id}
+                item={it}
+                lvl={0}
+                unitLevel={unitLevel}
+                budget={budget}
+                shake={false}
+                onBuy={() => {}}
+              />
+            ))}
+          </>
+        )}
       </div>
-    </div>
+    </BottomSheet>
   );
 }

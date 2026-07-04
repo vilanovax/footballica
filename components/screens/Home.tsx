@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { ClubBankSheet } from "@/components/ui/ClubBankSheet";
 import { Button } from "@/components/ui/Button";
@@ -10,11 +10,19 @@ import { HomeStreakBar } from "@/components/ui/HomeStreakBar";
 import { HomeFeaturedMode } from "@/components/ui/HomeFeaturedMode";
 import { HomeMissionBanner } from "@/components/ui/HomeMissionBanner";
 import { MODE_THEME_MAP } from "@/lib/designSystem";
+import { unitDef, unitUpgradeCost } from "@/lib/units";
+import { unitIncomeSnapshot } from "@/lib/clubEconomy";
 import { useGame } from "@/lib/store";
 import { faNum, faVaultM } from "@/lib/format";
-import { levelInfo, leagueForXp, formatRegenCountdown, msUntilNextLife } from "@/lib/player";
+import { levelInfo, formatRegenCountdown, msUntilNextLife } from "@/lib/player";
 import { featuredModeForDate, type FeaturedModeId } from "@/lib/home";
-import { vaultCapacity, isBank } from "@/lib/vault";
+import { vaultCapacity, vaultUpgradeCost, isBank } from "@/lib/vault";
+import {
+  buildPromotionSnapshot,
+  currentDivisionLabel,
+  promotionGateStatus,
+  seasonAdvisorMessage,
+} from "@/lib/promotion";
 
 interface HomeProps {
   onPlayQuick: () => void;
@@ -140,32 +148,64 @@ export function Home({
   onPlaySurvival,
 }: HomeProps) {
   const [bankOpen, setBankOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   const cards = useGame((s) => s.cards);
   const budget = useGame((s) => s.budget);
   const vaultLevel = useGame((s) => s.vaultLevel);
   const xp = useGame((s) => s.xp);
   const club = useGame((s) => s.club);
+  const units = useGame((s) => s.units);
+  const itemLevels = useGame((s) => s.itemLevels);
+  const assign = useGame((s) => s.assign);
+  const hired = useGame((s) => s.hired);
+  const matchesWon = useGame((s) => s.matchesWon);
+  const fans = useGame((s) => s.fans);
+  const seasonStep = useGame((s) => s.seasonStep);
   const lives = useGame((s) => s.lives);
   const livesUpdatedAt = useGame((s) => s.livesUpdatedAt);
   const survivalBest = useGame((s) => s.survivalBest);
   const syncLives = useGame((s) => s.syncLives);
   const ensureDailyMissions = useGame((s) => s.ensureDailyMissions);
+  const showVaultTutorial = useGame((s) => s.showVaultTutorial);
 
   const { level } = levelInfo(xp);
-  const league = leagueForXp(xp);
   const regenIn = formatRegenCountdown(msUntilNextLife(lives, livesUpdatedAt));
   const canDuel = lives > 0;
   const featured = featuredModeForDate();
   const bank = isBank(vaultLevel);
   const safeBudget = Number.isFinite(budget) ? budget : 0;
   const vaultCap = vaultCapacity(vaultLevel);
+  const shopLevel = units.shop?.level ?? 1;
+  const hiredCount = Object.values(hired).filter(Boolean).length;
+  const assignedCount = Object.values(assign).filter(Boolean).length;
+  const shopUpgradeCost = unitUpgradeCost(unitDef("shop"), shopLevel);
+  const foodUpgradeCost = unitUpgradeCost(unitDef("food"), units.food?.level ?? 1);
+  const parkingUpgradeCost = unitUpgradeCost(unitDef("parking"), units.parking?.level ?? 1);
+  const nextVaultUpgradeCost = vaultUpgradeCost(vaultLevel);
+  const clubSnap = unitIncomeSnapshot({
+    units,
+    itemLevels,
+    assign,
+    xp,
+    fans,
+    vaultLevel,
+    budget: safeBudget,
+    now,
+  });
+  const canCollectFromHome =
+    clubSnap.readyCount > 0 && clubSnap.vaultFree > 0 && !bank && clubSnap.totalPending > 0;
+  const homeVaultFull = clubSnap.vaultFull && !bank;
 
   useEffect(() => {
     syncLives();
     ensureDailyMissions();
-    const t = setInterval(syncLives, 30_000);
-    return () => clearInterval(t);
+    const livesTimer = setInterval(syncLives, 30_000);
+    const clubTimer = setInterval(() => setNow(Date.now()), 5000);
+    return () => {
+      clearInterval(livesTimer);
+      clearInterval(clubTimer);
+    };
   }, [syncLives, ensureDailyMissions]);
 
   function playFeatured(id: FeaturedModeId) {
@@ -192,6 +232,54 @@ export function Home({
 
   const gridModes = MODE_DEFS.filter((m) => m.id !== featured.id);
   const playableModes = MODE_DEFS.filter((m) => m.id !== "duel" || canDuel).length;
+  const promotionSnapshot = useMemo(
+    () =>
+      buildPromotionSnapshot({
+        fans,
+        vaultLevel,
+        matchesWon,
+        xp,
+        units,
+        hired,
+        assign,
+      }),
+    [fans, vaultLevel, matchesWon, xp, units, hired, assign],
+  );
+  const promotionGate = useMemo(
+    () => promotionGateStatus(seasonStep, promotionSnapshot),
+    [seasonStep, promotionSnapshot],
+  );
+  const homeAdvisor = useMemo(
+    () =>
+      seasonAdvisorMessage({
+        seasonStep,
+        snapshot: promotionSnapshot,
+        budget: safeBudget,
+        pendingIncome: clubSnap.totalPending,
+        canCollect: canCollectFromHome,
+        vaultFull: homeVaultFull,
+        showVaultTutorial,
+        upgradeCosts: {
+          shop: shopUpgradeCost,
+          food: foodUpgradeCost,
+          parking: parkingUpgradeCost,
+          vault: nextVaultUpgradeCost,
+        },
+      }),
+    [
+      seasonStep,
+      promotionSnapshot,
+      safeBudget,
+      clubSnap.totalPending,
+      canCollectFromHome,
+      homeVaultFull,
+      showVaultTutorial,
+      shopUpgradeCost,
+      foodUpgradeCost,
+      parkingUpgradeCost,
+      nextVaultUpgradeCost,
+    ],
+  );
 
   return (
     <div className="pitch-stripes min-h-dvh pb-32">
@@ -208,7 +296,7 @@ export function Home({
               {club.name}
             </p>
             <p className="text-xs text-gold-400 font-bold truncate mt-0.5">
-              سطح {faNum(level)} · {league}
+              سطح {faNum(level)} · {currentDivisionLabel(seasonStep)}
             </p>
           </div>
           <span className="home-topbar__action">ورود به باشگاه</span>
@@ -250,11 +338,17 @@ export function Home({
       <ClubBankSheet open={bankOpen} onClose={() => setBankOpen(false)} />
 
       <div className="home-section-head px-5 mt-5">
-        <span className="home-section-head__eyebrow">حلقه روزانه</span>
-        <h2 className="home-section-head__title">الان بهترین حرکت چیست؟</h2>
+        <span className="home-section-head__eyebrow">
+          {promotionGate.seasonTitle} · {faNum(promotionGate.completeCount)} از {faNum(promotionGate.totalCount)} شرط
+        </span>
+        <h2 className="home-section-head__title">الان مهم‌ترین قدم برای صعود چیست؟</h2>
       </div>
 
-      <HomeMissionBanner onOpenMissions={onOpenMissions} />
+      <HomeMissionBanner
+        onOpenMissions={onOpenMissions}
+        seasonTitle={promotionGate.seasonTitle}
+        seasonFocus={homeAdvisor.focus}
+      />
 
       <GameCard
         variant="hero"
@@ -264,27 +358,29 @@ export function Home({
           ⚽
         </span>
         <div className="relative">
-          <p className="home-command-hero__eyebrow">سریع‌ترین راه برای XP و ریتم بازی</p>
+          <p className="home-command-hero__eyebrow">{homeAdvisor.eyebrow}</p>
           <h2 className="text-2xl font-extrabold text-white text-right mt-1">
-            شروع سریع
+            {homeAdvisor.title}
           </h2>
           <p className="mt-1.5 text-sm text-white/70 text-right leading-6">
-            کویز تک‌نفره برای گرم‌کردن؛ بدون مصرف جان و آماده برای هر بار برگشتن به بازی.
+            {homeAdvisor.detail}
           </p>
         </div>
         <div className="home-command-hero__chips">
-          <span className="home-command-hero__chip">بدون جان</span>
-          <span className="home-command-hero__chip">رایگان</span>
-          <span className="home-command-hero__chip">همیشه آماده</span>
+          <span className="home-command-hero__chip">{homeAdvisor.focus}</span>
+          <span className="home-command-hero__chip">{faNum(promotionGate.completeCount)} شرط کامل</span>
+          <span className="home-command-hero__chip">
+            {homeAdvisor.action === "play" ? "حرکت در زمین" : "حرکت در باشگاه"}
+          </span>
         </div>
         <Button
-          onClick={onPlayQuick}
+          onClick={homeAdvisor.action === "play" ? onPlayQuick : onOpenClub}
           variant="primary"
           size="lg"
           fullWidth
           className="relative mt-4 text-lg"
         >
-          ⚽ شروع بازی
+          {homeAdvisor.action === "play" ? "⚽ شروع بازی" : "🏟️ برو به باشگاه"}
         </Button>
       </GameCard>
 
@@ -295,7 +391,13 @@ export function Home({
         onPlay={playFeatured}
       />
 
-      <ClubHomeBanner onOpenClub={onOpenClub} />
+      <ClubHomeBanner
+        onOpenClub={onOpenClub}
+        seasonTitle={promotionGate.seasonTitle}
+        advisorTitle={homeAdvisor.title}
+        advisorAction={homeAdvisor.action}
+        advisorFocus={homeAdvisor.focus}
+      />
 
       <HomeStreakBar />
 

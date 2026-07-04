@@ -24,6 +24,11 @@ import {
 import { todayKey } from "./player";
 import type { PowerUpId, PowerUpInventory } from "./powerups";
 import { powerUpDef } from "./powerups";
+import {
+  buildPromotionSnapshot,
+  canClaimPromotion,
+  promotionGateStatus,
+} from "./promotion";
 
 export type UpgradeResult = "ok" | "poor" | "locked" | "max";
 
@@ -84,6 +89,7 @@ interface GameState {
   dailyDate: string;
   dailyProgress: Record<string, number>;
   missionClaimed: Record<string, boolean>;
+  seasonStep: number;
   // اکشن‌ها
   addCards: (n: number) => void;
   addFans: (n: number) => void;
@@ -125,6 +131,7 @@ interface GameState {
   completeVaultTutorial: () => void;
   ensureDailyMissions: () => void;
   claimMission: (id: string) => "ok" | "locked" | "claimed";
+  claimPromotion: (id: string) => "ok" | "locked" | "claimed";
   claimableMissions: () => number;
   resetSave: () => void;
 }
@@ -216,6 +223,7 @@ const initialState = {
   dailyDate: "",
   dailyProgress: {} as Record<string, number>,
   missionClaimed: {} as Record<string, boolean>,
+  seasonStep: 1,
 };
 
 export const useGame = create<GameState>()(
@@ -573,6 +581,22 @@ export const useGame = create<GameState>()(
         return "ok";
       },
 
+      claimPromotion: (id) => {
+        const state = get();
+        if (promotionGateStatus(state.seasonStep, buildPromotionSnapshot(state)).id !== id) {
+          return "locked";
+        }
+        if (!canClaimPromotion(state.seasonStep, buildPromotionSnapshot(state))) {
+          return "locked";
+        }
+        const gate = promotionGateStatus(state.seasonStep, buildPromotionSnapshot(state));
+        if (gate.claimReward) {
+          get().applyActivityReward(gate.claimReward);
+        }
+        set((s) => ({ seasonStep: s.seasonStep + 1 }));
+        return "ok";
+      },
+
       claimableMissions: () =>
         claimableMissionCount(missionSnapFromState(get())),
 
@@ -580,7 +604,7 @@ export const useGame = create<GameState>()(
     }),
     {
       name: "footballica-save",
-      version: 6,
+      version: 7,
       migrate: (persisted, version) => {
         const s = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -629,6 +653,9 @@ export const useGame = create<GameState>()(
           delete s.vaultBalance;
           delete s.vaultWithdrawCount;
         }
+        if (version < 7) {
+          s.seasonStep = typeof s.seasonStep === "number" ? s.seasonStep : 1;
+        }
         return persisted;
       },
       storage: createJSONStorage(() => localStorage),
@@ -666,6 +693,7 @@ export const useGame = create<GameState>()(
         dailyDate: s.dailyDate,
         dailyProgress: s.dailyProgress,
         missionClaimed: s.missionClaimed,
+        seasonStep: s.seasonStep,
       }),
     },
   ),

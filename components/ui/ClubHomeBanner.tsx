@@ -11,9 +11,19 @@ import { faClubMoneyLabel, faNum, faVaultM } from "@/lib/format";
 
 interface ClubHomeBannerProps {
   onOpenClub: () => void;
+  seasonTitle: string;
+  advisorTitle: string;
+  advisorAction: "club" | "play";
+  advisorFocus: string;
 }
 
-export function ClubHomeBanner({ onOpenClub }: ClubHomeBannerProps) {
+export function ClubHomeBanner({
+  onOpenClub,
+  seasonTitle,
+  advisorTitle,
+  advisorAction,
+  advisorFocus,
+}: ClubHomeBannerProps) {
   const units = useGame((s) => s.units);
   const itemLevels = useGame((s) => s.itemLevels);
   const assign = useGame((s) => s.assign);
@@ -79,7 +89,7 @@ export function ClubHomeBanner({ onOpenClub }: ClubHomeBannerProps) {
           جزئیات ›
         </button>
         <div className="flex-1 min-w-0">
-          <p className="home-loop-card__eyebrow">باشگاه</p>
+          <p className="home-loop-card__eyebrow">{seasonTitle}</p>
           <p className="font-extrabold text-white text-sm">خزانهٔ باشگاه</p>
           {!bank ? (
             <p className="mt-0.5 text-xs text-white/55 tabular-nums">
@@ -145,15 +155,23 @@ export function ClubHomeBanner({ onOpenClub }: ClubHomeBannerProps) {
       )}
 
       {!snap.topReady && (
-        <Button
-          onClick={onOpenClub}
-          variant="muted"
-          size="sm"
-          fullWidth
-          className="mt-3 text-xs font-bold text-white/50"
-        >
-          مدیریت باشگاه و ارتقاها
-        </Button>
+        <>
+          <div className="mt-3 rounded-xl bg-black/20 px-3 py-2.5 text-right">
+            <p className="text-[11px] font-extrabold text-white/82">{advisorTitle}</p>
+            <p className="mt-1 text-[10px] font-bold text-white/45">
+              {advisorAction === "club" ? "حرکت بعدی در باشگاه" : "تمرکز فعلی"} · {advisorFocus}
+            </p>
+          </div>
+          <Button
+            onClick={onOpenClub}
+            variant="muted"
+            size="sm"
+            fullWidth
+            className="mt-3 text-xs font-bold text-white/50"
+          >
+            {advisorAction === "club" ? "ادامه فصل در باشگاه" : "مرور باشگاه و اقتصاد"}
+          </Button>
+        </>
       )}
     </GameCard>
   );
