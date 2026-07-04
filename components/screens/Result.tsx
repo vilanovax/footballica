@@ -49,7 +49,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
   const recordWin = useGame((s) => s.recordWin);
   const club = useGame((s) => s.club);
   const vaultLevel = useGame((s) => s.vaultLevel);
-  const vaultBalance = useGame((s) => s.vaultBalance);
+  const budget = useGame((s) => s.budget);
   const showVaultTutorial = useGame((s) => s.showVaultTutorial);
   const credited = useRef(false);
   const [vaultOverflow, setVaultOverflow] = useState(0);
@@ -60,7 +60,7 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
   const scoreDiff = result.youScore - result.foeScore;
   const bank = isBank(vaultLevel);
   const showVaultCta =
-    showVaultTutorial && result.vaultEarned > 0 && !bank && vaultBalance > 0;
+    showVaultTutorial && result.vaultEarned > 0 && !bank && budget > 0;
 
   const hasRewards =
     result.xpEarned > 0 ||
@@ -224,8 +224,8 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
                 vaultNote={
                   result.vaultEarned > 0
                     ? bank
-                      ? "مستقیم به بودجه"
-                      : "وارد گاوصندوق شد"
+                      ? "مستقیم به خزانه"
+                      : "وارد خزانه شد"
                     : undefined
                 }
               />
@@ -244,9 +244,9 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
 
         {showVaultCta && (
           <div className="rounded-2xl border border-gold-500/45 bg-gold-500/10 p-4 text-right animate-pulse-soft">
-            <p className="text-sm font-extrabold text-gold-400">🔐 قدم بعدی: گاوصندوق</p>
+            <p className="text-sm font-extrabold text-gold-400">🔐 قدم بعدی: باشگاه</p>
             <p className="mt-2 text-sm text-white/70 leading-6">
-              درآمد در گاوصندوق است. برداشت کن تا باشگاه را ارتقا بدهی.
+              پول در خزانه است. برو باشگاه و واحدها را ارتقا بده.
             </p>
             <button
               onClick={onOpenClub}

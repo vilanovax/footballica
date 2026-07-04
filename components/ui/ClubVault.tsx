@@ -23,11 +23,8 @@ export function ClubVault({
 }: ClubVaultProps) {
   const budget = useGame((s) => s.budget);
   const vaultLevel = useGame((s) => s.vaultLevel);
-  const vaultBalance = useGame((s) => s.vaultBalance);
-  const withdrawVault = useGame((s) => s.withdrawVault);
   const upgradeVault = useGame((s) => s.upgradeVault);
 
-  const [floatAmt, setFloatAmt] = useState<number | null>(null);
   const [flash, setFlash] = useState(false);
   const [shake, setShake] = useState(false);
 
@@ -35,10 +32,10 @@ export function ClubVault({
 
   const info = vaultInfo(vaultLevel);
   const cap = vaultCapacity(vaultLevel);
-  const pct = bank ? 0 : Math.min(100, cap > 0 ? (vaultBalance / cap) * 100 : 0);
-  const full = !bank && vaultBalance >= cap;
+  const pct = bank ? 0 : Math.min(100, cap > 0 ? (budget / cap) * 100 : 0);
+  const full = !bank && budget >= cap;
   const emptyHint =
-    vaultBalance <= 0 && unitsPending > 0 && !bank
+    budget <= 0 && unitsPending > 0 && !bank
       ? `${faMoney(unitsPending)} در واحدها — اول واریز کن`
       : null;
 
@@ -47,15 +44,6 @@ export function ClubVault({
   const nextIsBank = vaultLevel === VAULT_MAX - 1;
   const canUpgrade = !isFinal && budget >= cost;
 
-  function withdraw() {
-    const got = withdrawVault();
-    if (got > 0) {
-      setFloatAmt(got);
-      setFlash(true);
-      setTimeout(() => setFlash(false), 600);
-      setTimeout(() => setFloatAmt(null), 900);
-    }
-  }
   function upgrade() {
     if (upgradeVault() !== "ok") {
       setShake(true);
@@ -85,18 +73,16 @@ export function ClubVault({
             {info.name} {bank ? "🏦" : "🔐"}
           </h3>
           <p className="mt-0.5 text-[11px] text-white/45">
-            {bank ? "مرحلهٔ ۲ — برداشت خودکار" : "مرحلهٔ ۲ — ذخیرهٔ موقت"}
+            {bank ? "خزانهٔ نامحدود" : "خزانهٔ باشگاه"}
           </p>
         </div>
       </div>
 
       {bank ? (
         <div className="mt-3 rounded-xl bg-gold-500/10 px-3 py-2.5 text-right">
-          <p className="text-sm font-bold text-gold-400">
-            ✓ برداشتِ خودکار فعال
-          </p>
+          <p className="text-sm font-bold text-gold-400">✓ بانکِ اسپانسر فعال</p>
           <p className="mt-1 text-xs text-white/55 leading-5">
-            درآمد واحدها و جایزهٔ مسابقه مستقیم به بودجه می‌رود.
+            درآمد واحدها و جایزهٔ مسابقه مستقیم به خزانه می‌رود.
           </p>
         </div>
       ) : (
@@ -106,19 +92,19 @@ export function ClubVault({
               className={
                 full
                   ? "font-bold text-gold-400"
-                  : vaultBalance > 0
+                  : budget > 0
                     ? "text-grass-400 font-bold"
                     : "text-white/50"
               }
             >
               {full
-                ? "پر — برداشت کن"
-                : vaultBalance > 0
-                  ? "آمادهٔ برداشت"
+                ? "پر — خرج کن یا ارتقا بده"
+                : budget > 0
+                  ? "آمادهٔ خرج"
                   : emptyHint ?? "خالی"}
             </span>
             <span className="font-extrabold shrink-0">
-              {faMoney(vaultBalance)}{" "}
+              {faMoney(budget)}{" "}
               <span className="text-white/35 font-bold">/ {faMoney(cap)}</span>
             </span>
           </div>
@@ -129,7 +115,7 @@ export function ClubVault({
                 width: `${pct}%`,
                 background: full
                   ? "linear-gradient(90deg,#e0a92e,#f5c542)"
-                  : vaultBalance > 0
+                  : budget > 0
                     ? "linear-gradient(90deg,#2f9e5f,#5ee08a)"
                     : "rgba(255,255,255,0.08)",
               }}
@@ -139,27 +125,9 @@ export function ClubVault({
       )}
 
       <div className="mt-3 flex gap-2">
-        {!bank && (
-          <div className="relative flex-1">
-            {floatAmt !== null && (
-              <span className="float-up pointer-events-none absolute -top-3 left-1/2 text-sm font-extrabold text-gold-400">
-                +{faMoney(floatAmt)}
-              </span>
-            )}
-            <button
-              onClick={withdraw}
-              disabled={vaultBalance <= 0}
-              className={`w-full rounded-2xl py-3 text-sm font-extrabold transition active:scale-[0.98] ${
-                vaultBalance > 0 ? "btn-gold" : "bg-white/8 text-white/35"
-              } ${full && vaultBalance > 0 ? "animate-pulse-soft" : ""}`}
-            >
-              {vaultBalance > 0 ? "برداشت به بودجه" : "خالی است"}
-            </button>
-          </div>
-        )}
         <button
           onClick={upgrade}
-          className={`${bank ? "w-full" : "flex-1"} rounded-2xl py-3 text-sm font-extrabold transition active:scale-[0.98] ${shake ? "animate-shake" : ""} ${
+          className={`w-full rounded-2xl py-3 text-sm font-extrabold transition active:scale-[0.98] ${shake ? "animate-shake" : ""} ${
             isFinal
               ? "bg-gold-500/15 text-gold-400"
               : canUpgrade
@@ -174,7 +142,7 @@ export function ClubVault({
             : nextIsBank
               ? `🏦 تبدیل · ${faMoney(cost)}`
               : canUpgrade
-                ? `ظرفیت ↑ · ${faMoney(cost)}`
+                ? `ارتقای گاوصندوق · ${faMoney(cost)}`
                 : `نیاز ${faMoney(cost)}`}
         </button>
       </div>

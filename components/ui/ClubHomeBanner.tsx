@@ -2,28 +2,35 @@
 
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/store";
-import { clubNextAction, unitIncomeSnapshot } from "@/lib/clubEconomy";
+import { unitIncomeSnapshot } from "@/lib/clubEconomy";
 import { isBank } from "@/lib/vault";
-import { faMoney, faNum } from "@/lib/format";
+import { faClubMoneyLabel, faNum, faVaultM } from "@/lib/format";
 
-export function ClubHomeBanner({ onOpenClub }: { onOpenClub: () => void }) {
+interface ClubHomeBannerProps {
+  onOpenClub: () => void;
+}
+
+export function ClubHomeBanner({ onOpenClub }: ClubHomeBannerProps) {
   const units = useGame((s) => s.units);
   const itemLevels = useGame((s) => s.itemLevels);
   const assign = useGame((s) => s.assign);
   const xp = useGame((s) => s.xp);
   const fans = useGame((s) => s.fans);
   const vaultLevel = useGame((s) => s.vaultLevel);
-  const vaultBalance = useGame((s) => s.vaultBalance);
+  const budget = useGame((s) => s.budget);
+  const collectAllUnits = useGame((s) => s.collectAllUnits);
 
-  const [now, setNow] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [flash, setFlash] = useState(false);
+  const [collected, setCollected] = useState<number | null>(null);
 
   useEffect(() => {
-    setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(t);
   }, []);
 
   const bank = isBank(vaultLevel);
+  const safeBudget = Number.isFinite(budget) ? budget : 0;
   const snap = unitIncomeSnapshot({
     units,
     itemLevels,
@@ -31,56 +38,103 @@ export function ClubHomeBanner({ onOpenClub }: { onOpenClub: () => void }) {
     xp,
     fans,
     vaultLevel,
-    vaultBalance,
-    now: now ?? undefined,
+    budget: safeBudget,
+    now,
   });
 
-  const action = clubNextAction({
-    totalPending: snap.totalPending,
-    vaultBalance,
-    vaultFull: snap.vaultFull,
-    vaultFree: snap.vaultFree,
-    readyCount: snap.readyCount,
-    isBank: bank,
-  });
-
+  const canCollect =
+    snap.readyCount > 0 && snap.vaultFree > 0 && !bank && snap.totalPending > 0;
+  const blocked = snap.vaultFree <= 0 && snap.totalPending > 0 && !bank;
   const needsAttention =
-    snap.totalPending > 0 || vaultBalance > 0 || snap.vaultFull;
+    canCollect || blocked || snap.vaultFull;
+
+  function collect(e: React.MouseEvent) {
+    e.stopPropagation();
+    const got = collectAllUnits();
+    if (got > 0) {
+      setCollected(got);
+      setFlash(true);
+      setTimeout(() => setFlash(false), 600);
+      setTimeout(() => setCollected(null), 1200);
+    }
+  }
 
   return (
-    <button
-      onClick={onOpenClub}
-      className={`home-club-banner mx-5 mt-4 w-[calc(100%-2.5rem)] rounded-2xl p-4 text-right active:scale-[0.98] transition-transform ${
-        needsAttention ? "home-club-banner--active" : ""
-      }`}
+    <div
+      className={`home-club-panel mx-5 mt-3 rounded-2xl p-4 text-right ${
+        needsAttention ? "home-club-panel--active" : ""
+      } ${flash ? "home-club-panel--flash" : ""}`}
     >
-      <div className="flex items-start gap-3">
-        <span className="text-2xl shrink-0">{action.emoji}</span>
+      <div className="flex items-start justify-between gap-2">
+        <button
+          type="button"
+          onClick={onOpenClub}
+          className="text-xs font-bold text-white/45 shrink-0 pt-0.5 active:opacity-70"
+        >
+          باشگاه ›
+        </button>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-bold text-white/45 shrink-0">باشگاه ›</span>
-            <p className="font-extrabold text-white truncate">{action.title}</p>
-          </div>
-          <p className="mt-1 text-xs text-white/60 leading-5">{action.detail}</p>
-          <div className="mt-2.5 flex flex-wrap justify-end gap-2">
-            {!bank && (
-              <span className="home-club-stat-pill">
-                🔐 {faMoney(vaultBalance)} / {faMoney(snap.vaultCap)}
-              </span>
-            )}
-            {snap.readyCount > 0 && (
-              <span className="home-club-stat-pill home-club-stat-pill--accent">
-                🏪 {faNum(snap.readyCount)} واحد آماده
-              </span>
-            )}
-            {bank && vaultBalance > 0 && (
-              <span className="home-club-stat-pill home-club-stat-pill--accent">
-                🏦 {faMoney(vaultBalance)} در بانک
-              </span>
-            )}
-          </div>
+          <p className="font-extrabold text-white text-sm">خزانهٔ باشگاه</p>
+          {!bank ? (
+            <p className="mt-0.5 text-xs text-white/55 tabular-nums">
+              🔐 {faVaultM(safeBudget)} / {faVaultM(snap.vaultCap)} میلیون
+              <span className="text-white/35"> · پول آمادهٔ خرج</span>
+            </p>
+          ) : (
+            <p className="mt-0.5 text-xs text-grass-400">
+              🏦 {faClubMoneyLabel(safeBudget)} · بدون سقف
+            </p>
+          )}
         </div>
       </div>
-    </button>
+
+      {snap.topReady && (
+        <div className="mt-3 flex items-center gap-2 rounded-xl bg-black/20 px-3 py-2.5">
+          <div className="flex-1 min-w-0 text-right">
+            <p className="text-xs font-extrabold text-white/85">
+              {snap.topReady.emoji} {snap.topReady.name}
+              {snap.readyCount > 1 && (
+                <span className="text-white/45 font-bold">
+                  {" "}
+                  +{faNum(snap.readyCount - 1)} واحد
+                </span>
+              )}
+            </p>
+            <p className="text-[11px] text-gold-400/90 mt-0.5">
+              {faClubMoneyLabel(snap.topReady.pending)} آمادهٔ انتقال
+            </p>
+          </div>
+          {canCollect ? (
+            <button
+              type="button"
+              onClick={collect}
+              className="home-club-collect-btn shrink-0 rounded-xl px-3 py-2 text-xs font-extrabold active:scale-[0.97]"
+            >
+              {collected !== null
+                ? `+${faClubMoneyLabel(collected)}`
+                : "جمع‌آوری"}
+            </button>
+          ) : blocked ? (
+            <button
+              type="button"
+              onClick={onOpenClub}
+              className="shrink-0 rounded-xl bg-team-foe/20 px-3 py-2 text-[10px] font-extrabold text-team-foe"
+            >
+              خزانه پر
+            </button>
+          ) : null}
+        </div>
+      )}
+
+      {!snap.topReady && (
+        <button
+          type="button"
+          onClick={onOpenClub}
+          className="mt-3 w-full rounded-xl bg-white/5 py-2.5 text-xs font-bold text-white/50 active:scale-[0.98]"
+        >
+          مدیریت باشگاه و ارتقاها
+        </button>
+      )}
+    </div>
   );
 }

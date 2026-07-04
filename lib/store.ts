@@ -49,17 +49,16 @@ interface GameState {
   // پیشرفت
   cards: number;
   fans: number;
-  budget: number; // بودجهٔ باشگاه (تومانِ درون‌بازی)
+  budget: number; // خزانهٔ باشگاه — پول قابلِ خرج (تومانِ درون‌بازی)
   xp: number; // تجربه (خرج نمی‌شود؛ فقط سطح را بالا می‌برد)
   reputation: number; // اعتبارِ باشگاه (محاسباتی — فاز بعد)
   levels: Record<string, number>;
-  // اقتصادِ باشگاه: واحدها درآمد می‌سازند → تپ/مدیر → گاوصندوق → برداشت → بودجه
+  // اقتصادِ باشگاه: واحدها درآمد می‌سازند → collect → خزانه (بودجه) → خرج
   units: Record<string, { level: number; lastCollect: number }>;
   itemLevels: Record<string, Record<string, number>>; // unitId → itemId → level
   hired: Record<string, boolean>; // مدیرانِ استخدام‌شده (managerId)
   assign: Record<string, string | null>; // unitId → managerId منصوب‌شده
-  vaultLevel: number; // ظرفیتِ گاوصندوق
-  vaultBalance: number; // موجودیِ فعلیِ گاوصندوق
+  vaultLevel: number; // ظرفیتِ خزانه (سقفِ بودجه)
   matchesWon: number; // برای بازشدنِ واحدهایی مثلِ بلیت‌فروشی
   // سناریو / هویت
   setupDone: boolean;
@@ -76,12 +75,11 @@ interface GameState {
   powerups: PowerUpInventory;
   // گزارشِ سؤال‌ها (فعلاً محلی؛ در فاز سرور به API می‌رود)
   reports: { questionId: string; reason: string; at: number }[];
-  /** آموزشِ مسیر پول: تا اولین برداشت از گاوصندوق */
+  /** آموزشِ مسیر پول: تا اولین واریز به خزانه */
   showVaultTutorial: boolean;
   // ماموریت‌ها
   gamesPlayed: number;
   unitCollectCount: number;
-  vaultWithdrawCount: number;
   vaultFillCount: number;
   dailyDate: string;
   dailyProgress: Record<string, number>;
@@ -91,20 +89,19 @@ interface GameState {
   addFans: (n: number) => void;
   addXp: (n: number) => void;
   addReputation: (n: number) => void;
-  /** واریزِ درآمد (مسابقه یا واحد) به گاوصندوق — تا سقفِ ظرفیت */
+  /** واریزِ درآمد (مسابقه یا واحد) به خزانه — تا سقفِ ظرفیت */
   depositVault: (amount: number) => VaultDepositResult;
   /** اعمالِ جایزهٔ یک فعالیت (XP، هوادار، کارت، پول→گاوصندوق) */
   applyActivityReward: (reward: ActivityReward) => VaultDepositResult;
   // اقتصادِ باشگاه (واحدها + گاوصندوق)
   ensureUnitClock: (id: string) => void;
-  collectUnit: (id: string) => number; // درآمدِ واحد → گاوصندوق
-  collectAllUnits: () => number; // همهٔ واحدهای آماده → گاوصندوق
+  collectUnit: (id: string) => number; // درآمدِ واحد → خزانه
+  collectAllUnits: () => number; // همهٔ واحدهای آماده → خزانه
   upgradeUnit: (id: string) => UpgradeResult;
   upgradeItem: (unitId: string, itemId: string) => UpgradeResult;
   hireManager: (managerId: string) => UpgradeResult; // استخدام (باز کردن)
   assignManager: (unitId: string, managerId: string) => UpgradeResult; // انتصاب
   unassignUnit: (unitId: string) => void;
-  withdrawVault: () => number; // گاوصندوق → بودجه
   upgradeVault: () => UpgradeResult;
   recordWin: () => void;
   completeSetup: (club: ClubIdentity) => void;
@@ -155,7 +152,6 @@ function missionSnapFromState(s: GameState) {
     gamesPlayed: s.gamesPlayed,
     totalCorrect: s.totalCorrect,
     unitCollectCount: s.unitCollectCount,
-    vaultWithdrawCount: s.vaultWithdrawCount,
     vaultFillCount: s.vaultFillCount,
     matchesWon: s.matchesWon,
     streakDays: s.streakDays,
@@ -201,7 +197,6 @@ const initialState = {
     string | null
   >,
   vaultLevel: 1,
-  vaultBalance: 0,
   matchesWon: 0,
   setupDone: false,
   club: DEFAULT_CLUB,
@@ -217,7 +212,6 @@ const initialState = {
   showVaultTutorial: true,
   gamesPlayed: 0,
   unitCollectCount: 0,
-  vaultWithdrawCount: 0,
   vaultFillCount: 0,
   dailyDate: "",
   dailyProgress: {} as Record<string, number>,
@@ -236,9 +230,9 @@ export const useGame = create<GameState>()(
 
       depositVault: (amount) => {
         if (amount <= 0) return { deposited: 0, overflow: 0 };
-        const { vaultLevel, vaultBalance } = get();
+        const { vaultLevel, budget } = get();
 
-        // بانکِ اسپانسر: مستقیم به بودجه (بدون توقف در گاوصندوق)
+        // بانکِ اسپانسر: بدون سقفِ ظرفیت
         if (isBank(vaultLevel)) {
           set((s) => ({ budget: s.budget + amount }));
           get().completeVaultTutorial();
@@ -246,14 +240,15 @@ export const useGame = create<GameState>()(
         }
 
         const cap = vaultCapacity(vaultLevel);
-        const free = Math.max(0, cap - vaultBalance);
+        const free = Math.max(0, cap - budget);
         const deposited = Math.min(amount, free);
         const overflow = amount - deposited;
         if (deposited > 0) {
-          set((s) => ({ vaultBalance: s.vaultBalance + deposited }));
+          set((s) => ({ budget: s.budget + deposited }));
+          get().completeVaultTutorial();
         }
         const after = get();
-        if (after.vaultBalance >= cap && deposited > 0) {
+        if (after.budget >= cap && deposited > 0) {
           set((s) => ({ vaultFillCount: s.vaultFillCount + 1 }));
         }
         return { deposited, overflow };
@@ -278,10 +273,10 @@ export const useGame = create<GameState>()(
         }
       },
 
-      // برداشتِ درآمدِ یک واحد → گاوصندوق (تا جای خالیِ گاوصندوق)
+      // برداشتِ درآمدِ یک واحد → خزانه (تا جای خالیِ ظرفیت)
       collectUnit: (id) => {
         const def = unitDef(id);
-        const { units, assign, vaultLevel, vaultBalance } = get();
+        const { units, assign, vaultLevel, budget } = get();
         const u = units[id];
         if (!u) return 0;
 
@@ -321,29 +316,22 @@ export const useGame = create<GameState>()(
           deposit = pending;
           newLast = now;
         } else {
-          const free = Math.max(0, vaultCapacity(vaultLevel) - vaultBalance);
+          const free = Math.max(0, vaultCapacity(vaultLevel) - budget);
           deposit = Math.min(pending, free);
           if (deposit <= 0) return 0;
           const rem = pending - deposit;
           newLast = now - (rate > 0 ? rem / rate : 0) * 1000;
         }
 
-        if (isBank(vaultLevel)) {
-          set((s) => ({
-            budget: s.budget + deposit,
-            units: { ...s.units, [id]: { ...s.units[id], lastCollect: newLast } },
-            unitCollectCount: s.unitCollectCount + 1,
-            ...bumpDailyProgress(s.dailyDate, s.dailyProgress, "daily_collect"),
-          }));
-        } else {
-          set((s) => ({
-            vaultBalance: s.vaultBalance + deposit,
-            units: { ...s.units, [id]: { ...s.units[id], lastCollect: newLast } },
-            unitCollectCount: s.unitCollectCount + 1,
-            ...bumpDailyProgress(s.dailyDate, s.dailyProgress, "daily_collect"),
-          }));
-        }
-        return deposit;
+        const { deposited } = get().depositVault(deposit);
+        if (deposited <= 0) return 0;
+
+        set((s) => ({
+          units: { ...s.units, [id]: { ...s.units[id], lastCollect: newLast } },
+          unitCollectCount: s.unitCollectCount + 1,
+          ...bumpDailyProgress(s.dailyDate, s.dailyProgress, "daily_collect"),
+        }));
+        return deposited;
       },
 
       collectAllUnits: () => {
@@ -428,31 +416,15 @@ export const useGame = create<GameState>()(
       unassignUnit: (unitId) =>
         set((s) => ({ assign: { ...s.assign, [unitId]: null } })),
 
-      // برداشت از گاوصندوق → بودجهٔ باشگاه
-      withdrawVault: () => {
-        const { vaultLevel, vaultBalance } = get();
-        if (isBank(vaultLevel) || vaultBalance <= 0) return 0;
-        set((s) => ({
-          budget: s.budget + vaultBalance,
-          vaultBalance: 0,
-          vaultWithdrawCount: s.vaultWithdrawCount + 1,
-        }));
-        get().completeVaultTutorial();
-        return vaultBalance;
-      },
-
-      // ارتقای گاوصندوق (ظرفیت ↑ / تبدیل به بانک) — با بودجه
+      // ارتقای گاوصندوق (ظرفیت ↑ / تبدیل به بانک) — از خزانه
       upgradeVault: () => {
-        const { vaultLevel, budget, vaultBalance } = get();
+        const { vaultLevel, budget } = get();
         if (vaultLevel >= VAULT_MAX) return "max";
         const cost = vaultUpgradeCost(vaultLevel);
         if (budget < cost) return "poor";
-        const nextLevel = vaultLevel + 1;
-        const becomingBank = isBank(nextLevel);
         set({
-          budget: budget - cost + (becomingBank ? vaultBalance : 0),
-          vaultLevel: nextLevel,
-          vaultBalance: becomingBank ? 0 : vaultBalance,
+          budget: budget - cost,
+          vaultLevel: vaultLevel + 1,
         });
         return "ok";
       },
@@ -572,9 +544,6 @@ export const useGame = create<GameState>()(
           if (!assign[u.id]) continue;
           get().collectUnit(u.id);
         }
-        const { vaultLevel, vaultBalance } = get();
-        if (!isBank(vaultLevel) || vaultBalance <= 0) return;
-        get().withdrawVault();
       },
 
       completeVaultTutorial: () => {
@@ -611,7 +580,7 @@ export const useGame = create<GameState>()(
     }),
     {
       name: "footballica-save",
-      version: 5,
+      version: 6,
       migrate: (persisted, version) => {
         const s = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -652,6 +621,14 @@ export const useGame = create<GameState>()(
             if (club.internationalTeam === undefined) club.internationalTeam = undefined;
           }
         }
+        if (version < 6) {
+          const budget = typeof s.budget === "number" ? s.budget : 0;
+          const vaultBalance =
+            typeof s.vaultBalance === "number" ? s.vaultBalance : 0;
+          s.budget = budget + vaultBalance;
+          delete s.vaultBalance;
+          delete s.vaultWithdrawCount;
+        }
         return persisted;
       },
       storage: createJSONStorage(() => localStorage),
@@ -670,7 +647,6 @@ export const useGame = create<GameState>()(
         hired: s.hired,
         assign: s.assign,
         vaultLevel: s.vaultLevel,
-        vaultBalance: s.vaultBalance,
         matchesWon: s.matchesWon,
         setupDone: s.setupDone,
         club: s.club,
@@ -686,7 +662,6 @@ export const useGame = create<GameState>()(
         showVaultTutorial: s.showVaultTutorial,
         gamesPlayed: s.gamesPlayed,
         unitCollectCount: s.unitCollectCount,
-        vaultWithdrawCount: s.vaultWithdrawCount,
         vaultFillCount: s.vaultFillCount,
         dailyDate: s.dailyDate,
         dailyProgress: s.dailyProgress,

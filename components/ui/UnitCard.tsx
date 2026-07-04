@@ -2,17 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/store";
-import { faNum, faMoney } from "@/lib/format";
+import { RARITY_THEME } from "@/lib/designSystem";
+import { faNum, faMoney, faTreasuryShort } from "@/lib/format";
 import { fanIncomeMultiplier } from "@/lib/economy";
 import { levelForXp } from "@/lib/progress";
 import { unitDef, unitStats, unitPending, unitUpgradeCost, activeItemCount } from "@/lib/units";
 import { isUnitUnlocked } from "@/lib/clubEconomy";
-import { managerDef, RARITY_COLOR } from "@/lib/managers";
+import { managerDef } from "@/lib/managers";
 import { ManagerAvatar } from "@/components/ui/ManagerAvatar";
 import { ManagerPanel } from "@/components/ui/ManagerPanel";
 import { UnitDetail } from "@/components/ui/UnitDetail";
 
-export function UnitCard({ id }: { id: string }) {
+export function UnitCard({
+  id,
+  vaultFull = false,
+}: {
+  id: string;
+  vaultFull?: boolean;
+}) {
   const def = unitDef(id);
   const unit = useGame((s) => s.units[id]);
   const itemLevels = useGame((s) => s.itemLevels[id]);
@@ -99,6 +106,8 @@ export function UnitCard({ id }: { id: string }) {
   const upCost = unitUpgradeCost(def, level);
   const canUpgrade = !maxed && budget >= upCost;
 
+  const canDeposit = ready && !vaultFull;
+
   function collect() {
     const got = collectUnit(id);
     if (got > 0) {
@@ -115,7 +124,7 @@ export function UnitCard({ id }: { id: string }) {
     }
   }
 
-  const rc = manager ? RARITY_COLOR[manager.rarity] : "#8aa0aa";
+  const rc = manager ? RARITY_THEME[manager.rarity].color : "var(--color-rarity-common)";
   const activeItems = activeItemCount(def, items);
 
   return (
@@ -126,23 +135,18 @@ export function UnitCard({ id }: { id: string }) {
         } ${ready && !manager ? "club-unit-card--ready" : ""}`}
       >
         <div className="flex items-start gap-3">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-black/20 text-2xl">
+          <div className="club-building-icon grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-[1.9rem]">
             {def.emoji}
           </div>
           <div className="flex-1 min-w-0 text-right">
             <div className="flex items-center justify-end gap-2 flex-wrap">
               <span className="rounded-md bg-gold-500/15 px-2 py-0.5 text-[10px] font-bold text-gold-400">
-                Lv.{faNum(level)}
+                سطح {faNum(level)}
               </span>
               <h4 className="font-extrabold truncate">{def.name}</h4>
             </div>
-            <p className="mt-1 text-xs text-white/50">
-              +{faMoney(stats.payout)} / {faNum(Math.round(stats.cycle))}ث
-              {manager && (
-                <span className="text-grass-400 mr-1">
-                  · ×{faNum(income.toFixed(1).replace(".", "٫"))}
-                </span>
-              )}
+            <p className="mt-1 text-[11px] text-white/48 leading-5">
+              {def.flavor}
             </p>
           </div>
           {manager && (
@@ -155,41 +159,62 @@ export function UnitCard({ id }: { id: string }) {
           )}
         </div>
 
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-[11px] mb-1">
-            <span
-              className={
-                full
-                  ? "font-bold text-gold-400"
-                  : ready
-                    ? "text-grass-400 font-bold"
-                    : "text-white/45"
-              }
-            >
-              {full
-                ? "پر — واریز کن"
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="club-building-stat rounded-2xl px-2.5 py-2.5 text-right">
+            <p className="text-[10px] font-bold text-white/38">آماده</p>
+            <p className="mt-1 text-sm font-extrabold text-gold-400">
+              {faMoney(pending)}
+            </p>
+            <p className="mt-1 text-[10px] text-white/35">برای جمع‌آوری</p>
+          </div>
+          <div className="club-building-stat rounded-2xl px-2.5 py-2.5 text-right">
+            <p className="text-[10px] font-bold text-white/38">درآمد</p>
+            <p className="mt-1 text-sm font-extrabold text-white">
+              +{faMoney(stats.payout)}
+            </p>
+            <p className="mt-1 text-[10px] text-white/35">
+              هر {faNum(Math.round(stats.cycle))}ث
+            </p>
+          </div>
+          <div className="club-building-stat rounded-2xl px-2.5 py-2.5 text-right">
+            <p className="text-[10px] font-bold text-white/38">ظرفیت</p>
+            <p className="mt-1 text-sm font-extrabold text-white/80">
+              {faMoney(pending)}
+            </p>
+            <p className="mt-1 text-[10px] text-white/35">
+              از {faMoney(stats.cap)}
+              {manager && (
+                <span className="text-grass-400 mr-1">
+                  · ×{faNum(income.toFixed(1).replace(".", "٫"))}
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span
+            className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${
+              vaultFull && ready
+                ? "bg-team-foe/12 text-team-foe"
+                : ready
+                  ? "bg-grass-500/12 text-grass-400"
+                  : "bg-white/6 text-white/38"
+            }`}
+          >
+            {vaultFull && ready
+              ? "خزانه پر"
+              : ready
+                ? "آمادهٔ جمع‌آوری"
                 : manager
-                  ? "واریز خودکار"
-                  : ready
-                    ? "آمادهٔ واریز"
-                    : "در حال جمع…"}
-            </span>
-            <span className="font-bold text-white/70">
-              {faMoney(pending)}{" "}
-              <span className="text-white/35">/ {faMoney(stats.cap)}</span>
-            </span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-black/35">
-            <div
-              className="h-full rounded-full transition-[width] duration-1000 ease-linear"
-              style={{
-                width: `${pct}%`,
-                background: full
-                  ? "linear-gradient(90deg,#e0a92e,#f5c542)"
-                  : "linear-gradient(90deg,#2f9e5f,#5ee08a)",
-              }}
-            />
-          </div>
+                  ? "مدیر فعال"
+                  : "در حال درآمدسازی"}
+          </span>
+          <p className="text-[10px] text-white/35 text-right leading-5">
+            {manager
+              ? "این ساختمان با مدیر، درآمد را خودش جمع می‌کند."
+              : "جمع‌آوری کن تا درآمد وارد خزانه شود."}
+          </p>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -200,13 +225,18 @@ export function UnitCard({ id }: { id: string }) {
               </span>
             )}
             <button
+              type="button"
               onClick={collect}
-              disabled={!ready}
+              disabled={!canDeposit}
               className={`w-full rounded-xl py-2.5 text-sm font-extrabold transition active:scale-[0.98] ${
-                ready ? "btn-gold" : "bg-white/8 text-white/35"
-              } ${full ? "animate-pulse-soft" : ""}`}
+                canDeposit ? "btn-gold" : "bg-white/8 text-white/35"
+              } ${full && canDeposit ? "animate-pulse-soft" : ""}`}
             >
-              {ready ? "واریز" : "جمع…"}
+              {vaultFull && ready
+                ? "خزانه پر"
+                : ready
+                  ? `جمع‌آوری ${faTreasuryShort(pending)}`
+                  : "جمع…"}
             </button>
           </div>
           <button
@@ -219,7 +249,7 @@ export function UnitCard({ id }: { id: string }) {
                   : "bg-white/8 text-white/35"
             }`}
           >
-            {maxed ? "حداکثر" : canUpgrade ? "ارتقا" : faMoney(upCost)}
+            {maxed ? "حداکثر" : canUpgrade ? "ارتقای ساختمان" : `نیاز ${faMoney(upCost)}`}
           </button>
         </div>
 
@@ -232,7 +262,7 @@ export function UnitCard({ id }: { id: string }) {
                 : "bg-white/5 text-white/70"
             }`}
           >
-            🧩 آیتم {faNum(activeItems)}/{faNum(def.items.length)}
+            {`ارتقای آیتم‌ها ${faNum(activeItems)}/${faNum(def.items.length)}`}
           </button>
           <button
             onClick={() => setPanel(true)}
@@ -241,7 +271,7 @@ export function UnitCard({ id }: { id: string }) {
             {manager ? (
               <span className="text-grass-400 truncate">{manager.name}</span>
             ) : (
-              <span className="text-gold-400">+ مدیر</span>
+              <span className="text-gold-400">استخدام مدیر</span>
             )}
           </button>
         </div>
@@ -261,15 +291,24 @@ export function LockedUnitRow({ id }: { id: string }) {
   const need = def.requiresLevel;
 
   return (
-    <div className="flex items-center gap-2.5 py-2 border-b border-white/5 last:border-0">
-      <span className="text-xl grayscale opacity-50">{def.emoji}</span>
-      <div className="flex-1 text-right min-w-0">
-        <p className="text-sm font-bold text-white/55 truncate">{def.name}</p>
-        <p className="text-[10px] text-white/35">سطح {faNum(need)}</p>
+    <div className="club-build-next-card rounded-2xl px-3 py-3 text-right">
+      <div className="flex items-start gap-3">
+        <div className="club-build-next-card__icon grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-2xl">
+          {def.emoji}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold text-gold-400/80">
+              باز می‌شود در سطح {faNum(need)}
+            </span>
+            <p className="text-sm font-extrabold text-white truncate">{def.name}</p>
+          </div>
+          <p className="mt-1 text-[11px] text-white/48 leading-5">{def.flavor}</p>
+          <p className="mt-1.5 text-[10px] text-white/35">
+            پیشرفت تو: {faNum(playerLevel)} / {faNum(need)}
+          </p>
+        </div>
       </div>
-      <span className="text-xs text-white/30 shrink-0">
-        {faNum(playerLevel)}/{faNum(need)}
-      </span>
     </div>
   );
 }

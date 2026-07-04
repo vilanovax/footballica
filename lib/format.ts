@@ -31,9 +31,10 @@ export function faMoney(n: number): string {
   return faNum(n);
 }
 
-/** نمایش اصلی اقتصاد باشگاه — ۶٬۱۸۴٬۱۶۶ → ۶٬۱۸۴ میلیون تومان */
+/** نمایش اصلی اقتصاد باشگاه — ۵٬۰۰۰٬۰۰۰ → ۵ میلیون تومان */
 export function faClubMoney(n: number): { value: string; unit: "میلیون" | "میلیارد" } {
-  n = Math.max(0, Math.floor(n));
+  const safe = Number.isFinite(n) ? n : 0;
+  n = Math.max(0, Math.floor(safe));
   if (n >= 1_000_000_000) {
     const billions = n / 1_000_000_000;
     if (billions >= 10) {
@@ -45,7 +46,32 @@ export function faClubMoney(n: number): { value: string; unit: "میلیون" | 
       unit: "میلیارد",
     };
   }
-  return { value: faCount(Math.floor(n / 1000)), unit: "میلیون" };
+  if (n >= 1_000_000) {
+    const millions = n / 1_000_000;
+    if (millions >= 100) {
+      return { value: faCount(Math.round(millions)), unit: "میلیون" };
+    }
+    const rounded = Math.round(millions * 10) / 10;
+    const value =
+      rounded % 1 === 0
+        ? faNum(Math.round(rounded))
+        : faNum(String(rounded).replace(".", "٫"));
+    return { value, unit: "میلیون" };
+  }
+  if (n > 0) {
+    const rounded = Math.round((n / 1_000_000) * 10) / 10;
+    return {
+      value: faNum(String(rounded).replace(".", "٫")),
+      unit: "میلیون",
+    };
+  }
+  return { value: faNum(0), unit: "میلیون" };
+}
+
+/** برچسب کوتاه خزانه — ۵٬۰۰۰٬۰۰۰ → ۵ میلیون */
+export function faTreasuryShort(n: number): string {
+  const { value, unit } = faClubMoney(n);
+  return `${value} ${unit}`;
 }
 
 export function faClubMoneyLabel(n: number): string {
@@ -55,5 +81,6 @@ export function faClubMoneyLabel(n: number): string {
 
 /** گاوصندوق به میلیون واقعی — ۵٬۰۰۰٬۰۰۰ → ۵ */
 export function faVaultM(n: number): string {
-  return faNum(Math.max(0, Math.floor(n / 1_000_000)));
+  const safe = Number.isFinite(n) ? n : 0;
+  return faNum(Math.max(0, Math.floor(safe / 1_000_000)));
 }

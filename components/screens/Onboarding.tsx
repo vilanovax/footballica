@@ -3,112 +3,54 @@
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { useGame, type ClubIdentity } from "@/lib/store";
-import { CITIES, HEART_TEAMS, type IdentityOption } from "@/lib/playerIdentity";
+import { CLUB_COLOR_OPTIONS } from "@/lib/designSystem";
+import {
+  CITIES,
+  HEART_TEAMS,
+  identityEmoji,
+  identityLabel,
+  type IdentityOption,
+} from "@/lib/playerIdentity";
 
 interface OnboardingProps {
   onDone: () => void;
 }
 
-const COLORS = ["#2f6fed", "#e5473f", "#2f9e5f", "#8b3fe0", "#e08a2f", "#111827"];
-const CRESTS = ["🦅", "🦁", "🐺", "🐉", "⚽", "🛡️", "⭐", "🔥"];
+type OnboardingPhase = "story" | "setup" | "prefs";
 
+const COLORS = [...CLUB_COLOR_OPTIONS];
+const CRESTS = ["🦅", "🦁", "🐺", "🐉", "⚽", "🛡️", "⭐", "🔥"];
 const STORY_BEATS = 3;
 
-function PrefsChipGrid({
-  options,
-  value,
-  onChange,
+const PHASE_LABELS: Record<OnboardingPhase, string> = {
+  story: "داستان",
+  setup: "ساخت باشگاه",
+  prefs: "شخصی‌سازی",
+};
+
+function OnboardingProgress({
+  phase,
+  storyBeat,
 }: {
-  options: IdentityOption[];
-  value?: string;
-  onChange: (id: string | undefined) => void;
+  phase: OnboardingPhase;
+  storyBeat: number;
 }) {
+  const phases: OnboardingPhase[] = ["story", "setup", "prefs"];
+  const phaseIndex = phases.indexOf(phase);
+
   return (
-    <div className="identity-chip-grid identity-chip-grid--compact">
-      {options.map((o) => {
-        const active = value === o.id;
-        return (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => onChange(active ? undefined : o.id)}
-            className={`identity-chip ${active ? "identity-chip--active" : ""}`}
-          >
-            {o.emoji && <span aria-hidden>{o.emoji}</span>}
-            <span>{o.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function OnboardingPrefs({
-  heartTeam,
-  city,
-  onHeartTeam,
-  onCity,
-  onSkip,
-  onContinue,
-}: {
-  heartTeam?: string;
-  city?: string;
-  onHeartTeam: (id: string | undefined) => void;
-  onCity: (id: string | undefined) => void;
-  onSkip: () => void;
-  onContinue: () => void;
-}) {
-  return (
-    <div className="onboarding-setup pitch-stripes min-h-dvh flex flex-col px-5 py-8">
-      <p className="text-center text-[11px] font-bold text-gold-400/80">
-        فصل ۱ · شخصی‌سازی
+    <div className="relative z-10 mb-5">
+      <p className="ob-phase-label mb-2">
+        فصل ۱ · {PHASE_LABELS[phase]}
+        {phase === "story" && ` · ${storyBeat + 1}/${STORY_BEATS}`}
       </p>
-      <h1 className="mt-2 text-2xl font-extrabold text-center text-white">
-        باشگاهت کجاست؟
-      </h1>
-      <p className="mt-1 text-center text-sm text-white/55 leading-6">
-        اختیاری — برای رویدادها و رقابت شهری
-      </p>
-
-      <div className="mt-6 space-y-5 flex-1 overflow-y-auto">
-        <div>
-          <p className="text-right text-sm font-bold text-white/70 mb-2">
-            تیم قلبی تو
-          </p>
-          <PrefsChipGrid
-            options={HEART_TEAMS.filter((t) => t.id !== "none_iran")}
-            value={heartTeam}
-            onChange={onHeartTeam}
-          />
-        </div>
-
-        <div>
-          <p className="text-right text-sm font-bold text-white/70 mb-2">
-            شهر باشگاه
-          </p>
-          <PrefsChipGrid
-            options={CITIES.filter((c) => c.id !== "other")}
-            value={city}
-            onChange={onCity}
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-2.5">
-        <button
-          type="button"
-          onClick={onContinue}
-          className="btn-gold w-full rounded-2xl py-4 text-lg font-extrabold active:scale-[0.98] transition-transform"
-        >
-          ادامه → اولین بازی
-        </button>
-        <button
-          type="button"
-          onClick={onSkip}
-          className="w-full rounded-2xl py-3 text-sm font-bold text-white/50"
-        >
-          بعداً تکمیل می‌کنم
-        </button>
+      <div className="ob-progress" aria-hidden>
+        {phases.map((p, i) => {
+          let state = "";
+          if (i < phaseIndex) state = "ob-progress__seg--done";
+          else if (i === phaseIndex) state = "ob-progress__seg--active";
+          return <span key={p} className={`ob-progress__seg ${state}`} />;
+        })}
       </div>
     </div>
   );
@@ -116,7 +58,7 @@ function OnboardingPrefs({
 
 function StoryDots({ beat }: { beat: number }) {
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div className="flex items-center justify-center gap-2" aria-hidden>
       {Array.from({ length: STORY_BEATS }, (_, i) => (
         <span
           key={i}
@@ -131,25 +73,24 @@ function StoryDots({ beat }: { beat: number }) {
 
 function StoryFlow() {
   const steps = [
-    { icon: "⚽", label: "کویز", sub: "جواب درست" },
-    { icon: "🔐", label: "گاوصندوق", sub: "ذخیرهٔ پول" },
-    { icon: "🏟️", label: "باشگاه", sub: "رشد و درآمد" },
+    { icon: "⚽", label: "کویز", sub: "پاسخ درست", accent: false },
+    { icon: "🏪", label: "واحدها", sub: "جمع‌آوری", accent: false },
+    { icon: "🔐", label: "خزانه", sub: "پول قابل خرج", accent: true },
+    { icon: "📈", label: "رشد", sub: "ارتقا و درآمد", accent: false },
   ];
 
   return (
-    <div className="onboarding-flow flex items-stretch justify-between gap-1">
+    <div className="ob-flow">
       {steps.map((s, i) => (
-        <div key={s.label} className="flex flex-1 items-center gap-1 min-w-0">
-          <div className="onboarding-flow-step flex-1 rounded-xl px-2 py-3 text-center">
-            <span className="text-xl">{s.icon}</span>
-            <p className="mt-1 text-[11px] font-extrabold text-white/90">{s.label}</p>
-            <p className="text-[9px] text-white/45">{s.sub}</p>
+        <div key={s.label} className="flex flex-1 items-center gap-0.5 min-w-0">
+          <div
+            className={`ob-flow__step flex-1 ${s.accent ? "ob-flow__step--accent" : ""}`}
+          >
+            <span className="ob-flow__icon">{s.icon}</span>
+            <p className="ob-flow__label">{s.label}</p>
+            <p className="ob-flow__sub">{s.sub}</p>
           </div>
-          {i < steps.length - 1 && (
-            <span className="onboarding-flow-arrow shrink-0 text-[10px] text-gold-400/70">
-              ←
-            </span>
-          )}
+          {i < steps.length - 1 && <span className="ob-flow__arrow">←</span>}
         </div>
       ))}
     </div>
@@ -160,12 +101,12 @@ function ContractCard() {
   const rows = [
     { label: "لیگ", value: "دستهٔ سه", accent: true },
     { label: "وضعیت", value: "ورشکسته · هوادارِ کم" },
-    { label: "گاوصندوق", value: "خالی — آمادهٔ پر شدن" },
+    { label: "خزانه", value: "خالی — آمادهٔ پر شدن" },
     { label: "هدیهٔ شروع", value: "۲ کارتِ تاکتیکی", accent: true },
   ];
 
   return (
-    <div className="onboarding-contract rounded-3xl overflow-hidden">
+    <div className="ob-contract onboarding-contract rounded-3xl overflow-hidden">
       <div className="onboarding-contract-header px-4 py-3 flex items-center justify-between">
         <span className="text-[10px] font-bold text-pitch-800/55 tracking-wide">
           قراردادِ خرید
@@ -224,23 +165,27 @@ function StoryIntro({
 }) {
   const isLast = beat === STORY_BEATS - 1;
 
+  const beatMeta = [
+    { kicker: "فصل ۱ · معامله", hint: "بعد: چطور باشگاه را احیا می‌کنی" },
+    { kicker: "فصل ۱ · مسیر تو", hint: "بعد: امضای قرارداد" },
+    { kicker: "فصل ۱ · امضا", hint: "" },
+  ][beat];
+
   return (
-    <div className="onboarding-story pitch-stripes min-h-dvh flex flex-col px-5 py-8">
+    <div className="ob-shell pitch-stripes flex flex-col px-5 py-6">
       <div className="onboarding-story-glow pointer-events-none" aria-hidden />
 
-      <div className="relative z-10 flex flex-col flex-1">
-        <p className="text-center text-[11px] font-bold tracking-wide text-gold-400/80">
-          {beat === 0 && "فصل ۱ · معامله"}
-          {beat === 1 && "فصل ۱ · مسیر تو"}
-          {beat === 2 && "فصل ۱ · امضا"}
-        </p>
+      <OnboardingProgress phase="story" storyBeat={beat} />
 
-        <div key={beat} className="animate-rise flex-1 flex flex-col pt-4">
+      <div className="relative z-10 flex flex-col flex-1">
+        <div key={beat} className="animate-rise flex-1 flex flex-col">
           {beat === 0 && (
             <>
               <div className="text-center">
-                <div className="onboarding-hero-icon mx-auto grid h-24 w-24 place-items-center rounded-3xl text-5xl animate-pop">
-                  🏟️
+                <div className="ob-hero-ring mx-auto">
+                  <div className="onboarding-hero-icon grid h-24 w-24 place-items-center rounded-3xl text-5xl animate-pop">
+                    🏟️
+                  </div>
                 </div>
                 <h1 className="mt-5 text-[1.75rem] font-extrabold leading-tight text-white">
                   یک باشگاه،
@@ -249,10 +194,9 @@ function StoryIntro({
                 </h1>
               </div>
 
-              <div className="onboarding-story-card mt-6 rounded-3xl p-5 text-right leading-8">
+              <div className="ob-story-card onboarding-story-card mt-6 rounded-3xl p-5 text-right leading-8">
                 <p className="text-[15px] text-white/88">
-                  تو با{" "}
-                  <strong className="text-gold-400">آخرین پولت</strong> یک باشگاهِ
+                  تو با <span className="ob-highlight">آخرین پولت</span> یک باشگاهِ
                   قدیمی و ارزان در{" "}
                   <strong className="text-white">دستهٔ سه</strong> می‌خری.
                 </p>
@@ -273,8 +217,10 @@ function StoryIntro({
           {beat === 1 && (
             <>
               <div className="text-center">
-                <div className="onboarding-hero-icon mx-auto grid h-24 w-24 place-items-center rounded-3xl text-5xl animate-pop">
-                  🧠
+                <div className="ob-hero-ring mx-auto">
+                  <div className="onboarding-hero-icon grid h-24 w-24 place-items-center rounded-3xl text-5xl animate-pop">
+                    🧠
+                  </div>
                 </div>
                 <h1 className="mt-5 text-[1.75rem] font-extrabold leading-tight text-white">
                   سلاحِ تو:
@@ -283,19 +229,19 @@ function StoryIntro({
                 </h1>
               </div>
 
-              <div className="onboarding-story-card mt-6 rounded-3xl p-5 text-right">
+              <div className="ob-story-card onboarding-story-card mt-5 rounded-3xl p-5 text-right">
                 <p className="text-[15px] text-white/88 leading-8">
-                  در کویزها جواب بده. هر پاسخِ درست →{" "}
-                  <strong className="text-gold-400">پول به گاوصندوق</strong>، XP،
-                  هوادار و کارتِ تاکتیکی.
+                  در کویزها جواب بده. هر پاسخ درست →{" "}
+                  <span className="ob-highlight">پول به خزانه</span>، XP، هوادار
+                  و کارت تاکتیکی.
                 </p>
                 <p className="mt-3 text-sm text-white/65 leading-7">
-                  پول را از گاوصندوق بردار، واحدهای باشگاه را ارتقا بده، مدیر
-                  استخدام کن — و باشگاه را قدم‌به‌قدم زنده کن.
+                  واحدها درآمد می‌سازند — جمع‌آوری کن، مستقیم از خزانه خرج کن،
+                  مدیر استخدام کن و باشگاه را قدم‌به‌قدم زنده کن.
                 </p>
               </div>
 
-              <div className="mt-5">
+              <div className="mt-4">
                 <StoryFlow />
               </div>
             </>
@@ -314,15 +260,17 @@ function StoryIntro({
 
               <ContractCard />
 
-              <div className="onboarding-perks mt-4 grid grid-cols-3 gap-2">
+              <div className="mt-4 grid grid-cols-3 gap-2">
                 {[
                   { icon: "🃏", label: "۲ کارت" },
                   { icon: "🏪", label: "فروشگاه" },
-                  { icon: "🔐", label: "گاوصندوق" },
+                  { icon: "🔐", label: "خزانه" },
                 ].map((p) => (
                   <div
                     key={p.label}
-                    className="onboarding-perk rounded-xl py-3 text-center"
+                    className={`ob-perk onboarding-perk rounded-xl py-3 text-center ${
+                      p.label === "خزانه" ? "ob-perk--gold" : ""
+                    }`}
                   >
                     <span className="text-xl">{p.icon}</span>
                     <p className="mt-1 text-[10px] font-bold text-white/70">
@@ -335,18 +283,17 @@ function StoryIntro({
           )}
         </div>
 
-        <div className="relative z-10 mt-auto pt-6 space-y-4">
+        <div className="ob-footer relative z-10 mt-auto pt-5 space-y-3">
           <StoryDots beat={beat} />
           <button
+            type="button"
             onClick={onNext}
             className="btn-gold w-full rounded-2xl py-4 text-lg font-extrabold active:scale-[0.98] transition-transform"
           >
             {isLast ? "قبول می‌کنم، مالِ من است ✍️" : "ادامه ←"}
           </button>
-          {!isLast && (
-            <p className="text-center text-[10px] text-white/30">
-              {faBeatHint(beat)}
-            </p>
+          {beatMeta.hint && (
+            <p className="text-center text-[10px] text-white/30">{beatMeta.hint}</p>
           )}
         </div>
       </div>
@@ -354,18 +301,258 @@ function StoryIntro({
   );
 }
 
-function faBeatHint(beat: number): string {
-  if (beat === 0) return "بعد: چطور باشگاه را احیا می‌کنی";
-  return "بعد: امضای قرارداد";
+function PrefsChipGrid({
+  options,
+  value,
+  onChange,
+  variant,
+}: {
+  options: IdentityOption[];
+  value?: string;
+  onChange: (id: string | undefined) => void;
+  variant: "team" | "city";
+}) {
+  const gridClass =
+    variant === "team" ? "ob-chip-grid--teams" : "ob-chip-grid";
+
+  return (
+    <div className={gridClass}>
+      {options.map((o) => {
+        const active = value === o.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => onChange(active ? undefined : o.id)}
+            className={`ob-chip ${variant === "team" ? "ob-chip--team" : ""} ${
+              active ? "ob-chip--active" : ""
+            }`}
+          >
+            {o.emoji && (
+              <span className="ob-chip__emoji" aria-hidden>
+                {o.emoji}
+              </span>
+            )}
+            <span>{o.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function OnboardingPrefs({
+  heartTeam,
+  city,
+  onHeartTeam,
+  onCity,
+  onSkip,
+  onContinue,
+}: {
+  heartTeam?: string;
+  city?: string;
+  onHeartTeam: (id: string | undefined) => void;
+  onCity: (id: string | undefined) => void;
+  onSkip: () => void;
+  onContinue: () => void;
+}) {
+  const hasSelection = Boolean(heartTeam || city);
+  const teamLabel = identityLabel(heartTeam, HEART_TEAMS);
+  const cityLabel = identityLabel(city, CITIES);
+
+  return (
+    <div className="ob-shell pitch-stripes flex flex-col px-5 py-6 min-h-dvh">
+      <OnboardingProgress phase="prefs" storyBeat={0} />
+
+      <h1 className="relative z-10 text-2xl font-extrabold text-center text-white">
+        باشگاهت کجاست؟
+      </h1>
+      <p className="relative z-10 mt-1 text-center text-sm text-white/55 leading-6">
+        اختیاری — برای رویدادها و رقابت شهری
+      </p>
+
+      <div className="relative z-10 mt-4 ob-prefs-preview">
+        {hasSelection ? (
+          <div className="flex flex-wrap justify-end gap-2 flex-1">
+            {teamLabel && (
+              <span className="ob-prefs-badge">
+                {identityEmoji(heartTeam, HEART_TEAMS)} {teamLabel}
+              </span>
+            )}
+            {cityLabel && (
+              <span className="ob-prefs-badge">
+                {identityEmoji(city, CITIES)} {cityLabel}
+              </span>
+            )}
+          </div>
+        ) : (
+          <p className="ob-prefs-preview__empty flex-1 text-right">
+            هنوز چیزی انتخاب نکردی — می‌توانی بعداً در پروفایل تکمیل کنی
+          </p>
+        )}
+        <span className="text-2xl shrink-0" aria-hidden>
+          🗺️
+        </span>
+      </div>
+
+      <div className="relative z-10 mt-5 space-y-4 flex-1 overflow-y-auto pb-2">
+        <div className="ob-chip-section">
+          <p className="ob-field-label mb-3">تیم قلبی تو</p>
+          <PrefsChipGrid
+            options={HEART_TEAMS.filter((t) => t.id !== "none_iran")}
+            value={heartTeam}
+            onChange={onHeartTeam}
+            variant="team"
+          />
+        </div>
+
+        <div className="ob-chip-section">
+          <p className="ob-field-label mb-3">شهر باشگاه</p>
+          <PrefsChipGrid
+            options={CITIES.filter((c) => c.id !== "other")}
+            value={city}
+            onChange={onCity}
+            variant="city"
+          />
+        </div>
+      </div>
+
+      <div className="relative z-10 ob-footer mt-4 space-y-1">
+        <button
+          type="button"
+          onClick={onContinue}
+          className="btn-gold w-full rounded-2xl py-4 text-lg font-extrabold active:scale-[0.98] transition-transform"
+        >
+          {hasSelection ? "ادامه → اولین بازی" : "شروع بازی ⚽"}
+        </button>
+        <button type="button" onClick={onSkip} className="ob-skip-link">
+          بعداً تکمیل می‌کنم
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OnboardingSetup({
+  name,
+  color,
+  crest,
+  onName,
+  onColor,
+  onCrest,
+  onContinue,
+}: {
+  name: string;
+  color: string;
+  crest: string;
+  onName: (v: string) => void;
+  onColor: (v: string) => void;
+  onCrest: (v: string) => void;
+  onContinue: () => void;
+}) {
+  const displayName = name.trim() || "باشگاهِ من";
+
+  return (
+    <div className="ob-shell pitch-stripes flex flex-col px-5 py-6 min-h-dvh">
+      <OnboardingProgress phase="setup" storyBeat={0} />
+
+      <h1 className="relative z-10 text-2xl font-extrabold text-center text-white">
+        باشگاهت را بساز
+      </h1>
+      <p className="relative z-10 mt-1 text-center text-sm text-white/55">
+        اسم، رنگ و نشان — اولین قدمِ مالکیت
+      </p>
+
+      <div className="relative z-10 ob-preview-card onboarding-preview mt-5 flex flex-col items-center gap-3 rounded-3xl py-7 px-4">
+        <div className="ob-preview-pitch" aria-hidden />
+        <Avatar label={crest} color={color} size={96} />
+        <p className="text-xl font-extrabold text-white relative z-1">
+          {displayName}
+        </p>
+        <span className="onboarding-badge relative z-1 rounded-lg px-3 py-1 text-sm font-bold text-gold-400">
+          🏆 دستهٔ سه · تازه‌تأسیس
+        </span>
+      </div>
+
+      <div className="relative z-10 mt-6">
+        <label className="ob-field-label" htmlFor="club-name">
+          نامِ باشگاه
+        </label>
+        <input
+          id="club-name"
+          value={name}
+          onChange={(e) => onName(e.target.value)}
+          maxLength={20}
+          placeholder="مثلاً: عقاب‌های تهران"
+          dir="rtl"
+          className="onboarding-input w-full rounded-2xl px-4 py-3 text-right font-bold outline-none"
+        />
+        <p className="ob-field-hint mt-1.5 text-left tabular-nums">
+          {name.length}/۲۰
+        </p>
+      </div>
+
+      <div className="relative z-10 mt-5">
+        <p className="ob-field-label">رنگِ باشگاه</p>
+        <div className="ob-color-row">
+          {COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => onColor(c)}
+              className={`ob-color-swatch ${
+                color === c ? "ob-color-swatch--active" : ""
+              }`}
+              style={{ background: c }}
+              aria-label={`رنگ ${c}`}
+              aria-pressed={color === c}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="relative z-10 mt-5">
+        <p className="ob-field-label">نشان / لوگو</p>
+        <div className="ob-crest-scroll">
+          {CRESTS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => onCrest(c)}
+              className={`ob-crest-btn ${
+                crest === c ? "ob-crest-btn--active" : ""
+              }`}
+              aria-label={`نشان ${c}`}
+              aria-pressed={crest === c}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-3" />
+
+      <div className="relative z-10 ob-footer">
+        <button
+          type="button"
+          onClick={onContinue}
+          className="btn-gold w-full rounded-2xl py-4 text-lg font-extrabold active:scale-[0.98] transition-transform"
+        >
+          ادامه ←
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function Onboarding({ onDone }: OnboardingProps) {
   const completeSetup = useGame((s) => s.completeSetup);
 
-  const [step, setStep] = useState<"story" | "setup" | "prefs">("story");
+  const [step, setStep] = useState<OnboardingPhase>("story");
   const [storyBeat, setStoryBeat] = useState(0);
   const [name, setName] = useState("");
-  const [color, setColor] = useState(COLORS[0]);
+  const [color, setColor] = useState<string>(COLORS[0]);
   const [crest, setCrest] = useState(CRESTS[0]);
   const [heartTeam, setHeartTeam] = useState<string | undefined>();
   const [city, setCity] = useState<string | undefined>();
@@ -408,77 +595,14 @@ export function Onboarding({ onDone }: OnboardingProps) {
   }
 
   return (
-    <div className="onboarding-setup pitch-stripes min-h-dvh flex flex-col px-5 py-8">
-      <p className="text-center text-[11px] font-bold text-gold-400/80">
-        فصل ۱ · ساختِ باشگاه
-      </p>
-      <h1 className="mt-2 text-2xl font-extrabold text-center text-white">
-        باشگاهت را بساز
-      </h1>
-      <p className="mt-1 text-center text-sm text-white/55">
-        اسم، رنگ و نشان — اولین قدمِ مالکیت
-      </p>
-
-      <div className="onboarding-preview mt-6 flex flex-col items-center gap-3 rounded-3xl py-6">
-        <Avatar label={crest} color={color} size={96} />
-        <p className="text-xl font-extrabold text-white">
-          {name.trim() || "باشگاهِ من"}
-        </p>
-        <span className="onboarding-badge rounded-lg px-3 py-1 text-sm font-bold text-gold-400">
-          🏆 دستهٔ سه · تازه‌تأسیس
-        </span>
-      </div>
-
-      <label className="mt-7 block text-right text-sm font-bold text-white/70">
-        نامِ باشگاه
-      </label>
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        maxLength={20}
-        placeholder="مثلاً: عقاب‌های تهران"
-        dir="rtl"
-        className="onboarding-input mt-2 w-full rounded-2xl px-4 py-3 text-right font-bold outline-none"
-      />
-
-      <p className="mt-5 text-right text-sm font-bold text-white/70">رنگِ باشگاه</p>
-      <div className="mt-2 flex justify-end gap-3 flex-wrap">
-        {COLORS.map((c) => (
-          <button
-            key={c}
-            onClick={() => setColor(c)}
-            className={`h-10 w-10 rounded-full transition ${
-              color === c ? "ring-4 ring-white scale-110" : "ring-2 ring-white/20"
-            }`}
-            style={{ background: c }}
-            aria-label={`رنگ ${c}`}
-          />
-        ))}
-      </div>
-
-      <p className="mt-5 text-right text-sm font-bold text-white/70">نشان / لوگو</p>
-      <div className="mt-2 grid grid-cols-8 gap-2">
-        {CRESTS.map((c) => (
-          <button
-            key={c}
-            onClick={() => setCrest(c)}
-            className={`grid aspect-square place-items-center rounded-xl text-2xl transition ${
-              crest === c ? "bg-gold-400 scale-105" : "onboarding-crest-btn"
-            }`}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1" />
-
-      <button
-        onClick={() => setStep("prefs")}
-        className="btn-gold w-full rounded-2xl py-4 text-xl font-extrabold mt-6 active:scale-[0.98] transition-transform"
-      >
-        ادامه ←
-      </button>
-    </div>
+    <OnboardingSetup
+      name={name}
+      color={color}
+      crest={crest}
+      onName={setName}
+      onColor={setColor}
+      onCrest={setCrest}
+      onContinue={() => setStep("prefs")}
+    />
   );
 }

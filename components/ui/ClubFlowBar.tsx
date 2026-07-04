@@ -1,11 +1,10 @@
 "use client";
 
-import { faClubMoney, faVaultM } from "@/lib/format";
+import { faVaultM } from "@/lib/format";
 import type { ClubFlowStep } from "@/lib/clubEconomy";
 
 interface ClubFlowBarProps {
   unitsPending: number;
-  vaultBalance: number;
   budget: number;
   vaultCap: number;
   vaultFull?: boolean;
@@ -14,16 +13,14 @@ interface ClubFlowBarProps {
 }
 
 function flowValue(step: ClubFlowStep, amount: number, vaultCap: number): string {
-  if (step === "vault") {
+  if (step === "treasury") {
     return `${faVaultM(amount)}/${faVaultM(vaultCap)}`;
   }
-  const { value } = faClubMoney(amount);
-  return value;
+  return faVaultM(amount);
 }
 
 export function ClubFlowBar({
   unitsPending,
-  vaultBalance,
   budget,
   vaultCap,
   vaultFull,
@@ -46,19 +43,11 @@ export function ClubFlowBar({
       alert: unitsPending > 0 && activeStep === "units",
     },
     {
-      id: "vault",
+      id: "treasury",
       emoji: "🔐",
-      label: "گاوصندوق",
-      value: vaultBalance,
-      alert: vaultFull || activeStep === "vault",
-      tappable: true,
-    },
-    {
-      id: "budget",
-      emoji: "💰",
-      label: "بودجه",
+      label: "خزانه",
       value: budget,
-      alert: activeStep === "budget" && budget > 0,
+      alert: vaultFull || activeStep === "treasury",
       tappable: true,
     },
   ];
@@ -80,7 +69,7 @@ export function ClubFlowBar({
               </p>
               <p
                 className={`mt-0.5 text-xs font-extrabold truncate tabular-nums ${
-                  hasValue || s.id === "vault" ? "text-gold-400" : "text-white/30"
+                  hasValue || s.id === "treasury" ? "text-gold-400" : "text-white/30"
                 }`}
               >
                 {flowValue(s.id, s.value, vaultCap)}

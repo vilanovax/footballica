@@ -47,11 +47,8 @@ export function ClubBankSheet({
 }: ClubBankSheetProps) {
   const budget = useGame((s) => s.budget);
   const vaultLevel = useGame((s) => s.vaultLevel);
-  const vaultBalance = useGame((s) => s.vaultBalance);
-  const withdrawVault = useGame((s) => s.withdrawVault);
   const upgradeVault = useGame((s) => s.upgradeVault);
 
-  const [floatAmt, setFloatAmt] = useState<number | null>(null);
   const [flash, setFlash] = useState(false);
   const [shake, setShake] = useState(false);
 
@@ -60,23 +57,13 @@ export function ClubBankSheet({
   const bank = isBank(vaultLevel);
   const info = vaultInfo(vaultLevel);
   const cap = vaultCapacity(vaultLevel);
-  const pct = bank ? 0 : Math.min(100, cap > 0 ? (vaultBalance / cap) * 100 : 0);
-  const full = !bank && vaultBalance >= cap;
+  const pct = bank ? 0 : Math.min(100, cap > 0 ? (budget / cap) * 100 : 0);
+  const full = !bank && budget >= cap;
   const cost = vaultUpgradeCost(vaultLevel);
   const isFinal = vaultLevel >= VAULT_MAX;
   const nextIsBank = vaultLevel === VAULT_MAX - 1;
   const canUpgrade = !isFinal && budget >= cost;
   const budgetFmt = faClubMoney(budget);
-
-  function withdraw() {
-    const got = withdrawVault();
-    if (got > 0) {
-      setFloatAmt(got);
-      setFlash(true);
-      setTimeout(() => setFlash(false), 600);
-      setTimeout(() => setFloatAmt(null), 900);
-    }
-  }
 
   function upgrade() {
     if (upgradeVault() !== "ok") {
@@ -104,7 +91,7 @@ export function ClubBankSheet({
           </button>
           <div className="text-right flex-1">
             <h2 className="bank-sheet__title">خزانهٔ باشگاه</h2>
-            <p className="bank-sheet__sub">دریافت · پرداخت · گاوصندوق</p>
+            <p className="bank-sheet__sub">پول قابلِ خرج · ارتقای خزانه</p>
           </div>
           <span className="bank-sheet__icon" aria-hidden>
             {bank ? "🏦" : "🔐"}
@@ -112,7 +99,7 @@ export function ClubBankSheet({
         </div>
 
         <div className="bank-sheet__hero">
-          <p className="bank-sheet__hero-label">بودجهٔ قابلِ خرج</p>
+          <p className="bank-sheet__hero-label">موجودیٔ خزانه</p>
           <p className="bank-sheet__hero-value">
             {budgetFmt.value}
             <span className="bank-sheet__hero-unit"> {budgetFmt.unit}</span>
@@ -122,11 +109,11 @@ export function ClubBankSheet({
 
         <div className="bank-ledger">
           <p className="bank-ledger__title">گزارش خلاصه</p>
-          <LedgerRow label="بودجه" value={faClubMoneyLabel(budget)} accent />
+          <LedgerRow label="خزانه" value={faClubMoneyLabel(budget)} accent />
           {!bank && (
             <LedgerRow
-              label="گاوصندوق"
-              value={`${faVaultM(vaultBalance)} / ${faVaultM(cap)} میلیون`}
+              label="ظرفیت خزانه"
+              value={`${faVaultM(budget)} / ${faVaultM(cap)} میلیون`}
             />
           )}
           {unitsPending > 0 && (
@@ -136,7 +123,7 @@ export function ClubBankSheet({
             />
           )}
           <LedgerRow
-            label={`سطح گاوصندوق — ${info.name}`}
+            label={`سطح خزانه — ${info.name}`}
             value={`سطح ${faNum(vaultLevel)}`}
           />
         </div>
@@ -148,15 +135,15 @@ export function ClubBankSheet({
                 className={
                   full
                     ? "text-gold-400 font-bold text-xs"
-                    : vaultBalance > 0
+                    : budget > 0
                       ? "text-grass-400 font-bold text-xs"
                       : "text-white/45 text-xs"
                 }
               >
-                {full ? "پر — برداشت کن" : vaultBalance > 0 ? "آمادهٔ برداشت" : "خالی"}
+                {full ? "پر — خرج کن یا ارتقا بده" : budget > 0 ? "آمادهٔ خرج" : "خالی"}
               </span>
               <span className="text-sm font-extrabold">
-                {faVaultM(vaultBalance)}
+                {faVaultM(budget)}
                 <span className="text-white/35"> / {faVaultM(cap)}</span>
               </span>
             </div>
@@ -167,7 +154,7 @@ export function ClubBankSheet({
                   width: `${pct}%`,
                   background: full
                     ? "linear-gradient(90deg,#e0a92e,#f5c542)"
-                    : vaultBalance > 0
+                    : budget > 0
                       ? "linear-gradient(90deg,#2f9e5f,#5ee08a)"
                       : "rgba(255,255,255,0.08)",
                 }}
@@ -183,35 +170,16 @@ export function ClubBankSheet({
           <div className="bank-bank-banner">
             <p className="font-extrabold text-gold-400 text-sm">✓ بانکِ اسپانسر فعال</p>
             <p className="mt-1 text-xs text-white/55 leading-5">
-              درآمد مستقیم به بودجه می‌رود — بدون توقف در گاوصندوق
+              درآمد بدون سقف ظرفیت — مستقیم به خزانه می‌رود
             </p>
           </div>
         )}
 
         <div className="bank-sheet__actions">
-          {!bank && (
-            <div className="relative flex-1">
-              {floatAmt !== null && (
-                <span className="float-up pointer-events-none absolute -top-3 left-1/2 text-sm font-extrabold text-gold-400">
-                  +{faClubMoneyLabel(floatAmt)}
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={withdraw}
-                disabled={vaultBalance <= 0}
-                className={`w-full rounded-2xl py-3.5 text-sm font-extrabold transition active:scale-[0.98] ${
-                  vaultBalance > 0 ? "btn-gold" : "bg-white/8 text-white/35"
-                } ${full && vaultBalance > 0 ? "animate-pulse-soft" : ""}`}
-              >
-                {vaultBalance > 0 ? "برداشت به بودجه" : "گاوصندوق خالی است"}
-              </button>
-            </div>
-          )}
           <button
             type="button"
             onClick={upgrade}
-            className={`${bank ? "w-full" : "flex-1"} rounded-2xl py-3.5 text-sm font-extrabold transition active:scale-[0.98] ${shake ? "animate-shake" : ""} ${
+            className={`w-full rounded-2xl py-3.5 text-sm font-extrabold transition active:scale-[0.98] ${shake ? "animate-shake" : ""} ${
               isFinal
                 ? "bg-gold-500/15 text-gold-400"
                 : canUpgrade
@@ -226,7 +194,7 @@ export function ClubBankSheet({
               : nextIsBank
                 ? `🏦 تبدیل به بانک · ${faClubMoneyLabel(cost)}`
                 : canUpgrade
-                  ? `ارتقا · ${faClubMoneyLabel(cost)}`
+                  ? `ارتقای خزانه · ${faClubMoneyLabel(cost)}`
                   : `ارتقا نیاز ${faClubMoneyLabel(cost)}`}
           </button>
         </div>

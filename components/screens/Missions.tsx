@@ -161,7 +161,6 @@ export function Missions({ onBack }: MissionsProps) {
   const gamesPlayed = useGame((s) => s.gamesPlayed);
   const totalCorrect = useGame((s) => s.totalCorrect);
   const unitCollectCount = useGame((s) => s.unitCollectCount);
-  const vaultWithdrawCount = useGame((s) => s.vaultWithdrawCount);
   const vaultFillCount = useGame((s) => s.vaultFillCount);
   const matchesWon = useGame((s) => s.matchesWon);
   const streakDays = useGame((s) => s.streakDays);
@@ -191,7 +190,6 @@ export function Missions({ onBack }: MissionsProps) {
         gamesPlayed,
         totalCorrect,
         unitCollectCount,
-        vaultWithdrawCount,
         vaultFillCount,
         matchesWon,
         streakDays,
@@ -210,7 +208,6 @@ export function Missions({ onBack }: MissionsProps) {
       gamesPlayed,
       totalCorrect,
       unitCollectCount,
-      vaultWithdrawCount,
       vaultFillCount,
       matchesWon,
       streakDays,

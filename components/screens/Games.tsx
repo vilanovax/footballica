@@ -1,6 +1,7 @@
 "use client";
 
 import { OngoingRow, ONGOING_GAMES } from "@/components/ui/OngoingRow";
+import { MODE_THEME_MAP } from "@/lib/designSystem";
 
 interface GamesProps {
   onPlayQuick: () => void;
@@ -28,41 +29,51 @@ export function Games({
         <button
           onClick={onPlayQuick}
           className="rounded-2xl p-3 text-center active:scale-95 transition"
-          style={{ background: "linear-gradient(150deg,#2f9e5f,#17683b)" }}
+          style={{
+            background: `linear-gradient(150deg,${MODE_THEME_MAP.quick.from},${MODE_THEME_MAP.quick.to})`,
+          }}
         >
-          <span className="text-3xl">⚡</span>
+          <span className="text-3xl">{MODE_THEME_MAP.quick.emoji}</span>
           <p className="mt-1 text-sm font-bold">بازی سریع</p>
         </button>
         <button
           onClick={onPlayBomb}
           className="rounded-2xl p-3 text-center active:scale-95 transition"
-          style={{ background: "linear-gradient(150deg,#e5473f,#a51f18)" }}
+          style={{
+            background: `linear-gradient(150deg,${MODE_THEME_MAP.bomb.from},${MODE_THEME_MAP.bomb.to})`,
+          }}
         >
-          <span className="text-3xl">💣</span>
+          <span className="text-3xl">{MODE_THEME_MAP.bomb.emoji}</span>
           <p className="mt-1 text-sm font-bold">بمب</p>
         </button>
         <button
           onClick={onPlayDuel}
           className="rounded-2xl p-3 text-center active:scale-95 transition"
-          style={{ background: "linear-gradient(150deg,#2f6fed,#1b45a8)" }}
+          style={{
+            background: `linear-gradient(150deg,${MODE_THEME_MAP.duel.from},${MODE_THEME_MAP.duel.to})`,
+          }}
         >
-          <span className="text-3xl">⚔️</span>
+          <span className="text-3xl">{MODE_THEME_MAP.duel.emoji}</span>
           <p className="mt-1 text-sm font-bold">دوئل</p>
         </button>
         <button
           onClick={onPlayPenalty}
           className="rounded-2xl p-3 text-center active:scale-95 transition"
-          style={{ background: "linear-gradient(150deg,#0f2018,#14301f)" }}
+          style={{
+            background: `linear-gradient(150deg,${MODE_THEME_MAP.penalty.from},${MODE_THEME_MAP.penalty.to})`,
+          }}
         >
-          <span className="text-3xl">🥅</span>
+          <span className="text-3xl">{MODE_THEME_MAP.penalty.emoji}</span>
           <p className="mt-1 text-sm font-bold">پنالتی</p>
         </button>
         <button
           onClick={onPlaySurvival}
           className="rounded-2xl p-3 text-center active:scale-95 transition"
-          style={{ background: "linear-gradient(150deg,#3a1220,#5a1f2e)" }}
+          style={{
+            background: `linear-gradient(150deg,${MODE_THEME_MAP.survival.from},${MODE_THEME_MAP.survival.to})`,
+          }}
         >
-          <span className="text-3xl">❤️</span>
+          <span className="text-3xl">{MODE_THEME_MAP.survival.emoji}</span>
           <p className="mt-1 text-sm font-bold">بقا</p>
         </button>
       </div>

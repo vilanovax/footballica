@@ -1,6 +1,7 @@
 /**
  * UI و منطقِ صفحهٔ Home — استریک، مودِ پیشنهادی.
  */
+import { MODE_THEME_MAP } from "./designSystem";
 import { todayKey } from "./player";
 import { faNum } from "./format";
 
@@ -78,36 +79,36 @@ const FEATURED_MODES: FeaturedModeDef[] = [
     title: "حالت بمب",
     subtitle: "قبل از انفجار جواب بده",
     perk: "XP بیشتر در زمانِ کم",
-    emoji: "💣",
-    from: "#e5473f",
-    to: "#a51f18",
+    emoji: MODE_THEME_MAP.bomb.emoji,
+    from: MODE_THEME_MAP.bomb.from,
+    to: MODE_THEME_MAP.bomb.to,
   },
   {
     id: "duel",
     title: "دوئل ۱به۱",
     subtitle: "۵ سؤال · ۱ ❤️ · جایزهٔ بزرگ",
-    perk: "+۱M به گاوصندوق در برد",
-    emoji: "⚔️",
-    from: "#2f6fed",
-    to: "#1b45a8",
+    perk: "+۱M به خزانه در برد",
+    emoji: MODE_THEME_MAP.duel.emoji,
+    from: MODE_THEME_MAP.duel.from,
+    to: MODE_THEME_MAP.duel.to,
   },
   {
     id: "penalty",
     title: "پنالتی",
     subtitle: "۵ ضربه · گل = پاداش",
     perk: "شانسِ کارت تاکتیکی",
-    emoji: "🥅",
-    from: "#0f2018",
-    to: "#14301f",
+    emoji: MODE_THEME_MAP.penalty.emoji,
+    from: MODE_THEME_MAP.penalty.from,
+    to: MODE_THEME_MAP.penalty.to,
   },
   {
     id: "survival",
     title: "مود بقا",
     subtitle: "تا آخرین جان",
     perk: "رکورد بزن، XP جمع کن",
-    emoji: "💪",
-    from: "#3a1220",
-    to: "#5a1f2e",
+    emoji: MODE_THEME_MAP.survival.emoji,
+    from: MODE_THEME_MAP.survival.from,
+    to: MODE_THEME_MAP.survival.to,
   },
 ];
 

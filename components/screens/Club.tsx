@@ -2,22 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { ClubFlowBar } from "@/components/ui/ClubFlowBar";
-import { ClubCollectBar } from "@/components/ui/ClubCollectBar";
 import { ClubBankSheet } from "@/components/ui/ClubBankSheet";
 import { UnitCard, LockedUnitRow } from "@/components/ui/UnitCard";
 import { UNITS } from "@/lib/units";
 import { CLUB } from "@/lib/club";
 import { fanIncomeMultiplier } from "@/lib/economy";
-import {
-  clubNextAction,
-  isUnitUnlocked,
-  unitIncomeSnapshot,
-} from "@/lib/clubEconomy";
+import { isUnitUnlocked, unitIncomeSnapshot } from "@/lib/clubEconomy";
 import { levelInfo, leagueForXp } from "@/lib/player";
-import { vaultCapacity, isBank } from "@/lib/vault";
+import { vaultCapacity, vaultUpgradeCost, VAULT_MAX, isBank } from "@/lib/vault";
 import { useGame } from "@/lib/store";
-import { faNum, faShort, faCount, faClubMoney, faVaultM } from "@/lib/format";
+import { faNum, faShort, faCount, faMoney, faTreasuryShort, faVaultM } from "@/lib/format";
 
 interface ClubProps {
   onBack: () => void;
@@ -30,24 +24,35 @@ function PromotionBar() {
   const remaining = Math.max(0, promotion.need - fans);
 
   return (
-    <div className="mx-5 mt-6 rounded-2xl bg-black/20 px-4 py-3 border border-white/5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-bold text-gold-400">
-          {faCount(fans)} / {faShort(promotion.need)} 🎽
-        </span>
-        <p className="text-xs font-extrabold text-white/70">
-          🏆 صعود → {promotion.target}
-        </p>
+    <div className="club-season-goal mx-5 mt-6 rounded-3xl px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-left shrink-0">
+          <p className="text-lg font-black text-gold-400 tabular-nums">
+            {faCount(fans)} / {faCount(promotion.need)}
+          </p>
+          <p className="text-[10px] font-bold text-white/40">هوادار برای صعود</p>
+        </div>
+        <div className="flex-1 text-right">
+          <p className="text-[10px] font-bold tracking-wide text-gold-400/75">
+            هدف فصل
+          </p>
+          <p className="mt-1 text-lg font-extrabold text-white">
+            صعود به {promotion.target}
+          </p>
+          <p className="mt-1 text-[11px] text-white/55 leading-5">
+            باشگاهت را بساز و هوادار جمع کن تا از این لیگ عبور کنی.
+          </p>
+        </div>
       </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/30">
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/30">
         <div
           className="h-full rounded-full bg-grass-500 transition-all duration-700"
           style={{ width: `${pct}%` }}
         />
       </div>
       {remaining > 0 && (
-        <p className="mt-1.5 text-[10px] text-white/40 text-right">
-          {faCount(remaining)} هوادار · هر برد دوئل ~۱۰۰
+        <p className="mt-2 text-[11px] text-white/42 text-right">
+          هنوز {faCount(remaining)} هوادار تا صعود باقی مانده.
         </p>
       )}
     </div>
@@ -57,24 +62,29 @@ function PromotionBar() {
 export function Club({ onBack }: ClubProps) {
   const [now, setNow] = useState(() => Date.now());
   const [bankOpen, setBankOpen] = useState(false);
+  const [flashCollect, setFlashCollect] = useState(false);
+  const [floatAmt, setFloatAmt] = useState<number | null>(null);
+  const [shakeUpgrade, setShakeUpgrade] = useState(false);
 
   const cards = useGame((s) => s.cards);
   const fans = useGame((s) => s.fans);
   const budget = useGame((s) => s.budget);
-  const vaultBalance = useGame((s) => s.vaultBalance);
   const vaultLevel = useGame((s) => s.vaultLevel);
   const units = useGame((s) => s.units);
   const itemLevels = useGame((s) => s.itemLevels);
   const assign = useGame((s) => s.assign);
   const xp = useGame((s) => s.xp);
-  const showVaultTutorial = useGame((s) => s.showVaultTutorial);
   const club = useGame((s) => s.club);
+  const showVaultTutorial = useGame((s) => s.showVaultTutorial);
+  const collectAllUnits = useGame((s) => s.collectAllUnits);
+  const upgradeVault = useGame((s) => s.upgradeVault);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 3000);
     return () => clearInterval(t);
   }, []);
 
+  const safeBudget = Number.isFinite(budget) ? budget : 0;
   const snap = unitIncomeSnapshot({
     units,
     itemLevels,
@@ -82,7 +92,7 @@ export function Club({ onBack }: ClubProps) {
     xp,
     fans,
     vaultLevel,
-    vaultBalance,
+    budget: safeBudget,
     now,
   });
 
@@ -90,26 +100,41 @@ export function Club({ onBack }: ClubProps) {
   const { level } = levelInfo(xp);
   const league = leagueForXp(xp);
   const fanMult = fanIncomeMultiplier(fans);
-
-  const next = clubNextAction({
-    totalPending: snap.totalPending,
-    vaultBalance,
-    vaultFull: snap.vaultFull,
-    vaultFree: snap.vaultFree,
-    readyCount: snap.readyCount,
-    isBank: bank,
-  });
-
-  const budgetFmt = faClubMoney(budget);
   const vaultCap = vaultCapacity(vaultLevel);
   const unlockedUnits = UNITS.filter((u) => isUnitUnlocked(u.id, xp));
   const lockedUnits = UNITS.filter((u) => !isUnitUnlocked(u.id, xp));
+  const canCollectAll =
+    snap.readyCount > 0 && snap.vaultFree > 0 && !bank && snap.totalPending > 0;
+  const vaultFull = snap.vaultFull && !bank;
+  const upgradeCost = vaultUpgradeCost(vaultLevel);
+  const canUpgradeVault = vaultLevel < VAULT_MAX && safeBudget >= upgradeCost;
+
+  function collectAll() {
+    const got = collectAllUnits();
+    if (got > 0) {
+      setFloatAmt(got);
+      setFlashCollect(true);
+      setTimeout(() => setFlashCollect(false), 650);
+      setTimeout(() => setFloatAmt(null), 1100);
+    }
+  }
+
+  function tryUpgradeVault() {
+    if (upgradeVault() === "ok") {
+      setFlashCollect(true);
+      setTimeout(() => setFlashCollect(false), 650);
+      return;
+    }
+    setShakeUpgrade(true);
+    setTimeout(() => setShakeUpgrade(false), 400);
+    setBankOpen(true);
+  }
 
   return (
     <div className="pitch-stripes min-h-dvh pb-12">
-      {/* هدر */}
       <header className="flex items-center gap-3 px-5 pt-6 pb-2">
         <button
+          type="button"
           onClick={onBack}
           className="glass grid h-10 w-10 place-items-center rounded-2xl text-xl font-bold active:scale-95 transition"
           aria-label="بازگشت"
@@ -121,59 +146,14 @@ export function Club({ onBack }: ClubProps) {
             {club.name}
           </h1>
           <p className="text-[11px] font-bold text-gold-400/90">
-            ⭐ {faNum(level)} · {league}
+            سطح {faNum(level)} · {league}
           </p>
         </div>
         <Avatar label={club.crest} color={club.color} size={48} />
       </header>
 
-      {/* پنل اقتصاد */}
       <div className="club-economy-panel mx-5 mt-2">
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex gap-2 shrink-0">
-            <div className="club-stat-chip">
-              <span className="text-sm font-extrabold">{faShort(fans)}</span>
-              <span className="text-[10px] text-white/45">🎽</span>
-            </div>
-            <div className="club-stat-chip">
-              <span className="text-sm font-extrabold">{faNum(cards)}</span>
-              <span className="text-[10px] text-white/45">⚡</span>
-            </div>
-            {fanMult > 1 && (
-              <div className="club-stat-chip text-grass-400">
-                <span className="text-xs font-extrabold">
-                  ×{fanMult.toFixed(2).replace(".", "٫")}
-                </span>
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setBankOpen(true)}
-            className="club-budget-btn text-right min-w-0 flex-1 active:scale-[0.98] transition-transform"
-          >
-            <p className="text-[10px] text-white/45">بودجهٔ قابلِ خرج</p>
-            <p className="text-2xl font-extrabold text-gold-400 leading-tight">
-              {budgetFmt.value}
-              <span className="text-base text-gold-400/85 mr-1">
-                {budgetFmt.unit}
-              </span>
-              <span className="text-xs text-white/45">تومان</span>
-            </p>
-            {!bank && (
-              <p className="mt-1 text-[11px] font-bold text-white/50">
-                گاوصندوق{" "}
-                <span className="text-white/70 tabular-nums">
-                  {faVaultM(vaultBalance)} / {faVaultM(vaultCap)}
-                </span>
-              </p>
-            )}
-            {bank && (
-              <p className="mt-1 text-[11px] font-bold text-grass-400">
-                🏦 بانکِ اسپانسر فعال
-              </p>
-            )}
-          </button>
+        <div className="flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => setBankOpen(true)}
@@ -182,40 +162,150 @@ export function Club({ onBack }: ClubProps) {
           >
             {bank ? "🏦" : "🔐"}
           </button>
-        </div>
-
-        <div className="mt-4 pt-3 border-t border-white/8">
-          <p className="mb-2 text-center text-[10px] font-bold text-white/40">
-            مسیر پول
-          </p>
-          <ClubFlowBar
-            unitsPending={snap.totalPending}
-            vaultBalance={vaultBalance}
-            budget={budget}
-            vaultCap={vaultCap}
-            vaultFull={snap.vaultFull}
-            activeStep={next.step}
-            onOpenBank={() => setBankOpen(true)}
-          />
-        </div>
-
-        <div className="club-next-action mt-3 flex items-center gap-2.5 rounded-xl px-3 py-2.5">
-          <span className="text-xl shrink-0">{next.emoji}</span>
-          <div className="flex-1 text-right min-w-0">
-            <p className="text-xs font-extrabold text-gold-400">{next.title}</p>
-            <p className="text-[11px] text-white/55 leading-5 truncate">
-              {next.detail}
-            </p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <div className="club-stat-chip">
+              <span className="text-sm font-extrabold">{faShort(fans)}</span>
+              <span className="text-[10px] text-white/45">هوادار</span>
+            </div>
+            <div className="club-stat-chip">
+              <span className="text-sm font-extrabold">{faNum(cards)}</span>
+              <span className="text-[10px] text-white/45">کارت</span>
+            </div>
+            {fanMult > 1 && (
+              <div className="club-stat-chip text-grass-400">
+                <span className="text-xs font-extrabold">
+                  ×{fanMult.toFixed(2).replace(".", "٫")}
+                </span>
+                <span className="text-[10px] text-white/45">ضریب</span>
+              </div>
+            )}
           </div>
-          {showVaultTutorial && vaultBalance > 0 && next.step === "vault" && (
-            <button
-              type="button"
-              onClick={() => setBankOpen(true)}
-              className="shrink-0 rounded-lg bg-gold-400 px-2.5 py-1 text-[10px] font-extrabold text-[#3a2600]"
-            >
-              برداشت
-            </button>
+        </div>
+
+        <div
+          className={`club-treasury-hero mt-4 rounded-3xl p-4 ${
+            flashCollect ? "flash-green" : ""
+          } ${snap.totalPending > 0 ? "club-treasury-hero--ready" : ""} ${
+            vaultFull ? "club-treasury-hero--full" : ""
+          }`}
+        >
+          <div className="flex items-start gap-4">
+            <div className="club-treasury-hero__safe shrink-0">{bank ? "🏦" : "🔐"}</div>
+            <div className="flex-1 min-w-0 text-right">
+              <p className="text-[11px] font-bold text-white/45">خزانهٔ باشگاه</p>
+              <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-gold-400 tabular-nums">
+                خزانه: {faVaultM(safeBudget)}
+                {!bank && <span className="text-white/35"> / {faVaultM(vaultCap)}</span>}
+                <span className="mr-2 text-sm text-gold-400/80">میلیون</span>
+              </p>
+              <p className="mt-2 text-xs text-white/58 leading-5">
+                {bank
+                  ? `${faTreasuryShort(safeBudget)} پول آمادهٔ خرج در بانک اسپانسر`
+                  : vaultFull
+                    ? "خزانه پر است — خرج کن یا آن را بزرگ‌تر کن"
+                    : safeBudget > 0
+                      ? "پول آمادهٔ خرج برای ارتقاها و استخدام مدیر"
+                      : "ساختمان‌ها در حال پول‌سازی هستند؛ آماده که شد جمع‌آوری کن."}
+              </p>
+            </div>
+          </div>
+
+          {!bank && (
+            <>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/30">
+                <div
+                  className="h-full rounded-full transition-[width] duration-500"
+                  style={{
+                    width: `${Math.min(100, vaultCap > 0 ? (safeBudget / vaultCap) * 100 : 0)}%`,
+                    background: vaultFull
+                      ? "linear-gradient(90deg,#e0a92e,#f5c542)"
+                      : "linear-gradient(90deg,#2f9e5f,#5ee08a)",
+                  }}
+                />
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3 text-[11px]">
+                <span className="font-bold text-white/40">
+                  {vaultFull ? "ظرفیت کامل" : "در حال پر شدن"}
+                </span>
+                <span className="font-extrabold text-white/65 tabular-nums">
+                  {faVaultM(safeBudget)} از {faVaultM(vaultCap)} میلیون
+                </span>
+              </div>
+            </>
           )}
+
+          <div className="mt-4 rounded-2xl bg-black/16 px-4 py-3 text-right">
+            {snap.totalPending > 0 ? (
+              <>
+                <p className="text-xs font-extrabold text-white/85">
+                  🏪 درآمد آمادهٔ جمع‌آوری
+                </p>
+                <p className="mt-1 text-sm font-bold text-gold-400">
+                  {faTreasuryShort(snap.totalPending)}
+                  {snap.topReady && (
+                    <span className="text-white/45 mr-1">
+                      · {snap.topReady.emoji} {snap.topReady.name}
+                    </span>
+                  )}
+                </p>
+              </>
+            ) : showVaultTutorial ? (
+              <p className="text-[11px] text-white/58 leading-6">
+                درآمد واحدها را جمع کن تا وارد خزانه شود. از خزانه برای ارتقا خرج
+                می‌کنی.
+              </p>
+            ) : (
+              <p className="text-[11px] text-white/50 leading-6">
+                ساختمان‌ها آرام‌آرام درآمد می‌سازند. هر وقت آماده شدند، جمع‌آوری کن.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="relative">
+              {floatAmt !== null && (
+                <span className="float-up pointer-events-none absolute -top-3 left-1/2 z-10 whitespace-nowrap text-xs font-extrabold text-gold-400">
+                  +{faTreasuryShort(floatAmt)}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={canCollectAll ? collectAll : () => setBankOpen(true)}
+                className={`w-full rounded-2xl py-3 text-sm font-extrabold transition active:scale-[0.98] ${
+                  canCollectAll
+                    ? "btn-gold"
+                    : "bg-white/8 text-white/55"
+                }`}
+              >
+                {canCollectAll
+                    ? `جمع‌آوری ${faTreasuryShort(snap.totalPending)}`
+                  : snap.totalPending > 0
+                    ? "درآمد آماده در واحدها"
+                    : "جزئیات خزانه"}
+              </button>
+            </div>
+            {!bank ? (
+              <button
+                type="button"
+                onClick={tryUpgradeVault}
+                className={`w-full rounded-2xl py-3 text-sm font-extrabold transition active:scale-[0.98] ${
+                  shakeUpgrade ? "animate-shake" : ""
+                } ${canUpgradeVault ? "bg-team-you text-white" : "bg-white/8 text-white/45"}`}
+              >
+                {canUpgradeVault
+                  ? `ارتقای خزانه · ${faMoney(upgradeCost)}`
+                  : "ارتقای خزانه"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setBankOpen(true)}
+                className="w-full rounded-2xl bg-white/8 py-3 text-sm font-extrabold text-white/70 transition active:scale-[0.98]"
+              >
+                جزئیات بانک
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -225,14 +315,11 @@ export function Club({ onBack }: ClubProps) {
         unitsPending={snap.totalPending}
       />
 
-      <ClubCollectBar onOpenBank={() => setBankOpen(true)} />
-
-      {/* واحدهای فعال */}
       <div className="mt-6">
         <div className="px-5 flex items-center justify-between mb-3">
-          <span className="text-[10px] font-bold text-white/35">مرحله ۱</span>
+          <span className="text-[10px] font-bold text-white/35">دارایی‌های فعال</span>
           <h2 className="text-base font-extrabold">
-            واحدهای درآمد
+            ساختمان‌های باشگاه
             <span className="mr-2 text-xs font-bold text-grass-400">
               {faNum(unlockedUnits.length)} فعال
             </span>
@@ -240,16 +327,15 @@ export function Club({ onBack }: ClubProps) {
         </div>
         <div className="space-y-3">
           {unlockedUnits.map((u) => (
-            <UnitCard key={u.id} id={u.id} />
+            <UnitCard key={u.id} id={u.id} vaultFull={snap.vaultFull && !bank} />
           ))}
         </div>
       </div>
 
-      {/* واحدهای قفل */}
       {lockedUnits.length > 0 && (
         <div className="mx-5 mt-6 rounded-2xl bg-black/20 px-4 py-3 border border-white/5">
           <p className="text-sm font-extrabold text-white/55 text-right mb-2">
-            🔒 باز شدن با level-up
+            🔒 ساخت‌وساز بعدی
           </p>
           {lockedUnits.map((u) => (
             <LockedUnitRow key={u.id} id={u.id} />

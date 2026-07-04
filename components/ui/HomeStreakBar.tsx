@@ -12,51 +12,48 @@ export function HomeStreakBar() {
   const reward = nextStreakRewardInfo(streakDays, lastPlayDate);
   const playedToday = reward?.playedToday ?? false;
 
+  if (streakDays === 0 && !playedToday) {
+    return (
+      <p className="mx-5 mt-2 text-center text-[11px] text-white/38 leading-5">
+        🔥 ۳ روز پیاپی بازی = <span className="text-gold-400/80">+۱ کارت</span>
+      </p>
+    );
+  }
+
   return (
-    <div className="home-streak-bar mx-5 mt-4 rounded-2xl p-3.5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex gap-1.5 shrink-0 pt-1">
+    <div className="home-streak-bar home-streak-bar--slim mx-5 mt-3 rounded-xl px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex gap-1 shrink-0">
           {Array.from({ length: 7 }).map((_, i) => {
             const filled = i < streakDisplay;
             const milestone = isStreakMilestoneDay(i);
             return (
               <span
                 key={i}
-                className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                className={`h-2 w-2 rounded-full ${
                   filled
                     ? milestone
-                      ? "bg-gold-400 ring-2 ring-gold-400/35"
-                      : "bg-gold-400"
+                      ? "bg-gold-400"
+                      : "bg-gold-400/80"
                     : milestone
-                      ? "bg-white/10 ring-1 ring-gold-400/40"
-                      : "bg-white/15"
+                      ? "bg-white/10 ring-1 ring-gold-400/30"
+                      : "bg-white/12"
                 }`}
-                title={milestone ? `پاداش روز ${faNum(i + 1)}` : undefined}
               />
             );
           })}
         </div>
         <div className="flex-1 text-right min-w-0">
-          <p className="text-sm font-extrabold text-white/90">
-            🔥 استریک:{" "}
-            <span className="text-gold-400">{faNum(streakDays)} روز</span>
-            {playedToday && (
-              <span className="mr-2 text-[11px] font-bold text-grass-400">
-                · امروز ✓
+          <p className="text-[11px] font-extrabold text-white/80 truncate">
+            🔥 {faNum(streakDays)} روز
+            {playedToday && <span className="text-grass-400 mr-1">· امروز ✓</span>}
+            {reward && (
+              <span className="text-white/40 font-bold mr-1">
+                {" "}
+                · {reward.hint}
               </span>
             )}
           </p>
-          {reward ? (
-            <p className="mt-1 text-[11px] text-white/55 leading-5">
-              پاداش روز {faNum(reward.targetDay)}:{" "}
-              <b className="text-gold-400">{reward.label}</b>
-              <span className="text-white/40"> · {reward.hint}</span>
-            </p>
-          ) : (
-            <p className="mt-1 text-[11px] text-grass-400">
-              ✓ همهٔ پاداش‌های هفتگی را گرفتی!
-            </p>
-          )}
         </div>
       </div>
     </div>

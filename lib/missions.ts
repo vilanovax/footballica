@@ -24,7 +24,6 @@ export interface MissionSnapshot {
   gamesPlayed: number;
   totalCorrect: number;
   unitCollectCount: number;
-  vaultWithdrawCount: number;
   vaultFillCount: number;
   matchesWon: number;
   streakDays: number;
@@ -66,20 +65,10 @@ export const ONBOARDING_MISSIONS: MissionDef[] = [
     kind: "onboarding",
     emoji: "🏪",
     title: "اولین واریز واحد",
-    detail: "درآمد فروشگاه را به گاوصندوق بفرست",
+    detail: "درآمد فروشگاه را به خزانه بفرست",
     target: 1,
     reward: { xp: 50, fans: 0, vaultMoney: 500_000, cards: 0 },
     progressKey: "unitCollectCount",
-  },
-  {
-    id: "ob_first_withdraw",
-    kind: "onboarding",
-    emoji: "🔐",
-    title: "برداشت از گاوصندوق",
-    detail: "پول گاوصندوق را به بودجه منتقل کن",
-    target: 1,
-    reward: { xp: 50, fans: 0, vaultMoney: 0, cards: 1 },
-    progressKey: "vaultWithdrawCount",
   },
   {
     id: "ob_shop_lv2",
@@ -253,8 +242,6 @@ function statValue(snap: MissionSnapshot, key: string): number {
       return snap.totalCorrect;
     case "unitCollectCount":
       return snap.unitCollectCount;
-    case "vaultWithdrawCount":
-      return snap.vaultWithdrawCount;
     case "vaultFillCount":
       return snap.vaultFillCount;
     case "shopLevel":
@@ -311,7 +298,6 @@ export function buildMissionSnapshot(state: {
   gamesPlayed: number;
   totalCorrect: number;
   unitCollectCount: number;
-  vaultWithdrawCount: number;
   vaultFillCount: number;
   matchesWon: number;
   streakDays: number;
@@ -332,7 +318,6 @@ export function buildMissionSnapshot(state: {
     gamesPlayed: state.gamesPlayed,
     totalCorrect: state.totalCorrect,
     unitCollectCount: state.unitCollectCount,
-    vaultWithdrawCount: state.vaultWithdrawCount,
     vaultFillCount: state.vaultFillCount,
     matchesWon: state.matchesWon,
     streakDays: state.streakDays,
@@ -355,6 +340,10 @@ export function allMissionStatuses(snap: MissionSnapshot): MissionStatus[] {
 
 export function claimableMissionCount(snap: MissionSnapshot): number {
   return allMissionStatuses(snap).filter((s) => s.claimable).length;
+}
+
+export function firstClaimableMission(snap: MissionSnapshot): MissionStatus | null {
+  return allMissionStatuses(snap).find((s) => s.claimable) ?? null;
 }
 
 export function rewardLabel(reward: ActivityReward): string {

@@ -17,7 +17,7 @@ export function ClubCollectBar({ onOpenBank }: ClubCollectBarProps) {
   const xp = useGame((s) => s.xp);
   const fans = useGame((s) => s.fans);
   const vaultLevel = useGame((s) => s.vaultLevel);
-  const vaultBalance = useGame((s) => s.vaultBalance);
+  const budget = useGame((s) => s.budget);
   const collectAllUnits = useGame((s) => s.collectAllUnits);
 
   const [flash, setFlash] = useState(false);
@@ -30,7 +30,7 @@ export function ClubCollectBar({ onOpenBank }: ClubCollectBarProps) {
     xp,
     fans,
     vaultLevel,
-    vaultBalance,
+    budget,
   });
 
   const bank = isBank(vaultLevel);
@@ -54,11 +54,11 @@ export function ClubCollectBar({ onOpenBank }: ClubCollectBarProps) {
     return (
       <div className="mx-5 mt-4 rounded-2xl border border-team-foe/40 bg-team-foe/10 px-4 py-3 text-right">
         <p className="text-sm font-extrabold text-team-foe">
-          ⚠️ واحدها منتظرند — گاوصندوق پر است
+          ⚠️ واحدها منتظرند — خزانه پر است
         </p>
         <p className="mt-1 text-xs text-white/60 leading-5">
-          {faClubMoneyLabel(snap.totalPending)} در واحدها جمع شده. گاوصندوق را
-          برداشت یا ارتقا بده.
+          {faClubMoneyLabel(snap.totalPending)} در واحدها جمع شده. خرج کن یا
+          گاوصندوق را ارتقا بده.
         </p>
         {onOpenBank && (
           <button
@@ -92,7 +92,7 @@ export function ClubCollectBar({ onOpenBank }: ClubCollectBarProps) {
           </p>
           <p className="mt-0.5 text-xs text-white/55">
             {canCollect
-              ? `${faClubMoneyLabel(snap.totalPending)} → گاوصندوق`
+              ? `${faClubMoneyLabel(snap.totalPending)} → خزانه`
               : "در حال جمع شدن…"}
           </p>
         </div>
