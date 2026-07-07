@@ -13,6 +13,7 @@ import { useClubAvatar } from "@/lib/clubAvatar";
 import { isBank } from "@/lib/vault";
 import type { MatchResult } from "@/lib/types";
 import { OPPONENT } from "@/lib/types";
+import { feedbackLoss, feedbackWin } from "@/lib/feedback";
 
 interface ResultProps {
   result: MatchResult;
@@ -105,6 +106,11 @@ export function Result({ result, onHome, onReplay, onOpenClub }: ResultProps) {
     recordDailyPlay,
     recordWin,
   ]);
+
+  useEffect(() => {
+    if (won) feedbackWin();
+    else feedbackLoss();
+  }, [won]);
 
   useEffect(() => {
     if (!won) return;

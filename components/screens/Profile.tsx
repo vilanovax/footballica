@@ -6,26 +6,26 @@ import {
   ProfileIdentityBadges,
   ProfileIdentitySheet,
 } from "@/components/ui/ProfileIdentitySheet";
+import { ProfileSettingsSheet } from "@/components/ui/ProfileSettingsSheet";
+import { Button } from "@/components/ui/Button";
 import { CollectionShowcase } from "@/components/ui/CollectionShowcase";
 import { useGame } from "@/lib/store";
 import { faNum, faCount } from "@/lib/format";
-import { levelInfo, leagueForXp } from "@/lib/player";
+import { formatRegenCountdown, levelInfo, leagueForXp, msUntilNextLife } from "@/lib/player";
 import { nextUnlock } from "@/lib/progress";
 import { ACHIEVEMENT_MISSIONS } from "@/lib/missions";
 import { CLUB } from "@/lib/club";
 import { useClubAvatar } from "@/lib/clubAvatar";
 import { ownedCollectibleCount } from "@/lib/collectibles";
 import { fairPlayScore } from "@/lib/leaderboards";
-import {
-  PLAYER_FOCUS_OPTIONS,
-  playerFocusLabel,
-  type PlayerFocus,
-} from "@/lib/playerFocus";
+import { playerFocusLabel } from "@/lib/playerFocus";
 
 interface ProfileProps {
   onOpenClub: () => void;
   onOpenMissions: () => void;
   onOpenShop?: () => void;
+  onPlayRankedDuel?: () => void;
+  onOpenFairPlayLeaderboard?: () => void;
   /** باز کردن خودکار sheet هویت — مثلاً از CTA جدول جامعه */
   initialIdentityOpen?: boolean;
   onIdentityOpenHandled?: () => void;
@@ -70,24 +70,17 @@ function CareerStat({
   );
 }
 
-function focusSummary(focus: PlayerFocus): string {
-  if (focus === "arena") {
-    return "Home با تاکید روی Quiz Arena چیده می‌شود و جدول کوییز پیش‌فرض می‌شود.";
-  }
-  if (focus === "club") {
-    return "Home با تاکید روی باشگاه شروع می‌شود و جدول باشگاه پیش‌فرض می‌شود.";
-  }
-  return "Arena و Club با وزن برابر نمایش داده می‌شوند.";
-}
-
 export function Profile({
   onOpenClub,
   onOpenMissions,
   onOpenShop,
+  onPlayRankedDuel,
+  onOpenFairPlayLeaderboard,
   initialIdentityOpen,
   onIdentityOpenHandled,
 }: ProfileProps) {
   const [identityOpen, setIdentityOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (!initialIdentityOpen) return;
@@ -104,11 +97,15 @@ export function Profile({
   const arenaRating = useGame((s) => s.arenaRating);
   const rankedWins = useGame((s) => s.rankedWins);
   const rankedLosses = useGame((s) => s.rankedLosses);
+  const lives = useGame((s) => s.lives);
+  const livesUpdatedAt = useGame((s) => s.livesUpdatedAt);
   const club = useGame((s) => s.club);
   const ownedCollectibles = useGame((s) => s.ownedCollectibles);
   const clubAvatar = useClubAvatar();
   const playerFocus = useGame((s) => s.playerFocus);
-  const setPlayerFocus = useGame((s) => s.setPlayerFocus);
+  const soundEnabled = useGame((s) => s.soundEnabled);
+  const hapticEnabled = useGame((s) => s.hapticEnabled);
+  const advisorHintsEnabled = useGame((s) => s.advisorHintsEnabled);
   const missionClaimed = useGame((s) => s.missionClaimed);
   const claimableMissions = useGame((s) => s.claimableMissions);
   const resetSave = useGame((s) => s.resetSave);
@@ -124,6 +121,9 @@ export function Profile({
   const rankedTotal = rankedWins + rankedLosses;
   const rankedWinRate = rankedTotal > 0 ? Math.round((rankedWins / rankedTotal) * 100) : 0;
   const fairPlayValue = fairPlayScore({ arenaRating, rankedWins, rankedLosses });
+  const enabledSettingsCount = [soundEnabled, hapticEnabled, advisorHintsEnabled].filter(Boolean).length;
+  const canRankedDuel = lives > 0;
+  const regenIn = formatRegenCountdown(msUntilNextLife(lives, livesUpdatedAt));
 
   return (
     <div className="pitch-stripes min-h-dvh pb-32">
@@ -243,46 +243,28 @@ export function Profile({
       </section>
 
       <section className="px-5 mt-4">
-        <div className="profile-focus-card">
-          <div className="flex items-start justify-between gap-3">
-            <span className="profile-focus-card__badge">
-              {playerFocusLabel(playerFocus)}
-            </span>
-            <div className="flex-1 text-right">
-              <p className="profile-card__eyebrow">سبک بازی من</p>
-              <h2 className="profile-focus-card__title">
-                اولویت Arena یا Club را هر وقت خواستی عوض کن
-              </h2>
-              <p className="profile-focus-card__sub">
-                این تنظیم فقط ترتیب و تاکید Home و جدول را عوض می‌کند و چیزی را قفل
-                نمی‌کند.
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="profile-settings-entry w-full text-right"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="profile-card__eyebrow">ترجیحات و تجربه بازی</p>
+              <p className="profile-settings-entry__title">تنظیمات</p>
+              <p className="profile-settings-entry__sub">
+                صدا، لرزش، راهنمای مربی و اولویت Arena/Club را در یک شیت جدا مدیریت کن.
               </p>
+              <div className="profile-settings-entry__meta">
+                <span className="profile-settings-entry__pill">{playerFocusLabel(playerFocus)}</span>
+                <span className="profile-settings-entry__pill">
+                  {faNum(enabledSettingsCount)}/۳ روشن
+                </span>
+              </div>
             </div>
+            <span className="profile-action-chip">باز کردن</span>
           </div>
-
-          <div className="mt-4 grid grid-cols-1 gap-2">
-            {PLAYER_FOCUS_OPTIONS.map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setPlayerFocus(opt.id)}
-                className={`profile-focus-chip ${
-                  playerFocus === opt.id ? "profile-focus-chip--active" : ""
-                }`}
-              >
-                <span className="profile-focus-chip__emoji" aria-hidden>
-                  {opt.emoji}
-                </span>
-                <span className="profile-focus-chip__copy">
-                  <span className="profile-focus-chip__label">{opt.label}</span>
-                  <span className="profile-focus-chip__detail">{opt.detail}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <p className="profile-focus-card__hint mt-3">{focusSummary(playerFocus)}</p>
-        </div>
+        </button>
       </section>
 
       <section className="px-5 mt-6">
@@ -313,8 +295,40 @@ export function Profile({
           <p className="profile-arena-card__hint">
             {rankedTotal > 0
               ? `${faNum(rankedWinRate)}٪ برد در ${faNum(rankedTotal)} دوئل رنکد`
-              : "هنوز وارد دوئل رنکد نشده‌ای؛ از Home یک رنکد بزن تا Fair Play فعال شود."}
+              : "هنوز وارد دوئل رنکد نشده‌ای؛ یک رنکد بزن تا Fair Play فعال شود."}
           </p>
+
+          {(onPlayRankedDuel || onOpenFairPlayLeaderboard) && (
+            <div className="profile-arena-card__actions">
+              {onPlayRankedDuel && (
+                <Button
+                  onClick={onPlayRankedDuel}
+                  variant="primary"
+                  size="sm"
+                  fullWidth
+                  disabled={!canRankedDuel}
+                  className="profile-arena-card__cta"
+                >
+                  {canRankedDuel
+                    ? "شروع دوئل رنکد"
+                    : regenIn
+                      ? `نیاز ۱ ❤️ · ${regenIn}`
+                      : "نیاز ۱ ❤️"}
+                </Button>
+              )}
+              {onOpenFairPlayLeaderboard && (
+                <Button
+                  onClick={onOpenFairPlayLeaderboard}
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                  className="profile-arena-card__cta profile-arena-card__cta--secondary"
+                >
+                  جدول Fair Play
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -392,7 +406,7 @@ export function Profile({
         </button>
       </section>
 
-      <div className="profile-danger-zone mx-5 mt-10">
+      <div className="profile-danger-zone mx-5 mt-8">
         <p className="profile-danger-zone__label">منطقهٔ خطر</p>
         <button
           type="button"
@@ -406,6 +420,7 @@ export function Profile({
       </div>
 
       <ProfileIdentitySheet open={identityOpen} onClose={() => setIdentityOpen(false)} />
+      <ProfileSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

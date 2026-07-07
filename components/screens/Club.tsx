@@ -144,6 +144,7 @@ export function Club({ onBack, onOpenShop, onOpenProfile }: ClubProps) {
   const club = useGame((s) => s.club);
   const clubAvatar = useClubAvatar();
   const showVaultTutorial = useGame((s) => s.showVaultTutorial);
+  const advisorHintsEnabled = useGame((s) => s.advisorHintsEnabled);
   const seasonStep = useGame((s) => s.seasonStep);
   const collectAllUnits = useGame((s) => s.collectAllUnits);
   const upgradeVault = useGame((s) => s.upgradeVault);
@@ -218,7 +219,7 @@ export function Club({ onBack, onOpenShop, onOpenProfile }: ClubProps) {
         pendingIncome: snap.totalPending,
         canCollect: canCollectAll,
         vaultFull,
-        showVaultTutorial,
+        showVaultTutorial: showVaultTutorial && advisorHintsEnabled,
         upgradeCosts: {
           shop: shopUpgradeCost,
           food: foodUpgradeCost,
@@ -237,6 +238,7 @@ export function Club({ onBack, onOpenShop, onOpenProfile }: ClubProps) {
       canCollectAll,
       vaultFull,
       showVaultTutorial,
+      advisorHintsEnabled,
       shopUpgradeCost,
       foodUpgradeCost,
       parkingUpgradeCost,
@@ -496,7 +498,7 @@ export function Club({ onBack, onOpenShop, onOpenProfile }: ClubProps) {
                   )}
                 </p>
               </>
-            ) : showVaultTutorial ? (
+            ) : showVaultTutorial && advisorHintsEnabled ? (
               <p className="text-[11px] text-white/58 leading-6">
                 درآمد واحدها را جمع کن تا وارد خزانه شود. از خزانه برای ارتقا خرج
                 می‌کنی.

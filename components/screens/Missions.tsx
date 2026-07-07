@@ -24,6 +24,7 @@ import {
   type MissionStatus,
 } from "@/lib/missions";
 import type { ActivityReward as EconomyReward } from "@/lib/economy";
+import { feedbackReward } from "@/lib/feedback";
 import {
   buildPromotionSnapshot,
   currentDivisionLabel,
@@ -604,6 +605,7 @@ export function Missions({ onBack, onGoToGames, onGoToClub }: MissionsProps) {
   function claim(id: string) {
     const res = claimMission(id);
     if (res === "ok") {
+      feedbackReward();
       setToast("جایزه دریافت شد ✓");
       setTimeout(() => setToast(null), 1800);
     } else {

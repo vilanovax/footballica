@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/QuizUi";
 import { drawRound, drawOneExcluding, type Question } from "@/lib/questions";
 import { scoreAnswer, SCORING, rewardQuickQuiz, rewardFriendlyDuel, rankedDuelArenaDelta } from "@/lib/economy";
+import { feedbackCorrect, feedbackWrong } from "@/lib/feedback";
 import {
   powerUpsForMode,
   powerUpCount,
@@ -161,10 +162,12 @@ export function Quiz({
     setRevealed(true);
 
     if (youCorrect) {
+      feedbackCorrect();
       youRef.current += scoreAnswer(true, secondsLeft);
       setYouScore(youRef.current);
       streakRef.current += 1;
     } else {
+      feedbackWrong();
       streakRef.current = 0;
     }
     if (foeCorrect) {

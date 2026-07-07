@@ -5,6 +5,7 @@ import confetti from "canvas-confetti";
 import { makeDeck } from "@/lib/questions";
 import { useGame } from "@/lib/store";
 import { rewardPenalty } from "@/lib/economy";
+import { feedbackCorrect, feedbackWrong } from "@/lib/feedback";
 import { faNum } from "@/lib/format";
 import { ReportButton } from "@/components/ui/ReportButton";
 import { RewardBreakdown } from "@/components/ui/RewardBreakdown";
@@ -87,6 +88,7 @@ export function Penalty({ onExit }: PenaltyProps) {
     setPhase("reveal");
 
     if (scored) {
+      feedbackCorrect();
       confetti({
         particleCount: 40,
         spread: 75,
@@ -94,6 +96,8 @@ export function Penalty({ onExit }: PenaltyProps) {
         origin: { y: 0.45 },
         colors: ["#f5c542", "#2f9e5f", "#ffffff"],
       });
+    } else {
+      feedbackWrong();
     }
 
     setTimeout(nextKick, 1500);

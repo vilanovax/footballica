@@ -18,6 +18,7 @@ import {
   seasonAdvisorMessage,
 } from "@/lib/promotion";
 import { fairPlayScore } from "@/lib/leaderboards";
+import { feedbackReward } from "@/lib/feedback";
 import {
   buildMissionSnapshot,
   DAILY_MISSION_IDS,
@@ -166,19 +167,21 @@ function HomeLoopHeroes({
         <Button onClick={onPlayQuick} variant="primary" size="sm" fullWidth className="home-loop-hero__cta">
           بازی سریع
         </Button>
-        <button
-          type="button"
-          onClick={onPlayRanked}
-          disabled={!canRanked}
-          className="home-loop-hero__secondary"
-        >
-          {canRanked ? "دوئل رنکد" : "نیاز ۱ ❤️"}
-        </button>
-        {onOpenFairPlayLeaderboard && (
-          <button type="button" onClick={onOpenFairPlayLeaderboard} className="home-loop-hero__link">
-            جدول
+        <div className="home-loop-hero__row">
+          <button
+            type="button"
+            onClick={onPlayRanked}
+            disabled={!canRanked}
+            className="home-loop-hero__secondary"
+          >
+            {canRanked ? "دوئل رنکد" : "نیاز ۱ ❤️"}
           </button>
-        )}
+          {onOpenFairPlayLeaderboard && (
+            <button type="button" onClick={onOpenFairPlayLeaderboard} className="home-loop-hero__link">
+              جدول
+            </button>
+          )}
+        </div>
       </div>
     </GameCard>
   );
@@ -193,7 +196,7 @@ function HomeLoopHeroes({
       </p>
       <div className="home-loop-hero__actions">
         <Button onClick={onOpenClub} variant="primary" size="sm" fullWidth className="home-loop-hero__cta">
-          ورود به باشگاه
+          {pendingIncome ? "جمع‌آوری درآمد" : "ورود به باشگاه"}
         </Button>
       </div>
     </GameCard>
@@ -221,18 +224,26 @@ function HomeNextStep({
   detail,
   actionLabel,
   onAction,
+  tone = "primary",
 }: {
   title: string;
   detail: string;
   actionLabel: string;
   onAction: () => void;
+  tone?: "primary" | "secondary";
 }) {
   return (
-    <GameCard variant="asset" className="home-next-step mx-5 mt-3 rounded-2xl p-3.5 text-right">
+    <GameCard variant="asset" className={`home-next-step home-next-step--${tone} mx-5 mt-3 rounded-2xl p-3.5 text-right`}>
       <p className="home-next-step__eyebrow">قدم بعدی تو</p>
       <p className="home-next-step__title">{title}</p>
       <p className="home-next-step__detail">{detail}</p>
-      <Button onClick={onAction} variant="primary" size="sm" fullWidth className="home-next-step__cta mt-3">
+      <Button
+        onClick={onAction}
+        variant={tone === "primary" ? "primary" : "secondary"}
+        size="sm"
+        fullWidth
+        className="home-next-step__cta mt-3"
+      >
         {actionLabel}
       </Button>
     </GameCard>
@@ -255,7 +266,7 @@ function HomeRewardReady({
   return (
     <GameCard variant="asset" className="home-reward-ready mx-5 mt-3 rounded-2xl p-3 text-right">
       <div className="flex items-center gap-3">
-        <Button onClick={onClaim} variant="primary" size="sm" className="shrink-0">
+        <Button onClick={onClaim} variant="success" size="sm" className="home-reward-ready__cta shrink-0">
           دریافت
         </Button>
         <button type="button" onClick={onOpenMissions} className="min-w-0 flex-1 text-right">
@@ -274,17 +285,21 @@ function HomeTodayStrip({
   claimableCount,
   dailyCount,
   arenaRating,
+  hideClaimable,
 }: {
   claimableCount: number;
   dailyCount: number;
   arenaRating: number;
+  hideClaimable?: boolean;
 }) {
   return (
     <div className="home-today-strip mx-5 mt-3 rounded-xl px-3 py-2.5 text-right">
       <p className="home-today-strip__label">امروز</p>
       <p className="home-today-strip__value">
-        {faNum(claimableCount)} جایزه آماده · {faNum(dailyCount)} مأموریت روزانه · رنک Arena{" "}
-        {faNum(arenaRating)}
+        {!hideClaimable && claimableCount > 0
+          ? `${faNum(claimableCount)} جایزه آماده · `
+          : ""}
+        {faNum(dailyCount)} مأموریت روزانه · رنک Arena {faNum(arenaRating)}
       </p>
     </div>
   );
@@ -371,6 +386,7 @@ export function Home({
   const syncLives = useGame((s) => s.syncLives);
   const ensureDailyMissions = useGame((s) => s.ensureDailyMissions);
   const showVaultTutorial = useGame((s) => s.showVaultTutorial);
+  const advisorHintsEnabled = useGame((s) => s.advisorHintsEnabled);
   const playerFocus = useGame((s) => s.playerFocus);
   const streakDays = useGame((s) => s.streakDays);
   const arenaRating = useGame((s) => s.arenaRating);
@@ -462,7 +478,7 @@ export function Home({
         pendingIncome: clubSnap.totalPending,
         canCollect: canCollectFromHome,
         vaultFull: homeVaultFull,
-        showVaultTutorial,
+        showVaultTutorial: showVaultTutorial && advisorHintsEnabled,
         upgradeCosts: {
           shop: shopUpgradeCost,
           food: foodUpgradeCost,
@@ -481,6 +497,7 @@ export function Home({
       canCollectFromHome,
       homeVaultFull,
       showVaultTutorial,
+      advisorHintsEnabled,
       shopUpgradeCost,
       foodUpgradeCost,
       parkingUpgradeCost,
@@ -537,21 +554,32 @@ export function Home({
   const divisionLabel = currentDivisionLabel(seasonStep);
   const arenaFirst = playerFocus !== "club";
 
-  const nextStepAction = (() => {
+  const nextStepAction = ((): {
+    title: string;
+    detail: string;
+    label: string;
+    onClick: () => void;
+    tone: "primary" | "secondary";
+    hidden: boolean;
+  } => {
+    if (canCollectFromHome) {
+      return {
+        title: "",
+        detail: "",
+        label: "",
+        onClick: onOpenClub,
+        tone: "secondary",
+        hidden: true,
+      };
+    }
     if (promotionGate.complete && !promotionGate.terminal) {
       return {
         title: "صعود آمادهٔ ثبت است",
         detail: "همه شرط‌های این فصل کامل شده‌اند.",
         label: promotionGate.claimLabel ?? "ثبت صعود",
         onClick: onOpenClub,
-      };
-    }
-    if (canCollectFromHome) {
-      return {
-        title: "درآمد فروشگاه آماده است",
-        detail: "جمع‌آوری کن و خزانه را برای قدم بعدی پر کن.",
-        label: "رفتن به باشگاه",
-        onClick: onOpenClub,
+        tone: "primary",
+        hidden: false,
       };
     }
     if (homeVaultFull) {
@@ -560,7 +588,28 @@ export function Home({
         detail: "درآمد را جمع کن یا ظرفیت خزانه را ارتقا بده.",
         label: "مدیریت خزانه",
         onClick: () => setBankOpen(true),
+        tone: "secondary",
+        hidden: false,
       };
+    }
+    if (!advisorHintsEnabled) {
+      return arenaFirst
+        ? {
+            title: "آمادهٔ یک بازی سریع؟",
+            detail: "از Arena شروع کن یا هر وقت خواستی وارد باشگاه شو.",
+            label: "بازی سریع",
+            onClick: onPlayQuick,
+            tone: "primary",
+            hidden: false,
+          }
+        : {
+            title: "باشگاه منتظر توست",
+            detail: "درآمد را جمع کن، ارتقا بده و برای صعود آماده شو.",
+            label: "ورود به باشگاه",
+            onClick: onOpenClub,
+            tone: "secondary",
+            hidden: false,
+          };
     }
     if (homeAdvisor.action === "play") {
       return {
@@ -568,6 +617,8 @@ export function Home({
         detail: homeAdvisor.detail,
         label: `برو برای ${homeAdvisor.focus}`,
         onClick: onPlayQuick,
+        tone: "primary",
+        hidden: false,
       };
     }
     return {
@@ -575,6 +626,8 @@ export function Home({
       detail: homeAdvisor.detail,
       label: `برو برای ${homeAdvisor.focus}`,
       onClick: onOpenClub,
+      tone: "secondary",
+      hidden: false,
     };
   })();
 
@@ -591,7 +644,8 @@ export function Home({
       return;
     }
     const result = claimMission(firstClaimable.def.id);
-    if (result !== "ok") onOpenMissions();
+    if (result === "ok") feedbackReward();
+    else onOpenMissions();
   }
 
   return (
@@ -623,12 +677,15 @@ export function Home({
         onOpenFairPlayLeaderboard={onOpenFairPlayLeaderboard}
       />
 
-      <HomeNextStep
-        title={nextStepAction.title}
-        detail={nextStepAction.detail}
-        actionLabel={nextStepAction.label}
-        onAction={nextStepAction.onClick}
-      />
+      {!nextStepAction.hidden && (
+        <HomeNextStep
+          title={nextStepAction.title}
+          detail={nextStepAction.detail}
+          actionLabel={nextStepAction.label}
+          onAction={nextStepAction.onClick}
+          tone={nextStepAction.tone}
+        />
+      )}
 
       {claimableCount > 0 && firstClaimable && (
         <HomeRewardReady
@@ -644,6 +701,7 @@ export function Home({
         claimableCount={claimableCount}
         dailyCount={DAILY_MISSION_IDS.length}
         arenaRating={arenaRating}
+        hideClaimable={claimableCount > 0}
       />
 
       <div className="home-section-head home-section-head--games px-5 mt-5 mb-2">

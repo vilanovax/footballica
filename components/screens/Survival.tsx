@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
 import { makeDeck, drawOneExcluding } from "@/lib/questions";
 import { rewardSurvival } from "@/lib/economy";
+import { feedbackCorrect, feedbackWrong } from "@/lib/feedback";
 import { useGame } from "@/lib/store";
 import { faNum } from "@/lib/format";
 import { ReportButton } from "@/components/ui/ReportButton";
@@ -105,9 +106,11 @@ export function Survival({ onExit }: SurvivalProps) {
     setRevealed(true);
 
     if (correct) {
+      feedbackCorrect();
       scoreRef.current += 1;
       setScore(scoreRef.current);
     } else {
+      feedbackWrong();
       livesRef.current -= 1;
       setLives(livesRef.current);
     }

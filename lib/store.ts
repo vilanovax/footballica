@@ -99,6 +99,10 @@ interface GameState {
   seasonStep: number;
   /** ترجیح مسیر — فقط UI را شخصی‌سازی می‌کند */
   playerFocus: PlayerFocus;
+  /** تنظیمات تجربهٔ بازی */
+  soundEnabled: boolean;
+  hapticEnabled: boolean;
+  advisorHintsEnabled: boolean;
   /** رتبه Arena — فقط از دوئل رنکد و فعالیت skill-based */
   arenaRating: number;
   /** آمار دوئل رنکد — پایهٔ جدول Fair Play */
@@ -131,6 +135,9 @@ interface GameState {
   applyArenaDelta: (delta: number) => void;
   completeSetup: (club: ClubIdentity, focus?: PlayerFocus) => void;
   setPlayerFocus: (focus: PlayerFocus) => void;
+  setSoundEnabled: (enabled: boolean) => void;
+  setHapticEnabled: (enabled: boolean) => void;
+  setAdvisorHintsEnabled: (enabled: boolean) => void;
   updateClubProfile: (
     patch: Partial<Pick<ClubIdentity, "city" | "heartTeam" | "internationalTeam">>,
   ) => void;
@@ -247,6 +254,9 @@ const initialState = {
   missionClaimed: {} as Record<string, boolean>,
   seasonStep: 1,
   playerFocus: "both" as PlayerFocus,
+  soundEnabled: true,
+  hapticEnabled: true,
+  advisorHintsEnabled: true,
   arenaRating: 1000,
   rankedWins: 0,
   rankedLosses: 0,
@@ -491,6 +501,9 @@ export const useGame = create<GameState>()(
       },
 
       setPlayerFocus: (focus) => set({ playerFocus: focus }),
+      setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
+      setHapticEnabled: (enabled) => set({ hapticEnabled: enabled }),
+      setAdvisorHintsEnabled: (enabled) => set({ advisorHintsEnabled: enabled }),
 
       updateClubProfile: (patch) =>
         set((s) => ({
@@ -685,7 +698,7 @@ export const useGame = create<GameState>()(
     }),
     {
       name: "footballica-save",
-      version: 11,
+      version: 12,
       migrate: (persisted, version) => {
         const s = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -759,6 +772,12 @@ export const useGame = create<GameState>()(
           s.rankedWins = typeof s.rankedWins === "number" ? s.rankedWins : 0;
           s.rankedLosses = typeof s.rankedLosses === "number" ? s.rankedLosses : 0;
         }
+        if (version < 12) {
+          s.soundEnabled = typeof s.soundEnabled === "boolean" ? s.soundEnabled : true;
+          s.hapticEnabled = typeof s.hapticEnabled === "boolean" ? s.hapticEnabled : true;
+          s.advisorHintsEnabled =
+            typeof s.advisorHintsEnabled === "boolean" ? s.advisorHintsEnabled : true;
+        }
         return persisted;
       },
       storage: createJSONStorage(() => localStorage),
@@ -798,6 +817,9 @@ export const useGame = create<GameState>()(
         missionClaimed: s.missionClaimed,
         seasonStep: s.seasonStep,
         playerFocus: s.playerFocus,
+        soundEnabled: s.soundEnabled,
+        hapticEnabled: s.hapticEnabled,
+        advisorHintsEnabled: s.advisorHintsEnabled,
         arenaRating: s.arenaRating,
         rankedWins: s.rankedWins,
         rankedLosses: s.rankedLosses,

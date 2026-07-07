@@ -2742,7 +2742,7 @@ body {
 .home-loop-hero__card {
   display: flex;
   flex-direction: column;
-  min-height: 10.5rem;
+  min-height: 9.25rem;
   text-align: right;
 }
 
@@ -2780,10 +2780,27 @@ body {
 
 .home-loop-hero__actions {
   margin-top: auto;
-  padding-top: 0.75rem;
+  padding-top: 0.6rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
+}
+
+.home-loop-hero__row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.home-loop-hero__row .home-loop-hero__secondary {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-loop-hero__row .home-loop-hero__link {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 0.45rem 0.35rem;
 }
 
 .home-loop-hero__cta {
@@ -2823,6 +2840,15 @@ body {
   border-color: rgba(47, 158, 95, 0.22);
 }
 
+.home-next-step--secondary {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(21, 41, 33, 0.96));
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.home-next-step--secondary .home-next-step__eyebrow {
+  color: rgba(255, 255, 255, 0.42);
+}
+
 .home-next-step__eyebrow {
   font-size: 0.56rem;
   font-weight: 800;
@@ -2850,8 +2876,14 @@ body {
 }
 
 .home-reward-ready {
-  border-color: rgba(245, 197, 66, 0.24);
-  background: linear-gradient(160deg, rgba(245, 197, 66, 0.08), rgba(21, 41, 33, 0.96));
+  border-color: rgba(47, 158, 95, 0.22);
+  background: linear-gradient(160deg, rgba(47, 158, 95, 0.1), rgba(21, 41, 33, 0.96));
+}
+
+.home-reward-ready__cta {
+  min-width: 4.5rem !important;
+  min-height: 2rem !important;
+  font-size: 0.72rem !important;
 }
 
 .home-reward-ready__title {
@@ -2874,8 +2906,8 @@ body {
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 999px;
-  background: rgba(245, 197, 66, 0.16);
-  border: 1px solid rgba(245, 197, 66, 0.32);
+  background: rgba(47, 158, 95, 0.16);
+  border: 1px solid rgba(47, 158, 95, 0.32);
   font-size: 0.72rem;
   font-weight: 900;
   color: #f5c542;
@@ -7427,6 +7459,215 @@ button.collection-chip:active {
   line-height: 1.55;
 }
 
+/* ---------- profile settings ---------- */
+.profile-settings-entry {
+  padding: 1rem;
+  border-radius: 1.15rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(12, 24, 18, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+}
+
+.profile-settings-entry__title {
+  margin-top: 0.18rem;
+  font-size: 0.96rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.profile-settings-entry__sub {
+  margin-top: 0.22rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.56);
+  line-height: 1.55;
+}
+
+.profile-settings-entry__meta {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.profile-settings-entry__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.45rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.profile-settings-card {
+  padding: 1rem;
+  border-radius: 1.15rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(12, 24, 18, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  text-align: right;
+}
+
+.profile-settings-sheet__icon {
+  min-width: 2.6rem;
+  padding-inline: 0.55rem;
+  font-size: 0.68rem;
+}
+
+.profile-settings-sheet__section + .profile-settings-sheet__section {
+  margin-top: 1rem;
+}
+
+.profile-settings-sheet__summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.profile-settings-sheet__summary-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.45rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.profile-settings-group__title {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.profile-settings-group__sub {
+  margin-top: 0.3rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.48);
+  line-height: 1.55;
+}
+
+.profile-settings-focus-badge {
+  display: inline-flex;
+  margin-top: 0.65rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(245, 197, 66, 0.12);
+  border: 1px solid rgba(245, 197, 66, 0.2);
+  color: rgba(245, 197, 66, 0.95);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.profile-settings-divider {
+  height: 1px;
+  margin: 1rem 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.profile-settings-list {
+  margin-top: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.profile-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.72rem 0.8rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+}
+
+.profile-setting-row__copy {
+  min-width: 0;
+  flex: 1;
+  text-align: right;
+}
+
+.profile-setting-row__label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.profile-setting-row__detail {
+  display: block;
+  margin-top: 0.18rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.44);
+  line-height: 1.45;
+}
+
+.profile-setting-toggle {
+  position: relative;
+  width: 2.65rem;
+  height: 1.55rem;
+  flex-shrink: 0;
+}
+
+.profile-setting-toggle__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+}
+
+.profile-setting-toggle__track {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.profile-setting-toggle__track::after {
+  content: "";
+  position: absolute;
+  top: 0.18rem;
+  right: 0.18rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  transition: transform 0.2s ease;
+}
+
+.profile-setting-toggle__input:checked + .profile-setting-toggle__track {
+  background: rgba(47, 158, 95, 0.55);
+  border-color: rgba(94, 224, 138, 0.35);
+}
+
+.profile-setting-toggle__input:checked + .profile-setting-toggle__track::after {
+  transform: translateX(-1.1rem);
+}
+
+.profile-setting-toggle__input:focus-visible + .profile-setting-toggle__track {
+  outline: 2px solid rgba(245, 197, 66, 0.55);
+  outline-offset: 2px;
+}
+
 .profile-arena-card {
   padding: 1rem;
   border-radius: 1.2rem;
@@ -7467,6 +7708,24 @@ button.collection-chip:active {
   font-weight: 700;
   color: rgba(138, 180, 255, 0.78);
   line-height: 1.6;
+}
+
+.profile-arena-card__actions {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.profile-arena-card__cta {
+  min-height: 2.15rem !important;
+  font-size: 0.76rem !important;
+}
+
+.profile-arena-card__cta--secondary {
+  background: rgba(47, 111, 237, 0.12) !important;
+  border-color: rgba(47, 111, 237, 0.28) !important;
+  color: rgba(138, 180, 255, 0.95) !important;
 }
 
 .profile-section-head {

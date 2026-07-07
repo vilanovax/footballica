@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { makeDeck } from "@/lib/questions";
 import { useGame } from "@/lib/store";
 import { rewardBomb } from "@/lib/economy";
+import { feedbackCorrect, feedbackWrong } from "@/lib/feedback";
 import { faNum, faMoney } from "@/lib/format";
 import { ReportButton } from "@/components/ui/ReportButton";
 import { PowerUpBar } from "@/components/ui/PowerUpBar";
@@ -85,10 +86,12 @@ export function BombMode({ onExit }: BombModeProps) {
   function answer(i: number) {
     if (phase !== "play") return;
     if (i === q.correct) {
+      feedbackCorrect();
       scoreRef.current += 1;
       setScore((s) => s + 1);
       setFuse((f) => Math.min(START_FUSE, f + REWARD_CORRECT));
     } else {
+      feedbackWrong();
       setFuse((f) => Math.max(0, f - PENALTY_WRONG));
       setWrongFlash(true);
       setTimeout(() => setWrongFlash(false), 300);

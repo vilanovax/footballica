@@ -141,6 +141,8 @@ export default function Page() {
           onOpenClub={() => openClub("profile")}
           onOpenMissions={() => openMissions("profile")}
           onOpenShop={() => setScreen("shop")}
+          onPlayRankedDuel={() => startDuel("ranked")}
+          onOpenFairPlayLeaderboard={openFairPlayLeaderboard}
           initialIdentityOpen={profileIdentityOpen}
           onIdentityOpenHandled={() => setProfileIdentityOpen(false)}
         />
