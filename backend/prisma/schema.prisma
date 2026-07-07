@@ -261,6 +261,27 @@ model UserAchievement {
   @@map("user_achievements")
 }
 
+// ---------- پادکستِ خودکار ----------
+// هر اجرای روزانهٔ پایپلاین یک اپیزود می‌سازد؛ فیدِ RSS از همین جدول ساخته
+// می‌شود. audioUrl نشانیِ عمومیِ فایل (Google Drive/محلی) است.
+model PodcastEpisode {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  audioUrl        String // enclosure در RSS
+  mimeType        String   @default("audio/wav")
+  byteSize        Int      @default(0)
+  durationSec     Int      @default(0)
+  scriptText      String // متنِ گویندگی (SSML) — برای بازبینی/بازتولید
+  storageProvider String   @default("local") // local | gdrive
+  externalId      String? // شناسهٔ فایل در میزبان (fileId گوگل‌درایو)
+  sourceMeta      Json     @default("{}") // شمارشِ اخبار/نتایج/بازی‌ها + تریگر
+  publishedAt     DateTime @default(now())
+
+  @@index([publishedAt])
+  @@map("podcast_episodes")
+}
+
 // لیدربورد در Redis Sorted Set نگه‌داری می‌شود؛ این جدول فقط
 // اسنپ‌شاتِ فصلی برای آرشیو است.
 model LeaderboardSnapshot {

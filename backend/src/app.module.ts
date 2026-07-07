@@ -10,6 +10,7 @@ import { DuelModule } from './duel/duel.module';
 import { EconomyModule } from './economy/economy.module';
 import { ProgressModule } from './progress/progress.module';
 import { PowerupsModule } from './powerups/powerups.module';
+import { PodcastModule } from './podcast/podcast.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PowerupsModule } from './powerups/powerups.module';
     EconomyModule,
     ProgressModule,
     PowerupsModule,
+    PodcastModule,
   ],
 })
 export class AppModule {}
