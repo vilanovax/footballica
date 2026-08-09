@@ -207,15 +207,19 @@ export async function loadBusinessSnapshot(
   const withInterest = await settleClubBankInterest(seeded, db);
   const withSponsors = await settleSponsorOffice(withInterest, db);
   const withStaffCollect = await settleStaffAutoCollect(withSponsors, db);
-  const rows = await db.clubFacility.findMany({
-    where: { clubId: withStaffCollect.id },
-  });
-  const staffMembers = await loadClubStaffViews(withStaffCollect.id, db);
-  const museumBadges = await loadMuseumBadgeRefs(withStaffCollect.id, db);
-  const sponsorDeals = await db.clubSponsorDeal.findMany({
-    where: { clubId: withStaffCollect.id },
-  });
-  const config = await getGameConfig();
+  // Settle chain above is ordered (mutations). Reads below are independent.
+  const [rows, staffMembers, museumBadges, sponsorDeals, config] =
+    await Promise.all([
+      db.clubFacility.findMany({
+        where: { clubId: withStaffCollect.id },
+      }),
+      loadClubStaffViews(withStaffCollect.id, db),
+      loadMuseumBadgeRefs(withStaffCollect.id, db),
+      db.clubSponsorDeal.findMany({
+        where: { clubId: withStaffCollect.id },
+      }),
+      getGameConfig(),
+    ]);
   const business = buildBusinessSnapshot({
     clubId: withStaffCollect.id,
     clubFunds: withStaffCollect.clubFunds,

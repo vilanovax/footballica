@@ -18,12 +18,10 @@ import type { Locale } from "@/lib/i18n/config";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import {
-  GameChip,
-  GameCta,
-  GameIconWell,
-  GamePanel,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { cn } from "@/lib/utils";
 
 type FlagPickerModalProps = {

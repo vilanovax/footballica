@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -17,14 +18,17 @@ import { toLocaleDigits } from "@/lib/i18n/format";
 import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { MysteryShareCard } from "@/components/mystery/MysteryShareCard";
-import { BadgeUnlockPopup } from "@/components/quiz/BadgeUnlockPopup";
-import { GotdResultModal } from "@/components/play/GotdResultModal";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import {
-  GameChip,
-  GameIconWell,
-  GamePanel,
-} from "@/components/ui/game";
+
+const BadgeUnlockPopup = dynamic(() =>
+  import("@/components/quiz/BadgeUnlockPopup").then((m) => m.BadgeUnlockPopup),
+);
+const GotdResultModal = dynamic(() =>
+  import("@/components/play/GotdResultModal").then((m) => m.GotdResultModal),
+);
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import type { GotdRewardsPayload } from "@/lib/game/gotdRewards";
 
 type Props = {

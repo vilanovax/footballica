@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { toast } from "sonner";
 import type { DailyMemorySnapshot } from "@/actions/memorygotd/getDailyMemory";
@@ -8,17 +9,18 @@ import { submitMemoryGotd } from "@/actions/memorygotd/submitMemoryGotd";
 import type { MemoryAttemptSubmission } from "@/lib/duel/memoryTypes";
 import type { GotdRewardsPayload } from "@/lib/game/gotdRewards";
 import { MemoryBoard } from "@/components/duel/MemoryBoard";
-import { GotdResultModal } from "@/components/play/GotdResultModal";
 import { useTranslation } from "@/lib/i18n/useTranslation";
+
+const GotdResultModal = dynamic(() =>
+  import("@/components/play/GotdResultModal").then((m) => m.GotdResultModal),
+);
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
-import {
-  GameChip,
-  GameCta,
-  GameIconWell,
-  GamePanel,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 type Props = {
   initial: DailyMemorySnapshot;

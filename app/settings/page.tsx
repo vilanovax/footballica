@@ -10,14 +10,11 @@ import { logout } from "@/actions/auth";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { PushOptIn } from "@/components/pwa/PushOptIn";
 import { TelegramOptIn } from "@/components/pwa/TelegramOptIn";
-import {
-  GameChip,
-  GameCta,
-  GameIconWell,
-  GamePanel,
-  GameTile,
-  type GamePanelTone,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 
 type Theme = "day" | "dark";
 

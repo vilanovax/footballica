@@ -23,7 +23,9 @@ import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { AvatarImage } from "@/components/common/AvatarImage";
 import { KeysHandoff } from "@/components/onboarding/KeysHandoff";
-import { GameCta, GamePanel, GameTile } from "@/components/ui/game";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 import { CLUB_NAME_MAX_LEN } from "@/lib/auth/blacklist";
 
 type Step = "avatar" | "keys" | "color" | "flag" | "name";

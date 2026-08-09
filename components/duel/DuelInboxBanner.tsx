@@ -6,11 +6,9 @@ import { Swords } from "lucide-react";
 import type { DuelInboxItem } from "@/actions/duel/getInboxCount";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
-import {
-  GameChip,
-  GameIconWell,
-  GamePanel,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 type DuelInboxBannerProps = {
   count: number;

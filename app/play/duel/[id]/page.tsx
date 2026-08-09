@@ -1,5 +1,5 @@
 import { redirect, notFound } from "next/navigation";
-import { getClubSnapshot, getCurrentUser, hasClub } from "@/lib/player/current";
+import { getClubSnapshot, getCurrentUser } from "@/lib/player/current";
 import { getDuel } from "@/actions/duel/getDuel";
 import { DuelArena } from "@/components/duel/DuelArena";
 
@@ -12,7 +12,7 @@ type DuelDetailPageProps = {
 export default async function DuelDetailPage({ params }: DuelDetailPageProps) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!(await hasClub())) redirect("/onboarding");
+  if (!user.club) redirect("/onboarding");
 
   const { id } = await params;
   const [res, club] = await Promise.all([getDuel(id), getClubSnapshot()]);

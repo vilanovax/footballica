@@ -17,15 +17,12 @@ import { AvatarImage } from "@/components/common/AvatarImage";
 import { duelViewerOutcome } from "@/lib/duel/history";
 import { viewerMatchScore } from "@/lib/duel/matchScore";
 import { isDuelTerminal } from "@/lib/duel/types";
-import {
-  GameChip,
-  GameCta,
-  GameIconWell,
-  GameOffer,
-  GamePanel,
-  GameTile,
-  type GamePanelTone,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GameOffer } from "@/components/ui/game/GameOffer";
+import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 import { cn } from "@/lib/utils";
 
 type DuelLobbyProps = {

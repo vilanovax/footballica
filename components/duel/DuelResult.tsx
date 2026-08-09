@@ -16,7 +16,9 @@ import { startDuel } from "@/actions/duel/startDuel";
 import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
-import { GameChip, GameCta, GamePanel } from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { cn } from "@/lib/utils";
 
 type DuelResultProps = {

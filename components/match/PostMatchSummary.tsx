@@ -15,12 +15,10 @@ import type {
   PostMatchOutcome,
   PostMatchRewards,
 } from "./postMatchTypes";
-import {
-  GameChip,
-  GameCta,
-  GameIconWell,
-  GamePanel,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 export type PostMatchSummaryProps = {
   outcome: PostMatchOutcome;

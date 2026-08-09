@@ -22,11 +22,9 @@ import { playSound } from "@/lib/audio/SoundManager";
 import { AvatarImage } from "@/components/common/AvatarImage";
 import { CLUB_NAME_MAX_LEN } from "@/lib/auth/blacklist";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import {
-  GameChip,
-  GameCta,
-  GamePanel,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { cn } from "@/lib/utils";
 
 type ProfileEditModalProps = {

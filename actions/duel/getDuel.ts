@@ -42,6 +42,8 @@ export type GetDuelResult =
  * so the arena can jump straight into play — no client bootstrap race.
  */
 export async function getDuel(duelId: string): Promise<GetDuelResult> {
+  // Auth overlaps the ordered job chain (mutations must stay sequential).
+  const authPromise = requireUserClub();
   try {
     await tickDuelJobs();
     await pairOpenMatchingDuels(10);
@@ -52,7 +54,7 @@ export async function getDuel(duelId: string): Promise<GetDuelResult> {
     console.error("duel tick in getDuel", err);
   }
 
-  const pair = await requireUserClub();
+  const pair = await authPromise;
   if (!pair) return { ok: false, error: "not_authenticated" };
   const { user } = pair;
 

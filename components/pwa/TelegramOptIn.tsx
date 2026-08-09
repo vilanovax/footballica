@@ -11,7 +11,9 @@ import {
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
-import { GameCta, GameChip, GameTile } from "@/components/ui/game";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameTile } from "@/components/ui/game/GameTile";
 
 type PrefKey = keyof Omit<TelegramPrefsInput, "enabled">;
 

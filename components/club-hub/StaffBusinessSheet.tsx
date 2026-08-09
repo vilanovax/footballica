@@ -12,13 +12,11 @@ import type { BusinessFacilityKey } from "@/lib/club/businessEconomy";
 import type { StaffMemberView, StaffOfferView } from "@/lib/club/staff";
 import { staffDisplayName } from "@/lib/club/staff";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import {
-  GameChip,
-  GameCta,
-  GameIconWell,
-  GamePanel,
-  GameTile,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 import { FundsCost } from "@/components/club-hub/FundsCost";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";

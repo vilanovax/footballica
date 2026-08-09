@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { AvatarImage } from "@/components/common/AvatarImage";
-import { GamePanel } from "@/components/ui/game";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { playSound } from "@/lib/audio/SoundManager";
 
 type FtueCoachProps = {

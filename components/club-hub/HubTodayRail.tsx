@@ -9,7 +9,7 @@ import { campaignSeasonActive } from "@/lib/game/campaignSeason";
 import type { ActiveNewsBoosterSnapshot } from "@/lib/club/upgrades";
 import { ActiveNewsChip } from "@/components/club-hub/ActiveNewsChip";
 import { CampaignSeasonCard } from "@/components/club-hub/CampaignSeasonCard";
-import { GamePanel } from "@/components/ui/game";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { playSound } from "@/lib/audio/SoundManager";

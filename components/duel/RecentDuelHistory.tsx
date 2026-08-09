@@ -8,7 +8,8 @@ import { viewerMatchScore } from "@/lib/duel/matchScore";
 import { AvatarImage } from "@/components/common/AvatarImage";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
-import { GameChip, GamePanel } from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { cn } from "@/lib/utils";
 
 type RecentDuelHistoryProps = {

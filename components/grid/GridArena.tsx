@@ -1,15 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import type { DailyGridSnapshot } from "@/actions/grid/getDailyGrid";
 import { submitGridGuess } from "@/actions/grid/submitGridGuess";
 import type { UnlockedBadge } from "@/actions/resolveMatch";
-import { BadgeUnlockPopup } from "@/components/quiz/BadgeUnlockPopup";
-import { GotdResultModal } from "@/components/play/GotdResultModal";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+
+const BadgeUnlockPopup = dynamic(() =>
+  import("@/components/quiz/BadgeUnlockPopup").then((m) => m.BadgeUnlockPopup),
+);
+const GotdResultModal = dynamic(() =>
+  import("@/components/play/GotdResultModal").then((m) => m.GotdResultModal),
+);
 import { buildGridShareCode } from "@/lib/grid/share";
 import { cellKey } from "@/lib/grid/types";
 import type { GotdRewardsPayload } from "@/lib/game/gotdRewards";
@@ -18,11 +24,9 @@ import { toLocaleDigits } from "@/lib/i18n/format";
 import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playerPhotoSrc } from "@/lib/players/photos";
-import {
-  GameChip,
-  GameIconWell,
-  GamePanel,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { ARENA } from "@/lib/ui/tokens";
 import { cn } from "@/lib/utils";
 

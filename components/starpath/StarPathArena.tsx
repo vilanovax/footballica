@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -12,14 +13,15 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
-import { GotdResultModal } from "@/components/play/GotdResultModal";
-import {
-  GameChip,
-  GameCta,
-  GameIconWell,
-  GamePanel,
-  GameTile,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+
+const GotdResultModal = dynamic(() =>
+  import("@/components/play/GotdResultModal").then((m) => m.GotdResultModal),
+);
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 import { cn } from "@/lib/utils";
 
 type Props = {

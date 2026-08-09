@@ -47,18 +47,27 @@ export async function toClubSnapshotWithBooster(
   db: Db = prisma,
   userXp?: number,
 ): Promise<ClubSnapshot> {
-  const activeNewsBooster = await loadActiveNewsBooster(club.id, db);
-  let xp = userXp;
-  if (xp === undefined) {
-    const u = await db.user.findUnique({
+  // News booster is independent of business settles — overlap them when XP is known.
+  if (userXp !== undefined) {
+    const [activeNewsBooster, { club: withBusiness, business }] =
+      await Promise.all([
+        loadActiveNewsBooster(club.id, db),
+        loadBusinessSnapshot(club, userXp, db),
+      ]);
+    return toClubSnapshot(withBusiness, activeNewsBooster, business);
+  }
+
+  // XP missing: fetch XP + news in parallel, then settle business (needs level).
+  const [activeNewsBooster, userRow] = await Promise.all([
+    loadActiveNewsBooster(club.id, db),
+    db.user.findUnique({
       where: { id: club.userId },
       select: { xp: true },
-    });
-    xp = u?.xp ?? 0;
-  }
+    }),
+  ]);
   const { club: withBusiness, business } = await loadBusinessSnapshot(
     club,
-    xp,
+    userRow?.xp ?? 0,
     db,
   );
   return toClubSnapshot(withBusiness, activeNewsBooster, business);

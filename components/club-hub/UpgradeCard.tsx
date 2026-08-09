@@ -10,14 +10,11 @@ import {
 } from "@/lib/club/upgradeEffects";
 import { staminaRegenIntervalMinutes } from "@/lib/club/stamina";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import {
-  GameCta,
-  GameIconWell,
-  GameOffer,
-  GamePanel,
-  GameTile,
-  type GamePanelTone,
-} from "@/components/ui/game";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GameOffer } from "@/components/ui/game/GameOffer";
+import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";

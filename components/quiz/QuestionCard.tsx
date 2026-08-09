@@ -5,7 +5,8 @@ import { Flag } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import type { CareerPathPayload, HigherLowerPayload } from "@/lib/quiz/formats";
 import type { QuizQuestionType } from "@/lib/quiz/types";
-import { GameChip, GamePanel } from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { FormatPrompt } from "./FormatPrompt";
 
 type QuestionCardProps = {

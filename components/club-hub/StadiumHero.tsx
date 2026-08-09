@@ -4,12 +4,9 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import {
-  GameIconWell,
-  GamePanel,
-  GameTile,
-  type GamePanelTone,
-} from "@/components/ui/game";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 import { fansSoftCap } from "@/lib/club/upgradeEffects";
 import { staminaRegenIntervalMinutes } from "@/lib/club/stamina";
 import { useTranslation } from "@/lib/i18n/useTranslation";

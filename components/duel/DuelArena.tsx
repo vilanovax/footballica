@@ -7,6 +7,7 @@ import {
   useState,
   useTransition,
 } from "react";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { getDuel } from "@/actions/duel/getDuel";
@@ -35,15 +36,33 @@ import type { LiveModeId } from "@/lib/game/economy";
 import { isSpecialDuelRoundType } from "@/lib/game/liveModes";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { playSound } from "@/lib/audio/SoundManager";
-import { DraftPicker } from "./DraftPicker";
-import { DuelQuiz } from "./DuelQuiz";
-import { DuelWaiting } from "./DuelWaiting";
-import { DuelResult } from "./DuelResult";
-import { MemoryBoard } from "./MemoryBoard";
-import { DuelSpecialPlay } from "./DuelSpecialPlay";
-import { TikiTakaBoard } from "./TikiTakaBoard";
-import { MATCHING_MIN_MS } from "./MatchingSearch";
 import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
+
+// Mode boards / end screens — load only the phase that is active.
+const DuelWaiting = dynamic(() =>
+  import("./DuelWaiting").then((m) => m.DuelWaiting),
+);
+const DraftPicker = dynamic(() =>
+  import("./DraftPicker").then((m) => m.DraftPicker),
+);
+const DuelQuiz = dynamic(() =>
+  import("./DuelQuiz").then((m) => m.DuelQuiz),
+);
+const DuelResult = dynamic(() =>
+  import("./DuelResult").then((m) => m.DuelResult),
+);
+const MemoryBoard = dynamic(() =>
+  import("./MemoryBoard").then((m) => m.MemoryBoard),
+);
+const DuelSpecialPlay = dynamic(() =>
+  import("./DuelSpecialPlay").then((m) => m.DuelSpecialPlay),
+);
+const TikiTakaBoard = dynamic(() =>
+  import("./TikiTakaBoard").then((m) => m.TikiTakaBoard),
+);
+
+/** Min matching UI dwell — keep local so we don't pull MatchingSearch into kickoff. */
+const MATCHING_MIN_MS = 5_000;
 
 type DuelArenaProps = {
   duelId: string;

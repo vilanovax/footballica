@@ -1,15 +1,26 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getClubSnapshot, getCurrentUser, hasClub } from "@/lib/player/current";
+import { getClubSnapshot, getCurrentUser } from "@/lib/player/current";
 import { getMyDuels } from "@/actions/duel/getMyDuels";
 import { DuelLobby } from "@/components/duel/DuelLobby";
+import { RouteLoading } from "@/components/ui/RouteLoading";
 
 export const dynamic = "force-dynamic";
 
 export default async function DuelLobbyPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!(await hasClub())) redirect("/onboarding");
+  // user.club already on the cached auth row — no extra hasClub() hop.
+  if (!user.club) redirect("/onboarding");
 
+  return (
+    <Suspense fallback={<RouteLoading label="Duel" />}>
+      <DuelLobbyLoader />
+    </Suspense>
+  );
+}
+
+async function DuelLobbyLoader() {
   const [res, club] = await Promise.all([getMyDuels(), getClubSnapshot()]);
   if (!res.ok) redirect("/login");
 

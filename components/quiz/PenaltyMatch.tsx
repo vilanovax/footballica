@@ -24,7 +24,8 @@ import { Scoreboard } from "./Scoreboard";
 import { GoalBurst } from "./GoalBurst";
 import { MissedPopup } from "./MissedPopup";
 import { MatchLeaveControl } from "./MatchLeaveControl";
-import { GameIconWell, GamePanel } from "@/components/ui/game";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 // Post-match / rare chrome — keep out of the kickoff JS chunk.
 const MatchResult = dynamic(() =>

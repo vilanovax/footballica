@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { ClubHub } from "@/components/club-hub/ClubHub";
+import { RouteLoading } from "@/components/ui/RouteLoading";
 import { getClubSnapshot, getCurrentUser } from "@/lib/player/current";
 import { getDuelInbox } from "@/actions/duel/getInboxCount";
 import { getMyMissions } from "@/actions/missions";
@@ -10,12 +12,23 @@ import { getGameConfig } from "@/lib/game/gameConfig";
 // Reads live club balances from the DB — never prerender.
 export const dynamic = "force-dynamic";
 
+/**
+ * Auth + onboarding gate only. Hub payload streams under Suspense so AppShell
+ * can paint the route fallback while snapshot / inbox / missions resolve.
+ */
 export default async function ClubPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!user.club) redirect("/onboarding");
 
-  // Snapshot + hub side-panels share one round-trip (auth is request-cached).
+  return (
+    <Suspense fallback={<RouteLoading label="Club Hub" />}>
+      <ClubHubLoader />
+    </Suspense>
+  );
+}
+
+async function ClubHubLoader() {
   const [club, inbox, missions, config, challenges] = await Promise.all([
     getClubSnapshot(),
     getDuelInbox(),

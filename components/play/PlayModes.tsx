@@ -10,7 +10,8 @@ import { RecentDuelHistory } from "@/components/duel/RecentDuelHistory";
 import { DuelInboxBanner } from "@/components/duel/DuelInboxBanner";
 import { MatchCard } from "@/components/play/MatchCard";
 import { ResourceIcon } from "@/components/common/ResourceIcon";
-import { GameChip, GamePanel } from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { cn } from "@/lib/utils";
 
 type PlayModesProps = {

@@ -14,7 +14,7 @@ import { nextMilestone, winsAway } from "@/lib/club/milestones";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { PostMatchSummary } from "@/components/match/PostMatchSummary";
-import { GameCta } from "@/components/ui/game";
+import { GameCta } from "@/components/ui/game/GameCta";
 
 type MatchResultProps = {
   totalKicks: number;

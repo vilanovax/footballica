@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useTranslation } from "@/lib/i18n/useTranslation";
-import {
-  GameIconWell,
-  GamePanel,
-} from "@/components/ui/game";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 /** Shown when stamina is empty — gates entry to a match (PRD §3 Gate). */
 export function ExhaustedBlocker() {

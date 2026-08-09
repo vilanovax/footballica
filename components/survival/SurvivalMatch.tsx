@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useSurvivalStore } from "@/stores/survivalStore";
@@ -24,11 +25,21 @@ import {
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { AnswerButton } from "@/components/quiz/AnswerButton";
 import { ExplanationFact } from "@/components/quiz/ExplanationFact";
-import { GoalBurst } from "@/components/quiz/GoalBurst";
-import { ReportModal } from "@/components/quiz/ReportModal";
-import { SurvivalResult } from "@/components/survival/SurvivalResult";
-import { FormatDevToggle } from "@/components/quiz/FormatDevToggle";
 import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
+
+// Post-match / rare chrome — mirror PenaltyMatch kickoff split.
+const SurvivalResult = dynamic(() =>
+  import("@/components/survival/SurvivalResult").then((m) => m.SurvivalResult),
+);
+const ReportModal = dynamic(() =>
+  import("@/components/quiz/ReportModal").then((m) => m.ReportModal),
+);
+const GoalBurst = dynamic(() =>
+  import("@/components/quiz/GoalBurst").then((m) => m.GoalBurst),
+);
+const FormatDevToggle = dynamic(() =>
+  import("@/components/quiz/FormatDevToggle").then((m) => m.FormatDevToggle),
+);
 
 const REVEAL_MS = 900;
 
@@ -292,7 +303,7 @@ export function SurvivalMatch({
 
   return (
     <section className="relative flex flex-1 flex-col">
-      <FormatDevToggle />
+      {process.env.NODE_ENV === "development" ? <FormatDevToggle /> : null}
       <div
         className={[
           "flex flex-1 flex-col gap-5",

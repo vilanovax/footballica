@@ -6,7 +6,8 @@ import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { playSound } from "@/lib/audio/SoundManager";
-import { GameChip, GamePanel } from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 type MissionProgressBannerProps = {
   missions: EvaluateMissionsResult;

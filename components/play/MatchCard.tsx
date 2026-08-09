@@ -9,13 +9,10 @@ import { toLocaleDigits } from "@/lib/i18n/format";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
 import { ResourceIcon } from "@/components/common/ResourceIcon";
-import {
-  GameChip,
-  GameIconWell,
-  GamePanel,
-  GameTile,
-  type GamePanelTone,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 import { cn } from "@/lib/utils";
 
 function GameIcon({

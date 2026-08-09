@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -21,10 +22,18 @@ import {
 import { AvatarImage } from "@/components/common/AvatarImage";
 import { HubIcon } from "@/components/common/HubIcon";
 import { ResourceIcon } from "@/components/common/ResourceIcon";
-import { ProfileEditModal } from "./ProfileEditModal";
-import { FlagPickerModal } from "./FlagPickerModal";
-import { MissionDrawer } from "@/components/profile/MissionDrawer";
 import { countMissionRewardsReady } from "@/lib/game/missionRewards";
+
+// Modals / drawer — mount chunks only when opened (ClubHub MissionDrawer pattern).
+const ProfileEditModal = dynamic(() =>
+  import("./ProfileEditModal").then((m) => m.ProfileEditModal),
+);
+const FlagPickerModal = dynamic(() =>
+  import("./FlagPickerModal").then((m) => m.FlagPickerModal),
+);
+const MissionDrawer = dynamic(() =>
+  import("@/components/profile/MissionDrawer").then((m) => m.MissionDrawer),
+);
 import { calculateLevel, MAX_LEVEL } from "@/lib/game/economy";
 import { playerTitleBand } from "@/lib/game/playerTitle";
 import {
@@ -38,11 +47,8 @@ import type { BadgePresentation } from "@/lib/game/badgeTypes";
 import { resolveBadgeImageUrl } from "@/lib/game/badgeArt";
 import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
-import {
-  GameChip,
-  GamePanel,
-  type GamePanelTone,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
 import { cn } from "@/lib/utils";
 
 /** Tier → medal ring fill. */

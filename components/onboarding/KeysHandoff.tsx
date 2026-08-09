@@ -2,7 +2,9 @@
 
 import { motion } from "framer-motion";
 import { AvatarImage } from "@/components/common/AvatarImage";
-import { GameCta, GameIconWell, GamePanel } from "@/components/ui/game";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import type { AvatarKey } from "@/lib/onboarding/avatars";
 
 type KeysHandoffProps = {

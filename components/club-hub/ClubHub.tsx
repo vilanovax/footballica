@@ -33,7 +33,6 @@ import { countMissionRewardsReady } from "@/lib/game/missionRewards";
 import { StatusBar } from "./StatusBar";
 import { StadiumHero } from "./StadiumHero";
 import { UpgradeCard } from "./UpgradeCard";
-import { NewspaperModal } from "./NewspaperModal";
 import { FtueCoach } from "./FtueCoach";
 import { DuelInboxBanner } from "@/components/duel/DuelInboxBanner";
 import type { DuelInboxItem } from "@/actions/duel/getInboxCount";
@@ -41,7 +40,7 @@ import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
 import type { CampaignSeasonView } from "@/lib/game/campaignSeason";
 import { NextGoalCard } from "@/components/club-hub/NextGoalCard";
 import { HubTodayRail } from "@/components/club-hub/HubTodayRail";
-import { GamePanel } from "@/components/ui/game";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 // Heavy / deferred hub panels — keep first Club paint lean.
 const BusinessPanel = dynamic(() =>
@@ -52,6 +51,9 @@ const MissionDrawer = dynamic(() =>
 );
 const Confetti = dynamic(() =>
   import("./Confetti").then((m) => m.Confetti),
+);
+const NewspaperModal = dynamic(() =>
+  import("./NewspaperModal").then((m) => m.NewspaperModal),
 );
 
 type ClubHubProps = {

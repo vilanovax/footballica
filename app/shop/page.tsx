@@ -13,12 +13,17 @@ type ShopPageProps = {
 export default async function ShopPage({ searchParams }: ShopPageProps) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (!user.club) redirect("/onboarding");
 
-  const club = await getClubSnapshot();
+  // Club, config, and searchParams are independent after auth.
+  const [club, config, params] = await Promise.all([
+    getClubSnapshot(),
+    getGameConfig(),
+    searchParams,
+  ]);
   if (!club) redirect("/onboarding");
 
-  const config = await getGameConfig();
-  const { tab } = await searchParams;
+  const tab = params.tab;
   const initialTab =
     tab === "coins" || tab === "boosters" || tab === "upgrades"
       ? tab

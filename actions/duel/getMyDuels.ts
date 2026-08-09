@@ -30,13 +30,15 @@ export type GetMyDuelsResult =
  * fallback, bots, expiries) so the lobby stays fresh without relying on cron.
  */
 export async function getMyDuels(): Promise<GetMyDuelsResult> {
+  // Auth is independent of job tick — start both immediately.
+  const authPromise = requireUserClub();
   try {
     await tickDuelJobs();
   } catch (err) {
     console.error("tickDuelJobs in getMyDuels", err);
   }
 
-  const pair = await requireUserClub();
+  const pair = await authPromise;
   if (!pair) return { ok: false, error: "not_authenticated" };
   const { user } = pair;
 
@@ -44,31 +46,33 @@ export async function getMyDuels(): Promise<GetMyDuelsResult> {
     const cutoff = duelHistoryCutoff();
     const terminal = Array.from(DUEL_TERMINAL);
 
-    const rows = await prisma.duelMatch.findMany({
-      where: {
-        OR: [
-          {
-            AND: [
-              { OR: [{ challengerId: user.id }, { opponentId: user.id }] },
-              { status: { notIn: terminal } },
-            ],
-          },
-          {
-            AND: [
-              { OR: [{ challengerId: user.id }, { opponentId: user.id }] },
-              { status: { in: terminal } },
-              { finishedAt: { gte: cutoff } },
-            ],
-          },
-        ],
-      },
-      include: duelSnapshotInclude,
-      orderBy: { updatedAt: "desc" },
-      take: 40,
-    });
+    const [rows, cats, config] = await Promise.all([
+      prisma.duelMatch.findMany({
+        where: {
+          OR: [
+            {
+              AND: [
+                { OR: [{ challengerId: user.id }, { opponentId: user.id }] },
+                { status: { notIn: terminal } },
+              ],
+            },
+            {
+              AND: [
+                { OR: [{ challengerId: user.id }, { opponentId: user.id }] },
+                { status: { in: terminal } },
+                { finishedAt: { gte: cutoff } },
+              ],
+            },
+          ],
+        },
+        include: duelSnapshotInclude,
+        orderBy: { updatedAt: "desc" },
+        take: 40,
+      }),
+      listDuelEligibleCategories(),
+      getGameConfig(),
+    ]);
 
-    const cats = await listDuelEligibleCategories();
-    const config = await getGameConfig();
     const snapshots = rows.map((d) => {
       const activeRound = d.rounds.find((r) => {
         const turnRound =

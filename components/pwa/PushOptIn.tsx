@@ -13,7 +13,8 @@ import {
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
-import { GameCta, GameTile } from "@/components/ui/game";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameTile } from "@/components/ui/game/GameTile";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);

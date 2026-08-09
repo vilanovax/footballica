@@ -80,17 +80,15 @@ Fantasy light buttons remain: `.btn-fantasy-primary|secondary|accent` (Hub / Day
 
 ## 5. React primitives
 
-Import from `@/components/ui/game`:
+Import **deep paths** (no barrel — avoids pulling client `GameCta` into every panel consumer):
 
 ```tsx
-import {
-  GamePanel,
-  GameTile,
-  GameChip,
-  GameIconWell,
-  GameCta,
-  GameOffer,
-} from "@/components/ui/game";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameOffer } from "@/components/ui/game/GameOffer";
 ```
 
 | Component | Maps to |

@@ -10,14 +10,12 @@ import {
 } from "@/actions/club/sponsor";
 import type { ClubSnapshot } from "@/lib/club/upgrades";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import {
-  GameChip,
-  GameCta,
-  GameIconWell,
-  GameOffer,
-  GamePanel,
-  GameTile,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GameOffer } from "@/components/ui/game/GameOffer";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 import { FundsCost } from "@/components/club-hub/FundsCost";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";

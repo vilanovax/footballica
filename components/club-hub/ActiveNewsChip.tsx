@@ -8,7 +8,7 @@ import {
   newspaperEventById,
 } from "@/lib/boosters/boosters";
 import type { ActiveNewsBoosterSnapshot } from "@/lib/club/upgrades";
-import { GamePanel } from "@/components/ui/game";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 

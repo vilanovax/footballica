@@ -12,11 +12,8 @@ import type { UpgradeKey } from "@/lib/club/upgrades";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { UpgradeIcon } from "@/components/club-hub/UpgradeIcon";
-import {
-  GameIconWell,
-  GamePanel,
-  type GamePanelTone,
-} from "@/components/ui/game";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
 import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 

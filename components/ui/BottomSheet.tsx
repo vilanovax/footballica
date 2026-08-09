@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { GameIconWell } from "@/components/ui/game";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
 
 type BottomSheetProps = {
   open: boolean;

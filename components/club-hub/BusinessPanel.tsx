@@ -17,12 +17,10 @@ import { BankBusinessSheet } from "@/components/club-hub/BankBusinessSheet";
 import { SponsorOfficeSheet } from "@/components/club-hub/SponsorOfficeSheet";
 import { StaffBusinessSheet } from "@/components/club-hub/StaffBusinessSheet";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import {
-  GameCta,
-  GameIconWell,
-  GamePanel,
-  GameTile,
-} from "@/components/ui/game";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 import { FundsCost } from "@/components/club-hub/FundsCost";
 import type { BusinessFacilityKey } from "@/lib/club/businessEconomy";
 import { playSound } from "@/lib/audio/SoundManager";

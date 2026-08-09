@@ -14,7 +14,7 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { PostMatchSummary } from "@/components/match/PostMatchSummary";
 import type { PostMatchTrophy } from "@/components/match/postMatchTypes";
-import { GameCta } from "@/components/ui/game";
+import { GameCta } from "@/components/ui/game/GameCta";
 
 type SurvivalResultProps = {
   categoryId: string;

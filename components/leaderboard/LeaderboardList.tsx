@@ -19,10 +19,8 @@ import {
 import { ResourceIcon } from "@/components/common/ResourceIcon";
 import { RankArt, medalKindForPlace } from "@/components/leaderboard/RankArt";
 import { shortClubName } from "@/lib/leaderboard/displayName";
-import {
-  GameChip,
-  GamePanel,
-} from "@/components/ui/game";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { cn } from "@/lib/utils";
 
 type LeaderboardListProps = {
