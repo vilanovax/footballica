@@ -13,6 +13,7 @@ import {
   type MissionMatchLog,
   type MissionProgressView,
 } from "@/lib/game/missionTypes";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 
 export type {
   EvaluateMissionsResult,
@@ -404,6 +405,7 @@ export async function applyMissionEconomy(
         weeklyXp: { increment: xp },
       },
     });
+    invalidateLeaderboardCache();
   }
 }
 
@@ -643,7 +645,7 @@ export async function claimMissionReward(
   missionId: string,
 ): Promise<ClaimMissionRewardResult> {
   try {
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const row = await tx.clubMission.findUnique({
         where: { clubId_missionId: { clubId, missionId } },
         include: {
@@ -701,6 +703,8 @@ export async function claimMissionReward(
         missionId,
       };
     });
+    if (result.ok && result.xp > 0) invalidateLeaderboardCache();
+    return result;
   } catch (err) {
     console.error("claimMissionReward", err);
     return { ok: false, error: "server_error" };
@@ -716,7 +720,7 @@ export async function claimMissionChest(
   batchId?: string,
 ): Promise<ClaimChestResult> {
   try {
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const now = new Date();
       let targetBatchId = batchId ?? null;
       let kind: MissionTrackKind = "CAMPAIGN";
@@ -800,6 +804,8 @@ export async function claimMissionChest(
         balances: { coins: club.coins, xp },
       };
     });
+    if (result.ok && result.xp > 0) invalidateLeaderboardCache();
+    return result;
   } catch (err) {
     console.error("claimMissionChest failed", err);
     return { ok: false, error: "server_error" };

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserClub } from "@/lib/player/current";
 import { getGameConfig } from "@/lib/game/gameConfig";
 import { isLiveModeEnabledInGotd } from "@/lib/game/liveModes";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 import { calculateLevel } from "@/lib/game/economy";
 import {
   calculateGotdWinRewards,
@@ -172,6 +173,7 @@ export async function submitMemoryGotd(
 
     revalidatePath("/play");
     revalidatePath("/play/memory");
+    invalidateLeaderboardCache();
 
     return {
       ok: true,

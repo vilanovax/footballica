@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getGameConfig } from "@/lib/game/gameConfig";
 import { resolveDuelWinner, tallyRoundWins } from "@/lib/duel/scoring";
 import { statusAfterDefendSubmit } from "@/lib/duel/fsm";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 import { playerMatchesCell, toGridPlayerAttrs } from "@/lib/grid/rules";
 import { GRID_SIZE, cellKey } from "@/lib/grid/types";
 import {
@@ -424,6 +425,10 @@ async function completeTikiRound(opts: {
       include: duelSnapshotInclude,
     });
   });
+
+  if (updated.weeklyXpAwarded && !opts.duel.weeklyXpAwarded) {
+    invalidateLeaderboardCache();
+  }
 
   let draftOptions = undefined;
   if (updated.status === "B_ATTACKING") {

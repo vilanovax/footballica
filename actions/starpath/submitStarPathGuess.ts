@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUserClub } from "@/lib/player/current";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 import { getMysteryPlayer } from "@/lib/mystery/players";
 import {
   ensureTodayStarPathPuzzle,
@@ -195,6 +196,7 @@ export async function submitStarPathGuess(
 
     revalidatePath("/play");
     revalidatePath("/play/star-path");
+    invalidateLeaderboardCache();
 
     return {
       ok: true,

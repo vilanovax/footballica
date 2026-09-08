@@ -6,6 +6,7 @@ import { isDuelTerminal } from "@/lib/duel/types";
 import { creditDuelMissions } from "@/lib/game/missionEngine";
 import { runBotTurnIfDue } from "@/lib/duel/bot";
 import { runShadowBotTakeover } from "@/lib/duel/shadowBot";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 
 const EXPIREABLE_STATUSES = [
   "A_ATTACKING",
@@ -110,6 +111,7 @@ async function autoForfeitDuel(
     })
     .then(async (ok) => {
       if (!ok) return false;
+      invalidateLeaderboardCache();
       const finished = await prisma.duelMatch.findUnique({
         where: { id: duelId },
         select: {

@@ -13,6 +13,7 @@ import {
   type LevelInfo,
 } from "@/lib/game/economy";
 import { getGameConfig } from "@/lib/game/gameConfig";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 import { totalHelperCost, isHelperKey, type HelperKey } from "@/lib/game/helpers";
 import { applyBoosters, type BoosterType } from "@/lib/boosters/boosters";
 import { computeStaminaRegen } from "@/lib/club/stamina";
@@ -488,6 +489,7 @@ export async function resolveMatch(
     });
 
     revalidatePath("/club");
+    invalidateLeaderboardCache();
 
     return { ok: true, ...result };
   } catch (err) {

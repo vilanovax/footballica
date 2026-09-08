@@ -122,6 +122,14 @@ export function BottomNav() {
     };
   }, [pathname, router, t]);
 
+  // Warm the ranks route after first paint — highest-latency tab (DB standings).
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      router.prefetch("/leaderboard");
+    }, 800);
+    return () => window.clearTimeout(id);
+  }, [router]);
+
   // Warn before a full reload / tab close while a match is running.
   useEffect(() => {
     if (!matchActive) return;
@@ -136,6 +144,10 @@ export function BottomNav() {
   function handleTap() {
     playSound("click");
     haptic(HAPTIC.tap);
+  }
+
+  function prefetchTab(href: string) {
+    router.prefetch(href);
   }
 
   function handleNav(e: React.MouseEvent, href: string) {
@@ -179,7 +191,7 @@ export function BottomNav() {
           leaveOpen ? "pointer-events-none opacity-0" : "opacity-100",
         ].join(" ")}
       >
-        <div className="flex items-end justify-between gap-1 rounded-bubble-xl bg-nav/95 px-2 py-2 shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.22),0_8px_24px_-4px_rgba(0,0,0,0.55)] backdrop-blur-md">
+        <div className="flex items-end justify-between gap-1 rounded-bubble-xl bg-nav/95 px-2 py-2 shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.18)]">
           {tabs.map(({ href, labelKey, iconSrc, ...rest }) => {
             const label = t(labelKey);
             const featured = "featured" in rest && rest.featured;
@@ -191,7 +203,11 @@ export function BottomNav() {
                 <Link
                   key={href}
                   href={href}
+                  prefetch
                   onClick={(e) => handleNav(e, href)}
+                  onMouseEnter={() => prefetchTab(href)}
+                  onFocus={() => prefetchTab(href)}
+                  onTouchStart={() => prefetchTab(href)}
                   aria-current={active ? "page" : undefined}
                   aria-label={
                     duelInbox > 0
@@ -235,7 +251,11 @@ export function BottomNav() {
               <Link
                 key={href}
                 href={href}
+                prefetch
                 onClick={(e) => handleNav(e, href)}
+                onMouseEnter={() => prefetchTab(href)}
+                onFocus={() => prefetchTab(href)}
+                onTouchStart={() => prefetchTab(href)}
                 aria-current={active ? "page" : undefined}
                 tabIndex={leaveOpen ? -1 : undefined}
                 className={[

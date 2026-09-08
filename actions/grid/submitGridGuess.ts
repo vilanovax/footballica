@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUserClub } from "@/lib/player/current";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 import {
   ensureTodayGridPuzzle,
   maxMistakesFromConfig,
@@ -326,6 +327,7 @@ export async function submitGridGuess(input: {
   revalidatePath("/play/grid");
   revalidatePath("/club");
   revalidatePath("/profile");
+  invalidateLeaderboardCache();
   return {
     ok: true,
     grid: result.grid,

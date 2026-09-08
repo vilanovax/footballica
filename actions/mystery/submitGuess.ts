@@ -8,6 +8,7 @@ import { buildMysteryShareCode } from "@/lib/mystery/share";
 import { evaluateMysteryGuess } from "@/lib/mystery/evaluate";
 import type { MysteryGuessRecord } from "@/lib/mystery/types";
 import { parseMysteryGuesses } from "@/lib/mystery/parse";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 import {
   ensureTodayMysteryPuzzle,
   maxGuessesFromConfig,
@@ -284,6 +285,7 @@ export async function submitMysteryGuess(
     revalidatePath("/play/mystery");
     revalidatePath("/club");
     revalidatePath("/profile");
+    invalidateLeaderboardCache();
 
     return {
       ok: true,

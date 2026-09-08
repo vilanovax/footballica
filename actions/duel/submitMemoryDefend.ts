@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getGameConfig } from "@/lib/game/gameConfig";
 import { requireUserClub } from "@/lib/player/current";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 import {
   canUserAct,
   describeTurn,
@@ -217,6 +218,10 @@ export async function submitMemoryDefend(
         include: duelSnapshotInclude,
       });
     });
+
+    if (updated.weeklyXpAwarded && !duel.weeklyXpAwarded) {
+      invalidateLeaderboardCache();
+    }
 
     let draftOptions = undefined;
     if (updated.status === "B_ATTACKING") {

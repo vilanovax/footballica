@@ -5,10 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { GAME_CONFIG_ID } from "@/lib/game/gameConfig";
 import { DEFAULT_GAME_CONFIG } from "@/lib/game/economy";
 import { WEEKLY_PRIZE_TIERS } from "@/lib/game/weeklyPrizes";
-import {
-  HALL_OF_FAME_CACHE_TAG,
-  LEADERBOARD_CACHE_TAG,
-} from "@/lib/leaderboard/cacheTags";
+import { HALL_OF_FAME_CACHE_TAG } from "@/lib/leaderboard/cacheTags";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 
 const weekFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Tehran",
@@ -165,7 +163,7 @@ export async function ensureWeeklyLeagueReset(
     });
   });
 
-  revalidateTag(LEADERBOARD_CACHE_TAG, "max");
+  invalidateLeaderboardCache();
   revalidateTag(HALL_OF_FAME_CACHE_TAG, "max");
 
   return { reset: true, weekKey, prizesPaid };

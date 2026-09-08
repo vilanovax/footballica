@@ -4,6 +4,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getGameConfig } from "@/lib/game/gameConfig";
 import { resolveDuelWinner, tallyRoundWins } from "@/lib/duel/scoring";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 import {
   statusAfterAttackSubmit,
   statusAfterDefendSubmit,
@@ -233,6 +234,10 @@ export async function finalizeSpecialDefend(opts: {
       include: duelSnapshotInclude,
     });
   });
+
+  if (updated.weeklyXpAwarded && !opts.duel.weeklyXpAwarded) {
+    invalidateLeaderboardCache();
+  }
 
   let draftOptions = undefined;
   if (updated.status === "B_ATTACKING") {

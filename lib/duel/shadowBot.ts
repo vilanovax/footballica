@@ -8,6 +8,7 @@ import type {
   DuelStatus,
 } from "@/generated/prisma/client";
 import { getGameConfig } from "@/lib/game/gameConfig";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 import {
   drawCategoryQuestions,
   pickDraftCategories,
@@ -322,6 +323,10 @@ async function playDefendTurn(
       },
     });
   });
+
+  if (weeklyXpAwarded && !duel.weeklyXpAwarded) {
+    invalidateLeaderboardCache();
+  }
 
   try {
     await creditDuelMissions({

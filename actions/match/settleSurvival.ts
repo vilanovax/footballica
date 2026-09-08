@@ -10,6 +10,7 @@ import { calculateLevel, type LevelInfo } from "@/lib/game/economy";
 import { getGameConfig } from "@/lib/game/gameConfig";
 import { computeStaminaRegen } from "@/lib/club/stamina";
 import { computeStreakUpdate } from "@/lib/game/streak";
+import { invalidateLeaderboardCache } from "@/lib/leaderboard/invalidate";
 import {
   bestComboFromResults,
   computeSurvivalRewards,
@@ -519,6 +520,7 @@ export async function settleSurvival(input: {
     revalidatePath("/club");
     revalidatePath("/profile");
     revalidatePath("/leaderboard");
+    invalidateLeaderboardCache();
 
     return {
       ok: true,
