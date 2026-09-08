@@ -432,7 +432,9 @@ export function BusinessPanel({ club, onClubUpdate }: BusinessPanelProps) {
                 />
               </motion.div>
               <p className="mt-3 font-display text-sm font-black text-white">
-                {t("club.biz.cookingHint")}
+                {biz.totalRatePerHour > 0
+                  ? t("club.biz.cookingHint")
+                  : t("club.biz.cookingHintIdle")}
               </p>
               <p className="mt-1 font-display text-[11px] font-bold text-emerald-200/80">
                 {t("club.biz.rateShort", {

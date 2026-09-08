@@ -1,34 +1,22 @@
 import en from "./locales/en";
+import fa from "./locales/fa";
 import type { Dictionary } from "./locales/en";
 import type { Locale } from "./config";
 
 /**
- * Locale dictionary cache. English ships in the main client graph (fallback +
- * default SSR locale). Persian is code-split and loaded on demand (~56KB).
+ * Both locales ship in the client graph. Persian is first-class — lazy
+ * loading caused an English flash on RTL first paint.
  */
-const cache: Partial<Record<Locale, Dictionary>> = { en };
+const cache: Record<Locale, Dictionary> = { en, fa };
 
-/** Sync read — returns undefined until a lazy locale has finished loading. */
 export function peekDictionary(locale: Locale): Dictionary | undefined {
   return cache[locale];
 }
 
-/** Always-available English dictionary (eager). */
 export function getEnglishDictionary(): Dictionary {
   return en;
 }
 
-/** Load (and cache) a locale dictionary. Safe to call repeatedly. */
 export async function loadDictionary(locale: Locale): Promise<Dictionary> {
-  const hit = cache[locale];
-  if (hit) return hit;
-
-  if (locale === "fa") {
-    const mod = await import("./locales/fa");
-    cache.fa = mod.default;
-    return mod.default;
-  }
-
-  cache.en = en;
-  return en;
+  return cache[locale] ?? en;
 }

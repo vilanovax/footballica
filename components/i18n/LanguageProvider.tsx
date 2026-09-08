@@ -1,22 +1,45 @@
 "use client";
 
-import { useEffect } from "react";
+import { createContext, useContext, useLayoutEffect, useState } from "react";
 import { useLanguageStore } from "@/stores/languageStore";
-import { getDirection } from "@/lib/i18n/config";
+import { DEFAULT_LOCALE, getDirection, type Locale } from "@/lib/i18n/config";
+
+const SeedLocaleContext = createContext<Locale>(DEFAULT_LOCALE);
+
+export function useSeedLocale(): Locale {
+  return useContext(SeedLocaleContext);
+}
+
+function applyDocLocale(locale: Locale) {
+  const root = document.documentElement;
+  root.lang = locale;
+  root.dir = getDirection(locale);
+}
 
 /**
- * Syncs the persisted locale to the document: sets `lang` + `dir` on <html>
- * so Tailwind logical properties flip and the Persian font kicks in for RTL.
- * Pure side-effect wrapper — renders children untouched.
+ * Cookie locale from the server seeds first paint. Persist wins after hydrate
+ * so we never flash English on a Persian document.
  */
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
+export function LanguageProvider({
+  children,
+  seedLocale,
+}: {
+  children: React.ReactNode;
+  seedLocale: Locale;
+}) {
   const locale = useLanguageStore((s) => s.locale);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    root.lang = locale;
-    root.dir = getDirection(locale);
+  useLayoutEffect(() => {
+    const unsub = useLanguageStore.persist.onFinishHydration(() => {
+      applyDocLocale(useLanguageStore.getState().locale);
+    });
+    if (useLanguageStore.persist.hasHydrated()) applyDocLocale(locale);
+    return unsub;
   }, [locale]);
 
-  return <>{children}</>;
+  return (
+    <SeedLocaleContext.Provider value={seedLocale}>
+      {children}
+    </SeedLocaleContext.Provider>
+  );
 }

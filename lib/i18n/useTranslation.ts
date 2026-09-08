@@ -1,21 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useLayoutEffect, useState } from "react";
 import { useLanguageStore } from "@/stores/languageStore";
-import {
-  DEFAULT_LOCALE,
-  getDirection,
-  type Locale,
-} from "./config";
-import {
-  getEnglishDictionary,
-  loadDictionary,
-  peekDictionary,
-} from "./dictionaries";
+import { getDirection, type Locale } from "./config";
+import { getEnglishDictionary, peekDictionary } from "./dictionaries";
+import { useSeedLocale } from "@/components/i18n/LanguageProvider";
 
 type Params = Record<string, string | number>;
 
-/** Resolve a dot-path (e.g. "quiz.kickOf" / "stadium.tiers.2") in a dictionary. */
 function resolve(dict: unknown, key: string): unknown {
   return key.split(".").reduce<unknown>((acc, part) => {
     if (acc && typeof acc === "object") {
@@ -33,38 +25,23 @@ function interpolate(template: string, params?: Params): string {
 }
 
 /**
- * Client translation hook. Returns `t()` plus the active locale/direction.
- * Falls back to English, then to the raw key, so a missing string is never
- * fatal to render.
- *
- * Locale from persist is applied only after mount so SSR + first paint match
- * (avoids hydration mismatches when the user saved `fa`). Persian dictionary
- * is lazy-loaded — English is used until that chunk arrives.
+ * Cookie seed matches SSR dir/lang. Persist locale after Zustand hydrates.
+ * Persian dictionary is eager so `t()` is never English on an RTL page.
  */
 export function useTranslation() {
+  const seedLocale = useSeedLocale();
   const storeLocale = useLanguageStore((s) => s.locale);
   const setLocale = useLanguageStore((s) => s.setLocale);
-  const [hydrated, setHydrated] = useState(false);
-  // Bump when a lazy dictionary finishes loading so `t` rebinds.
-  const [dictVersion, setDictVersion] = useState(0);
+  const [persistReady, setPersistReady] = useState(false);
 
-  useEffect(() => {
-    setHydrated(true);
+  useLayoutEffect(() => {
+    const mark = () => setPersistReady(true);
+    const unsub = useLanguageStore.persist.onFinishHydration(mark);
+    if (useLanguageStore.persist.hasHydrated()) mark();
+    return unsub;
   }, []);
 
-  const locale = (hydrated ? storeLocale : DEFAULT_LOCALE) as Locale;
-
-  useEffect(() => {
-    if (locale === DEFAULT_LOCALE) return;
-    if (peekDictionary(locale)) return;
-    let cancelled = false;
-    void loadDictionary(locale).then(() => {
-      if (!cancelled) setDictVersion((v) => v + 1);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [locale]);
+  const locale = (persistReady ? storeLocale : seedLocale) as Locale;
 
   const t = useCallback(
     (key: string, params?: Params): string => {
@@ -76,9 +53,7 @@ export function useTranslation() {
       if (typeof value !== "string") return key;
       return interpolate(value, params);
     },
-    // dictVersion forces refresh after lazy fa chunk lands
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
-    [locale, dictVersion],
+    [locale],
   );
 
   return { t, locale, dir: getDirection(locale), setLocale };

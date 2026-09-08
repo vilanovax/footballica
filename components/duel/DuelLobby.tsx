@@ -161,7 +161,7 @@ export function DuelLobby({
   });
 
   return (
-    <section className="flex flex-1 flex-col gap-4 pb-4">
+    <section className="flex flex-1 flex-col gap-2 pb-4">
       <GamePanel tone="amber" className="p-3.5">
         <div
           aria-hidden
@@ -263,7 +263,8 @@ export function DuelLobby({
         </GameTile>
       )}
 
-      {/* 3) Passive inbox */}
+      {waitingList.length > 0 || finishedList.length > 0 ? (
+        <div className="hub-deck flex flex-col gap-2">
       {waitingList.length > 0 ? (
         <InboxSection
           title={t("duel.inboxWaiting")}
@@ -282,7 +283,6 @@ export function DuelLobby({
         </InboxSection>
       ) : null}
 
-      {/* 4) Recents */}
       {finishedList.length > 0 ? (
         <InboxSection
           title={t("duel.inboxFinished")}
@@ -298,6 +298,8 @@ export function DuelLobby({
             />
           ))}
         </InboxSection>
+      ) : null}
+        </div>
       ) : null}
     </section>
   );

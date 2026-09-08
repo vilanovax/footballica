@@ -97,7 +97,7 @@ export function NextGoalCard({
 
             <div className="min-w-0 flex-1">
               <GameChip tone="emerald">{t("club.nextGoalReady")}</GameChip>
-              <p className="mt-1 truncate font-display text-sm font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
+              <p className="mt-1 font-display text-[13px] font-black leading-snug text-pretty text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
                 {t("club.nextGoalBuy", { name })}
               </p>
               <p className="mt-1 font-display text-[11px] font-bold text-white/70">

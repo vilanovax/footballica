@@ -49,7 +49,7 @@ export function TrophyShowcase({ challenges }: TrophyShowcaseProps) {
           <h2 className="font-display text-xs font-black text-arena-muted">
             {t("survival.trophyShowcase")}
           </h2>
-          <span className="rounded-full bg-accent/15 px-2 py-0.5 font-display text-[10px] font-extrabold text-accent-deep">
+          <span className="rounded-full bg-accent/15 px-2 py-0.5 font-display text-[10px] font-extrabold text-accent">
             {t("survival.trophyPath", {
               n: toLocaleDigits(conquered, locale),
               total: toLocaleDigits(total, locale),
@@ -69,7 +69,7 @@ export function TrophyShowcase({ challenges }: TrophyShowcaseProps) {
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="mt-1 font-body text-[11px] font-semibold text-muted-foreground">
+        <p className="mt-1 font-body text-[11px] font-semibold text-muted-foreground" dir="auto">
           {t("survival.trophyShowcaseHint")}
         </p>
       </div>

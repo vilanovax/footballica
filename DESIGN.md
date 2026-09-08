@@ -12,7 +12,7 @@ Admin CMS (`.admin`) stays on shadcn Slate and is out of scope.
 | **Player pitch** | All player chrome (`html.player-pitch`, `.hub-ground`) — Club, Play, ranks, profile, shop, settings, login | `--arena-*` bed; `--foreground` / `--nav` remapped to pitch |
 | **Arena chrome** | Bottom sheets, match arenas, result modals, immersive game UI | `--arena-*` — always pitch-dark |
 
-Arena does **not** flip with Day/Night. Immersion > theme sync.
+Arena sheets do **not** flip with Day/Night. Player pitch **does**: Day = forest `--arena-bg`, Night (`data-theme="dark"`) = midnight navy. Accents still theme.
 
 ---
 

@@ -199,6 +199,126 @@ html.player-pitch body {
   background-image: none !important;
 }
 
+/* Player chrome: sit in the pitch — ring only, no hard 3D lift (sheets keep punch). */
+html.player-pitch .game-panel {
+  box-shadow: 0 0 0 1px hsl(var(--arena-ring) / 0.22);
+}
+html.player-pitch .game-panel-amber {
+  box-shadow: 0 0 0 1px hsl(var(--arena-ring-amber) / 0.28);
+}
+html.player-pitch .game-panel-rose {
+  box-shadow: 0 0 0 1px hsl(var(--arena-ring-rose) / 0.26);
+}
+html.player-pitch .game-panel-sky {
+  box-shadow: 0 0 0 1px hsl(var(--arena-ring-sky) / 0.26);
+}
+html.player-pitch .game-tile,
+html.player-pitch .game-tile-emerald,
+html.player-pitch .game-tile-amber,
+html.player-pitch .game-tile-sky,
+html.player-pitch .game-tile-rose {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+html.player-pitch .game-tile-emerald {
+  box-shadow: 0 0 0 1px hsl(var(--arena-ring) / 0.28);
+}
+html.player-pitch .game-tile-amber {
+  box-shadow: 0 0 0 1px hsl(var(--arena-ring-amber) / 0.32);
+}
+html.player-pitch .game-tile-sky {
+  box-shadow: 0 0 0 1px hsl(var(--arena-ring-sky) / 0.3);
+}
+html.player-pitch .game-tile-rose {
+  box-shadow: 0 0 0 1px hsl(var(--arena-ring-rose) / 0.3);
+}
+
+html.player-pitch .game-sheet .game-panel {
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring) / 0.35),
+    0 4px 0 0 rgba(0, 0, 0, 0.35);
+}
+html.player-pitch .game-sheet .game-panel-amber {
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-amber) / 0.45),
+    0 4px 0 0 rgba(0, 0, 0, 0.35);
+}
+html.player-pitch .game-sheet .game-panel-rose {
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-rose) / 0.4),
+    0 4px 0 0 rgba(0, 0, 0, 0.35);
+}
+html.player-pitch .game-sheet .game-panel-sky {
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-sky) / 0.4),
+    0 4px 0 0 rgba(0, 0, 0, 0.35);
+}
+html.player-pitch .game-sheet .game-tile {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 3px 0 0 rgba(0, 0, 0, 0.28);
+}
+html.player-pitch .game-sheet .game-tile-emerald {
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring) / 0.35),
+    0 3px 0 0 rgba(0, 0, 0, 0.28);
+}
+html.player-pitch .game-sheet .game-tile-amber {
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-amber) / 0.4),
+    0 3px 0 0 rgba(0, 0, 0, 0.28);
+}
+html.player-pitch .game-sheet .game-tile-sky {
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-sky) / 0.4),
+    0 3px 0 0 rgba(0, 0, 0, 0.28);
+}
+html.player-pitch .game-sheet .game-tile-rose {
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-rose) / 0.4),
+    0 3px 0 0 rgba(0, 0, 0, 0.28);
+}
+
+/* Night Match: player pitch goes midnight; arena sheets still use :root --arena-*. */
+html.player-pitch[data-theme="dark"] {
+  --background: 215 55% 8%;
+  --foreground: 210 40% 96%;
+  --muted: 215 35% 16%;
+  --muted-foreground: 210 20% 70%;
+  --nav: 215 45% 12%;
+  --nav-foreground: 210 20% 70%;
+  --nav-active: 155 100% 48%;
+  --border: 215 30% 22%;
+  --hub-from: 155 60% 16%;
+  --hub-via: 215 55% 8%;
+  --hub-to: 220 60% 6%;
+}
+
+html.player-pitch[data-theme="dark"],
+html.player-pitch[data-theme="dark"] body {
+  background-color: hsl(215 55% 8%) !important;
+}
+
+html.player-pitch[data-theme="dark"] .hub-ground {
+  background-color: hsl(215 55% 8%);
+  background-image:
+    radial-gradient(
+      ellipse 90% 55% at 50% -8%,
+      hsl(155 60% 16% / 0.9) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 80% 70% at 50% 100%,
+      hsl(220 50% 10% / 0.7) 0%,
+      transparent 62%
+    );
+}
+
+/* Isolate each run of copy so English periods don't jump to the start in RTL. */
+[dir="rtl"] .font-display,
+[dir="rtl"] .font-body {
+  unicode-bidi: isolate;
+}
+
 .hub-deck {
   border-radius: var(--radius-bubble-xl);
   background: hsl(var(--arena-mid) / 0.42);

@@ -50,7 +50,7 @@ export function HubTodayRail({
       (campaignSeason.chapters.length > 0 || rewardReady),
   );
   // Auto-open when there's something to show under the chip (chapters / claim).
-  const [campaignOpen, setCampaignOpen] = useState(hasCampaignBody && rewardReady);
+  const [campaignOpen, setCampaignOpen] = useState(false);
   const missionPct =
     campaignSeason && campaignSeason.missionsTotal > 0
       ? Math.round(

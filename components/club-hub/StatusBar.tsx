@@ -156,8 +156,13 @@ export function StatusBar({
               className="flex min-h-touch items-center gap-2 px-2.5 py-1.5 active:translate-y-px"
             >
               <ResourceIcon kind="coin" size="md" priority />
-              <span className="font-display text-base font-black tabular-nums text-amber-100">
-                {toLocaleDigits(coins, locale)}
+              <span className="flex min-w-0 flex-col">
+                <span className="font-display text-[10px] font-bold leading-none text-amber-200/80">
+                  {t("status.coins")}
+                </span>
+                <span className="font-display text-base font-black tabular-nums text-amber-100">
+                  {toLocaleDigits(coins, locale)}
+                </span>
               </span>
             </GameTile>
           </Link>
@@ -175,14 +180,24 @@ export function StatusBar({
               className="flex min-h-touch w-full items-center gap-2 px-2.5 py-1.5 active:translate-y-px"
             >
               <ResourceIcon kind="energy" size="md" priority />
-              <span
-                className={[
-                  "font-display text-base font-black tabular-nums",
-                  staminaLow ? "text-rose-100" : "text-sky-100",
-                ].join(" ")}
-              >
-                {toLocaleDigits(localStamina, locale)}/
-                {toLocaleDigits(maxStamina, locale)}
+              <span className="flex min-w-0 flex-col">
+                <span
+                  className={[
+                    "font-display text-[10px] font-bold leading-none",
+                    staminaLow ? "text-rose-200/80" : "text-sky-200/80",
+                  ].join(" ")}
+                >
+                  {t("status.stamina")}
+                </span>
+                <span
+                  className={[
+                    "font-display text-base font-black tabular-nums",
+                    staminaLow ? "text-rose-100" : "text-sky-100",
+                  ].join(" ")}
+                >
+                  {toLocaleDigits(localStamina, locale)}/
+                  {toLocaleDigits(maxStamina, locale)}
+                </span>
               </span>
             </GameTile>
           </button>

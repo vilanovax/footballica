@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 type BottomSheetProps = {
   open: boolean;
@@ -36,6 +37,8 @@ export function BottomSheet({
 }: BottomSheetProps) {
   const dark = tone === "dark";
   const zClass = layer === "overlay" ? "z-[80]" : "z-[70]";
+  const titleId = useId();
+  const { t } = useTranslation();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -68,14 +71,14 @@ export function BottomSheet({
         >
           <button
             type="button"
-            aria-label={closeLabel}
+            aria-label={t("common.closeBackdrop")}
             onClick={onClose}
             className="absolute inset-0 bg-black/65 backdrop-blur-[5px]"
           />
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="bottom-sheet-title"
+            aria-labelledby={titleId}
             initial={{ y: "100%", opacity: 0.85 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "40%", opacity: 0 }}
@@ -105,7 +108,7 @@ export function BottomSheet({
                   )}
                 />
                 <h2
-                  id="bottom-sheet-title"
+                  id={titleId}
                   className={cn(
                     "font-display text-lg font-black",
                     dark ? "text-arena-fg" : "text-foreground",
@@ -129,7 +132,7 @@ export function BottomSheet({
                   type="button"
                   aria-label={closeLabel}
                   onClick={onClose}
-                  className="shrink-0 transition-transform active:scale-90"
+                  className="relative z-20 flex min-h-11 min-w-11 shrink-0 items-center justify-center transition-transform active:scale-90"
                 >
                   <GameIconWell size="md" src="/icons/close.png" />
                 </button>

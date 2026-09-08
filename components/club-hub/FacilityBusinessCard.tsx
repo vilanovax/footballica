@@ -243,7 +243,7 @@ export function FacilityBusinessCard({
             )}
             {f.status === "BUILT" && (
               <span className="absolute -bottom-1 -start-1 rounded-full bg-black/65 px-1.5 py-0.5 font-display text-[9px] font-black text-white ring-1 ring-white/30">
-                Lv{toLocaleDigits(f.level, locale)}
+                {t("club.levelChip", { n: toLocaleDigits(f.level, locale) })}
               </span>
             )}
           </div>
@@ -301,7 +301,7 @@ export function FacilityBusinessCard({
                     draggable={false}
                     className="h-3 w-3 object-contain"
                   />
-                  MAX
+                  {t("upgrades.max")}
                 </span>
               )}
             </div>
@@ -412,7 +412,9 @@ export function FacilityBusinessCard({
             )}
             {f.status === "LOCKED" && (
               <span className="rounded-full bg-white/10 px-2 py-1 font-display text-[10px] font-bold text-white/50">
-                Lv {toLocaleDigits(f.unlockPlayerLevel, locale)}
+                {t("club.biz.unlockChip", {
+                  n: toLocaleDigits(f.unlockPlayerLevel, locale),
+                })}
               </span>
             )}
             {/* eslint-disable-next-line @next/next/no-img-element */}

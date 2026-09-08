@@ -101,9 +101,7 @@ export function UpgradeCard({
         ? "upgrades.heroHintTraining"
         : "upgrades.heroHintMedical";
 
-  function openDetails(e: React.MouseEvent) {
-    // Don't steal the upgrade button tap.
-    if ((e.target as HTMLElement).closest("[data-upgrade-buy]")) return;
+  function openDetails() {
     if (locked) return;
     haptic(HAPTIC.light);
     playSound("click");
@@ -114,15 +112,6 @@ export function UpgradeCard({
     <>
       <motion.div
         id={id}
-        role="button"
-        tabIndex={locked ? -1 : 0}
-        onClick={openDetails}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            openDetails(e as unknown as React.MouseEvent);
-          }
-        }}
         animate={
           spotlight
             ? {
@@ -136,7 +125,7 @@ export function UpgradeCard({
         }
         transition={spotlight ? { repeat: 2, duration: 1.2 } : undefined}
         className={[
-          "scroll-mt-24 rounded-bubble-xl",
+          "scroll-mt-28 rounded-bubble-xl",
           spotlight ? "z-50" : "",
           locked ? "pointer-events-none opacity-45" : "",
         ].join(" ")}
@@ -144,7 +133,7 @@ export function UpgradeCard({
         <GamePanel
           tone={UPGRADE_PANEL_TONE[def.key]}
           className={[
-            "cursor-pointer px-3 py-3",
+            "px-3 py-3",
             spotlight
               ? "ring-2 ring-accent"
               : affordable
@@ -163,13 +152,20 @@ export function UpgradeCard({
         )}
 
         <div className="relative flex items-center gap-3">
+          <button
+            type="button"
+            onClick={openDetails}
+            disabled={locked}
+            aria-label={`${t("upgrades.openDetails")} — ${t(`upgrades.${def.key}.name`)}`}
+            className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-bubble text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+          >
           <div className="relative shrink-0">
             <GameIconWell size="lg" amber={affordable}>
               <UpgradeIcon upgradeKey={def.key} size="md" className="h-9 w-9!" />
             </GameIconWell>
             <span className="absolute -bottom-1 -start-1">
               <GameChip className="px-1.5 py-0.5 text-[9px]">
-                Lv{toLocaleDigits(level, locale)}
+                {t("club.levelChip", { n: toLocaleDigits(level, locale) })}
               </GameChip>
             </span>
           </div>
@@ -191,7 +187,7 @@ export function UpgradeCard({
                     draggable={false}
                     className="h-3 w-3 object-contain"
                   />
-                  MAX
+                  {t("upgrades.max")}
                 </GameChip>
               )}
             </div>
@@ -224,6 +220,7 @@ export function UpgradeCard({
               ))}
             </div>
           </div>
+          </button>
 
           <div className="flex shrink-0 flex-col items-end gap-1.5">
             {isMax ? (
@@ -235,7 +232,7 @@ export function UpgradeCard({
                   draggable={false}
                   className="h-3.5 w-3.5 object-contain"
                 />
-                MAX
+                  {t("upgrades.max")}
               </GameChip>
             ) : (
               <GameCta

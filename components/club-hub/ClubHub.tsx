@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
@@ -125,16 +125,18 @@ export function ClubHub({
 
   function focusUpgrade(key: UpgradeKey) {
     setGoalSpotlightKey(key);
-    window.requestAnimationFrame(() => {
-      const el = document.getElementById(`club-upgrade-${key}`);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
+    const jump = () => {
+      document
+        .getElementById(`club-upgrade-${key}`)
+        ?.scrollIntoView({ behavior: "auto", block: "start" });
+    };
+    jump();
+    window.requestAnimationFrame(jump);
     window.setTimeout(() => setGoalSpotlightKey(null), 2200);
   }
 
   const canClaimNews = club.newsClaimable;
   const missionReadyCount = countMissionRewardsReady(dailyBoard, missionBoard);
-  const newsAutoOpenedRef = useRef(false);
 
   // Replay onboarding whistle once after createClub redirect (tutorialStep 0).
   useEffect(() => {
@@ -189,14 +191,6 @@ export function ClubHub({
     });
   }
 
-  // Auto-open today's Newspaper once FTUE is done and the day is claimable.
-  useEffect(() => {
-    if (!ftueComplete || !canClaimNews || newsAutoOpenedRef.current) return;
-    if (news || newsPending) return;
-    newsAutoOpenedRef.current = true;
-    handleDailyNews();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on hub land
-  }, [ftueComplete, canClaimNews]);
 
   function handleUpgrade(key: UpgradeKey) {
     if (pendingKey) return;
@@ -285,33 +279,21 @@ export function ClubHub({
                   )}
                 </motion.button>
 
-                <Link
-                  href="/shop"
-                  aria-label={t("shop.title")}
-                  onClick={() => playSound("click")}
-                  className="game-icon-btn active:scale-90"
-                >
-                  <HubIcon kind="shop" size="md" />
-                </Link>
-
-                <motion.button
-                  type="button"
-                  onClick={handleDailyNews}
-                  disabled={newsPending}
-                  aria-label={t("club.dailyNews")}
-                  className={[
-                    "game-icon-btn relative",
-                    canClaimNews ? "" : "opacity-55",
-                  ].join(" ")}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <HubIcon kind="news" size="md" />
-                  {canClaimNews && (
+                {canClaimNews && (
+                  <motion.button
+                    type="button"
+                    onClick={handleDailyNews}
+                    disabled={newsPending}
+                    aria-label={t("club.dailyNews")}
+                    className="game-icon-btn relative"
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <HubIcon kind="news" size="md" />
                     <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
                       {toLocaleDigits(1, locale)}
                     </span>
-                  )}
-                </motion.button>
+                  </motion.button>
+                )}
               </>
             )}
 
@@ -357,7 +339,6 @@ export function ClubHub({
       </div>
 
       {ftueComplete && (
-        <div className="hub-deck mt-3 flex flex-col gap-2">
         <NextGoalCard
           coinsPerWin={coinsPerWin}
           milestoneInput={{
@@ -368,30 +349,9 @@ export function ClubHub({
           }}
           onFocusUpgrade={focusUpgrade}
         />
-
-      {/* Secondary activities — progressive disclosure under the stadium */}
-        <HubTodayRail
-          mysteryStreak={club.mysteryStreak}
-          campaignSeason={campaignSeason}
-          activeNews={club.activeNewsBooster}
-          onOpenCampaign={() => openMissions("campaign")}
-          onOpenNews={handleDailyNews}
-          onNewsExpired={() =>
-            setClub((c) => ({ ...c, activeNewsBooster: null }))
-          }
-        />
-
-        <DuelInboxBanner
-          count={duelInboxCount}
-          items={duelInboxItems}
-          variant="club"
-        />
-
-        <BusinessPanel club={club} onClubUpdate={setClub} />
-        </div>
       )}
 
-      <div className="hub-deck mt-4 flex flex-col gap-2">
+      <div className="hub-deck mt-3 flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <GameIconWell size="sm" src="/icons/upgrade.png" />
           <h2 className="font-display text-lg font-black text-arena-fg">
@@ -436,6 +396,29 @@ export function ClubHub({
           );
         })}
       </div>
+
+      {ftueComplete && (
+        <div className="hub-deck mt-4 flex flex-col gap-2">
+          <HubTodayRail
+            mysteryStreak={club.mysteryStreak}
+            campaignSeason={campaignSeason}
+            activeNews={club.activeNewsBooster}
+            onOpenCampaign={() => openMissions("campaign")}
+            onOpenNews={handleDailyNews}
+            onNewsExpired={() =>
+              setClub((c) => ({ ...c, activeNewsBooster: null }))
+            }
+          />
+
+          <DuelInboxBanner
+            count={duelInboxCount}
+            items={duelInboxItems}
+            variant="club"
+          />
+
+          <BusinessPanel club={club} onClubUpdate={setClub} />
+        </div>
+      )}
 
       <AnimatePresence>
         {news && (

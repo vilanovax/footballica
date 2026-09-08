@@ -151,6 +151,11 @@ export default function SettingsPage() {
 
   function applyTheme(next: Theme) {
     setTheme(next);
+    try {
+      localStorage.setItem("footballica:theme", next);
+    } catch {
+      /* ignore quota / private mode */
+    }
     if (next === "dark") {
       document.documentElement.setAttribute("data-theme", "dark");
     } else {

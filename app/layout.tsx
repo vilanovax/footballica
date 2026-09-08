@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import { Fredoka, Nunito, Vazirmatn } from "next/font/google";
 import { AppShell } from "@/components/shell/AppShell";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
+import { getDirection } from "@/lib/i18n/config";
+import { LOCALE_COOKIE, parseLocale } from "@/lib/i18n/localeCookie";
 import "./globals.css";
 
-// Trimmed weights: browsers synthesize missing steps; fewer files = faster text.
 const fontDisplay = Fredoka({
   variable: "--font-display",
   subsets: ["latin"],
@@ -18,7 +20,6 @@ const fontBody = Nunito({
   weight: ["400", "700", "800"],
 });
 
-// Persian/Arabic script font — applied automatically for RTL (see globals.css).
 const fontFa = Vazirmatn({
   variable: "--font-fa",
   subsets: ["arabic"],
@@ -30,11 +31,8 @@ export const metadata: Metadata = {
   description:
     "The Ultimate Fantasy Football Trivia Game | بازی جذاب اطلاعات فوتبالی",
   applicationName: "Footballica",
-  // Next auto-links the manifest from app/manifest.ts.
   appleWebApp: {
     capable: true,
-    // Full-bleed status bar over our themed content (also emits
-    // mobile-web-app-capable="yes").
     statusBarStyle: "black-translucent",
     title: "Footballica",
   },
@@ -50,28 +48,37 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#07130D" },
-    { media: "(prefers-color-scheme: dark)", color: "#07130D" },
+    { media: "(prefers-color-scheme: dark)", color: "#0B1524" },
   ],
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = parseLocale((await cookies()).get(LOCALE_COOKIE)?.value);
+  const dir = getDirection(locale);
+
   return (
     <html
-      lang="en"
+      lang={locale}
+      dir={dir}
+      suppressHydrationWarning
       className={`${fontDisplay.variable} ${fontBody.variable} ${fontFa.variable} player-pitch h-full antialiased`}
-      /* Default = Day Match. Set data-theme="dark" for Night Match.
-         LanguageProvider updates lang + dir on the client. */
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem("footballica:theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="min-h-full overflow-x-hidden font-body text-foreground">
-        <LanguageProvider>
+        <LanguageProvider seedLocale={locale}>
           <AppShell>{children}</AppShell>
         </LanguageProvider>
         <ServiceWorkerRegistration />
