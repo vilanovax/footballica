@@ -12,7 +12,9 @@ import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { ResourceIcon } from "@/components/common/ResourceIcon";
+import { GameCta } from "@/components/ui/game/GameCta";
 import { GamePanel } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 
 type StatusBarProps = {
   coins: number;
@@ -86,6 +88,15 @@ export function StatusBar({
   const staminaLow = localStamina <= 1;
   const staminaFull = localStamina >= maxStamina;
 
+  useEffect(() => {
+    if (!confirmOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && !pending) setConfirmOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmOpen, pending]);
+
   function errorMessage(code: ShopErrorCode): string {
     switch (code) {
       case "insufficient":
@@ -138,12 +149,17 @@ export function StatusBar({
             href="/shop?tab=coins"
             aria-label={t("status.buyCoins")}
             onClick={() => playSound("click")}
-            className="flex min-h-11 items-center gap-2 rounded-2xl border-2 border-amber-400/40 bg-black/35 px-2.5 py-1.5 shadow-[0_3px_0_0_rgba(0,0,0,0.3)] active:translate-y-px active:shadow-none"
+            className="block rounded-bubble-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
           >
-            <ResourceIcon kind="coin" size="md" priority />
-            <span className="font-display text-base font-black tabular-nums text-amber-100">
-              {toLocaleDigits(coins, locale)}
-            </span>
+            <GameTile
+              tone="amber"
+              className="flex min-h-touch items-center gap-2 px-2.5 py-1.5 active:translate-y-px"
+            >
+              <ResourceIcon kind="coin" size="md" priority />
+              <span className="font-display text-base font-black tabular-nums text-amber-100">
+                {toLocaleDigits(coins, locale)}
+              </span>
+            </GameTile>
           </Link>
         </motion.div>
 
@@ -152,26 +168,26 @@ export function StatusBar({
             type="button"
             aria-label={t("status.refillStamina")}
             onClick={openRefill}
-            className={[
-              "flex min-h-11 w-full items-center gap-2 rounded-2xl border-2 px-2.5 py-1.5 shadow-[0_3px_0_0_rgba(0,0,0,0.3)] active:translate-y-px active:shadow-none",
-              staminaLow
-                ? "border-rose-400/50 bg-rose-950/50"
-                : "border-sky-400/40 bg-black/35",
-            ].join(" ")}
+            className="block w-full rounded-bubble-xl text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
           >
-            <ResourceIcon kind="energy" size="md" priority />
-            <span
-              className={[
-                "font-display text-base font-black tabular-nums",
-                staminaLow ? "text-rose-200" : "text-sky-100",
-              ].join(" ")}
+            <GameTile
+              tone={staminaLow ? "rose" : "sky"}
+              className="flex min-h-touch w-full items-center gap-2 px-2.5 py-1.5 active:translate-y-px"
             >
-              {toLocaleDigits(localStamina, locale)}/
-              {toLocaleDigits(maxStamina, locale)}
-            </span>
+              <ResourceIcon kind="energy" size="md" priority />
+              <span
+                className={[
+                  "font-display text-base font-black tabular-nums",
+                  staminaLow ? "text-rose-100" : "text-sky-100",
+                ].join(" ")}
+              >
+                {toLocaleDigits(localStamina, locale)}/
+                {toLocaleDigits(maxStamina, locale)}
+              </span>
+            </GameTile>
           </button>
           {regenerating && (
-            <span className="px-1 text-end font-display text-[10px] font-bold tabular-nums text-white/55">
+            <span className="px-1 text-end font-display text-[10px] font-bold tabular-nums text-white/70">
               {t("status.plusOneIn", {
                 time: toLocaleDigits(formatMMSS(remainingMs), locale),
               })}
@@ -216,38 +232,31 @@ export function StatusBar({
                 })}
               </p>
               <div className="relative mt-5 grid grid-cols-2 gap-2">
-                <button
-                  type="button"
+                <GameCta
+                  variant="ghost"
                   disabled={pending}
                   onClick={() => setConfirmOpen(false)}
-                  className="flex min-h-touch items-center justify-center rounded-bubble border-2 border-white/15 bg-black/30 px-3 font-display text-sm font-black text-white/70"
                 >
                   {t("common.close")}
-                </button>
-                <motion.button
-                  type="button"
+                </GameCta>
+                <GameCta
+                  variant="accent"
                   disabled={pending || coins < staminaRefillCost}
-                  whileTap={pending ? undefined : { y: 3 }}
                   onClick={confirmRefill}
-                  className={[
-                    "flex min-h-touch flex-col items-center justify-center rounded-bubble px-3 font-display text-sm font-black shadow-[0_4px_0_0_rgba(0,0,0,0.35)]",
-                    coins >= staminaRefillCost
-                      ? "bg-accent text-accent-foreground"
-                      : "bg-white/10 text-white/45",
-                  ].join(" ")}
+                  className="flex-col gap-0.5"
                 >
                   {pending ? (
                     "…"
                   ) : (
                     <>
                       <span>{t("status.refillConfirm")}</span>
-                      <span className="mt-0.5 flex items-center gap-1 text-xs opacity-95">
+                      <span className="flex items-center gap-1 text-xs opacity-95">
                         <ResourceIcon kind="coin" size="sm" />
                         {toLocaleDigits(staminaRefillCost, locale)}
                       </span>
                     </>
                   )}
-                </motion.button>
+                </GameCta>
               </div>
               </GamePanel>
             </motion.div>

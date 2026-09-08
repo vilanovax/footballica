@@ -211,7 +211,7 @@ export function MatchingSearch({
             {!found && (
               <>
                 <motion.span
-                  className="absolute inset-1 rounded-full border-2 border-secondary/50"
+                  className="absolute inset-1 rounded-full shadow-[0_0_0_2px_hsl(var(--secondary)/0.5)]"
                   animate={{ scale: [1, 1.45], opacity: [0.65, 0] }}
                   transition={{
                     repeat: Infinity,
@@ -322,7 +322,7 @@ export function MatchingSearch({
         {/* Candidate ticker */}
         {!found && (
           <div className="relative w-full max-w-xs overflow-hidden rounded-2xl bg-black/30 px-3 py-2.5 ring-1 ring-white/10">
-            <p className="mb-2 font-display text-[10px] font-extrabold uppercase tracking-widest text-white/45">
+            <p className="mb-2 font-display text-[10px] font-extrabold text-white/55">
               {t("duel.matchingScanning")}
             </p>
             <div className="flex justify-center gap-2.5">

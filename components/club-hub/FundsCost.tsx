@@ -1,6 +1,5 @@
 "use client";
 
-import { Landmark } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 
@@ -22,7 +21,13 @@ export function FundsCost({
   const { t, locale } = useTranslation();
   const body = (
     <>
-      <Landmark className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/icons/stadium.png"
+        alt=""
+        aria-hidden
+        className="h-3.5 w-3.5 shrink-0 object-contain opacity-90"
+      />
       <span className="tabular-nums">{toLocaleDigits(amount, locale)}</span>
       <span className="sr-only">{t("club.biz.funds")}</span>
     </>

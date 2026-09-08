@@ -365,7 +365,7 @@ export function MysteryArena({ initial }: Props) {
           />
           <Link
             href="/play"
-            className="flex min-h-12 w-full items-center justify-center rounded-2xl border-2 border-emerald-400/40 bg-linear-to-b from-emerald-500 to-emerald-800 font-display text-base font-black text-white shadow-[0_4px_0_0_rgba(0,0,0,0.4)] transition-transform active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(0,0,0,0.4)]"
+            className="game-cta game-cta-primary flex min-h-14 w-full items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
           >
             {t("mystery.backPlay")}
           </Link>
@@ -402,7 +402,7 @@ export function MysteryArena({ initial }: Props) {
               {attrLabels.map((label) => (
                 <span
                   key={label}
-                  className="truncate text-center font-display text-[9px] font-black uppercase tracking-wide text-emerald-200/55"
+                  className="truncate text-center font-display text-[9px] font-black text-emerald-200/70"
                 >
                   {label}
                 </span>

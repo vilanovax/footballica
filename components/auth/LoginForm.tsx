@@ -7,6 +7,7 @@ import { sendOtp, verifyOtp } from "@/actions/auth";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
 
 type Step = "phone" | "otp";
 
@@ -25,9 +26,7 @@ export function LoginForm() {
   if (!ready) {
     return (
       <section className="flex flex-1 flex-col items-center justify-center gap-3">
-        <div className="text-5xl" aria-hidden>
-          ⚽️
-        </div>
+        <GameIconWell size="xl" amber src="/icons/memory-ball.png" />
       </section>
     );
   }
@@ -81,12 +80,12 @@ export function LoginForm() {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 16 }}
-          className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-b from-primary/30 to-primary/5 text-4xl shadow-fantasy"
+          className="mx-auto mb-3"
           aria-hidden
         >
-          ⚽️
+          <GameIconWell size="xl" amber src="/icons/memory-ball.png" />
         </motion.div>
-        <p className="font-display text-sm font-semibold uppercase tracking-widest text-primary">
+        <p className="font-display text-sm font-black text-primary">
           {t("auth.eyebrow")}
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold text-foreground">
@@ -119,7 +118,7 @@ export function LoginForm() {
               onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, "").slice(0, 11))}
               maxLength={11}
               dir="ltr"
-              className="min-h-touch w-full rounded-bubble border-2 border-primary bg-surface px-4 py-3 text-center font-display text-xl font-bold tracking-widest text-surface-foreground shadow-glow outline-none placeholder:tracking-normal placeholder:text-muted-foreground focus:border-accent"
+              className="min-h-touch w-full rounded-bubble bg-surface px-4 py-3 text-center font-display text-xl font-bold tracking-widest text-surface-foreground shadow-[0_0_0_2px_hsl(var(--primary)),0_4px_0_0_rgba(0,0,0,0.12)] outline-none placeholder:tracking-normal placeholder:text-muted-foreground focus:shadow-[0_0_0_2px_hsl(var(--accent)),0_4px_0_0_rgba(0,0,0,0.12)]"
             />
             {error && (
               <p className="text-center font-display text-xs font-bold text-destructive">
@@ -160,7 +159,7 @@ export function LoginForm() {
               maxLength={6}
               dir="ltr"
               autoFocus
-              className="min-h-touch w-full rounded-bubble border-2 border-accent bg-surface px-4 py-3 text-center font-display text-2xl font-bold tracking-[0.4em] text-surface-foreground shadow-glow outline-none placeholder:tracking-normal placeholder:text-muted-foreground focus:border-primary"
+              className="min-h-touch w-full rounded-bubble bg-surface px-4 py-3 text-center font-display text-2xl font-bold tracking-[0.4em] text-surface-foreground shadow-[0_0_0_2px_hsl(var(--accent)),0_4px_0_0_rgba(0,0,0,0.12)] outline-none placeholder:tracking-normal placeholder:text-muted-foreground focus:shadow-[0_0_0_2px_hsl(var(--primary)),0_4px_0_0_rgba(0,0,0,0.12)]"
             />
             <p className="text-center font-body text-xs font-semibold text-muted-foreground">
               {t("auth.otpHint")}

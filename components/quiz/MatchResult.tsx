@@ -15,6 +15,7 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { PostMatchSummary } from "@/components/match/PostMatchSummary";
 import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
 
 type MatchResultProps = {
   totalKicks: number;
@@ -74,16 +75,21 @@ export function MatchResult({
 
   if (save.status === "saving") {
     return (
-      <section className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
+      <section className="relative flex flex-1 flex-col items-center justify-center gap-5 overflow-hidden bg-arena px-4 text-center text-arena-fg">
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}
-          className="text-6xl"
+          transition={{ repeat: Infinity, duration: 1.1, ease: "linear" }}
           aria-hidden
         >
-          ⚽️
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/memory-ball.png"
+            alt=""
+            draggable={false}
+            className="h-16 w-16 object-contain drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)]"
+          />
         </motion.div>
-        <h1 className="font-display text-2xl font-bold text-foreground">
+        <h1 className="font-display text-2xl font-black text-white">
           {t("result.saving")}
         </h1>
       </section>
@@ -92,15 +98,13 @@ export function MatchResult({
 
   if (save.status === "error") {
     return (
-      <section className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-        <div className="text-6xl" aria-hidden>
-          📡
-        </div>
+      <section className="flex flex-1 flex-col items-center justify-center gap-6 bg-arena px-4 text-center text-arena-fg">
+        <GameIconWell size="xl" src="/icons/broken-heart.png" className="mx-auto" />
         <div>
-          <h1 className="font-display text-2xl font-bold text-destructive">
+          <h1 className="font-display text-2xl font-black text-rose-300">
             {t("result.saveFailed")}
           </h1>
-          <p className="mt-1 max-w-xs font-body text-sm font-semibold text-muted-foreground">
+          <p className="mt-1 max-w-xs font-display text-sm font-bold text-white/65">
             {save.message}
           </p>
         </div>

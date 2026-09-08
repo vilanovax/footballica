@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, Lock } from "lucide-react";
 import type { FacilityView } from "@/lib/club/businessEconomy";
 import type { BusinessFacilityKey } from "@/lib/club/businessEconomy";
 import { BottomSheet } from "@/components/ui/BottomSheet";
@@ -73,33 +72,33 @@ const FACILITY_META: Record<
     iconSrc: "/icons/stadium.png",
     nameKey: "club.biz.ticketOffice",
     descKey: "club.biz.ticketOfficeDesc",
-    hero: "from-[#052e16] via-[#0f172a] to-[#14532d]",
-    row: "from-[#0f3d32] via-[#16634a] to-[#0c2e26]",
+    hero: "from-arena-deep via-arena to-emerald-950",
+    row: "from-emerald-950 via-emerald-900 to-arena-deep",
     glow: "bg-emerald-400/40",
     pip: "bg-emerald-400",
-    rim: "border-emerald-400/55",
+    rim: "shadow-arena-ring",
   },
   CLUB_SHOP: {
     icon: "🛍️",
     iconSrc: "/icons/hub-shop.png",
     nameKey: "club.biz.clubShop",
     descKey: "club.biz.clubShopDesc",
-    hero: "from-[#0c2d4a] via-[#0f172a] to-[#134e75]",
-    row: "from-[#0c2d4a] via-[#155a8a] to-[#0a243c]",
+    hero: "from-sky-950 via-arena to-sky-900",
+    row: "from-sky-950 via-sky-800 to-arena-deep",
     glow: "bg-sky-400/40",
     pip: "bg-sky-400",
-    rim: "border-sky-400/55",
+    rim: "shadow-arena-ring-sky",
   },
   MUSEUM: {
     icon: "🏆",
     iconSrc: "/icons/trophy.png",
     nameKey: "club.biz.museum",
     descKey: "club.biz.museumDesc",
-    hero: "from-[#3d2a08] via-[#0f172a] to-[#7a5410]",
-    row: "from-[#3d2a08] via-[#8a5a12] to-[#2a1c06]",
+    hero: "from-amber-950 via-arena to-amber-900",
+    row: "from-amber-950 via-amber-800 to-arena-deep",
     glow: "bg-amber-400/40",
     pip: "bg-amber-400",
-    rim: "border-amber-400/55",
+    rim: "shadow-arena-ring-amber",
   },
 };
 
@@ -234,10 +233,12 @@ export function FacilityBusinessCard({
             />
             {f.status === "LOCKED" && (
               <span
-                className="absolute -bottom-1 -end-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#0f172a] bg-slate-800 text-white/70 shadow-md"
+                className="absolute -bottom-1 -end-1 flex h-6 w-6 items-center justify-center rounded-full bg-arena text-white/70 shadow-[0_0_0_2px_hsl(var(--arena-bg)),0_2px_0_0_rgba(0,0,0,0.35)]"
                 aria-hidden
               >
-                <Lock className="h-3 w-3" />
+                <svg viewBox="0 0 16 16" className="h-3 w-3 fill-current">
+                  <path d="M8 1a3 3 0 0 0-3 3v2H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1V4a3 3 0 0 0-3-3Zm1.5 5h-3V4a1.5 1.5 0 1 1 3 0v2Z" />
+                </svg>
               </span>
             )}
             {f.status === "BUILT" && (
@@ -414,9 +415,12 @@ export function FacilityBusinessCard({
                 Lv {toLocaleDigits(f.unlockPlayerLevel, locale)}
               </span>
             )}
-            <ChevronRight
-              className="h-4 w-4 text-white/45 rtl:rotate-180"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/back.png"
+              alt=""
               aria-hidden
+              className="h-4 w-4 rotate-180 object-contain opacity-45 rtl:rotate-0"
             />
           </div>
         </div>
@@ -544,7 +548,7 @@ export function FacilityBusinessCard({
                     />
                   ))}
                 </div>
-                <p className="mt-2 font-display text-[11px] font-bold uppercase tracking-widest text-white/55">
+                <p className="mt-2 font-display text-[11px] font-black text-white/65">
                   {t("club.biz.statReady")}
                 </p>
                 <motion.p
@@ -669,7 +673,7 @@ export function FacilityBusinessCard({
 
             {f.status === "AVAILABLE" && f.nextRatePerHour != null && (
               <>
-                <p className="mt-3 font-display text-[11px] font-bold uppercase tracking-widest text-white/55">
+                <p className="mt-3 font-display text-[11px] font-black text-white/65">
                   {t("club.biz.readyToBuild")}
                 </p>
                 <p
@@ -687,7 +691,13 @@ export function FacilityBusinessCard({
             {f.status === "LOCKED" && (
               <>
                 <GameChip className="mt-3 gap-1.5 px-3 py-1.5 text-xs text-white/85">
-                  <Lock className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+                  <svg
+                    viewBox="0 0 16 16"
+                    className="h-3.5 w-3.5 shrink-0 fill-current opacity-80"
+                    aria-hidden
+                  >
+                    <path d="M8 1a3 3 0 0 0-3 3v2H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1V4a3 3 0 0 0-3-3Zm1.5 5h-3V4a1.5 1.5 0 1 1 3 0v2Z" />
+                  </svg>
                   {t("club.biz.unlockAt", {
                     n: toLocaleDigits(f.unlockPlayerLevel, locale),
                   })}
@@ -747,7 +757,13 @@ export function FacilityBusinessCard({
                   </span>
                 </span>
               </span>
-              <ChevronRight className="h-4 w-4 text-white/45 rtl:rotate-180" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/back.png"
+                alt=""
+                aria-hidden
+                className="h-4 w-4 rotate-180 object-contain opacity-45 rtl:rotate-0"
+              />
             </GameTile>
           </button>
         )}
@@ -755,7 +771,7 @@ export function FacilityBusinessCard({
         {f.status === "BUILT" && (
           <div className="mt-3 grid grid-cols-2 gap-2.5">
             <GameTile className="px-3 py-3">
-              <p className="flex items-center gap-1 font-display text-[10px] font-black uppercase tracking-wide text-white/50">
+              <p className="flex items-center gap-1 font-display text-[10px] font-black text-white/60">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/icons/energy.png"
@@ -775,7 +791,7 @@ export function FacilityBusinessCard({
               </p>
             </GameTile>
             <GameTile className="px-3 py-3">
-              <p className="flex items-center gap-1 font-display text-[10px] font-black uppercase tracking-wide text-white/50">
+              <p className="flex items-center gap-1 font-display text-[10px] font-black text-white/60">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/icons/gift.png"
@@ -810,7 +826,7 @@ export function FacilityBusinessCard({
                   iconClassName="h-7 w-7"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="font-display text-[10px] font-black uppercase tracking-widest text-accent">
+                  <p className="font-display text-[10px] font-black text-accent">
                     {needsBranch
                       ? t("club.biz.branchMilestoneTitle", {
                           n: toLocaleDigits(
@@ -853,10 +869,10 @@ export function FacilityBusinessCard({
                           setPickedBranch(branch);
                         }}
                         className={[
-                          "flex min-h-12 w-full items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-start transition-transform active:translate-y-px",
+                          "flex min-h-touch w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-start transition-transform active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70",
                           selected
-                            ? "border-accent bg-accent/20 shadow-[0_3px_0_0_hsl(var(--accent-deep))]"
-                            : "border-white/15 bg-black/25",
+                            ? "bg-accent/20 shadow-[0_0_0_1px_hsl(var(--accent)/0.55),0_3px_0_0_hsl(var(--accent-deep))]"
+                            : "bg-black/25 shadow-[0_0_0_1px_rgba(255,255,255,0.14)]",
                         ].join(" ")}
                       >
                         <span className="text-xl" aria-hidden>

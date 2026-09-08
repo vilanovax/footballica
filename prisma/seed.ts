@@ -349,6 +349,17 @@ async function seedMissionBatches() {
   }
 
   console.log(`Mission batches seeded: ${batches.length} batches.`);
+
+  // Cold-start weekly league pack so /leaderboard isn't empty after migrate+seed.
+  const { ensureMockLeaderboardIfSparse } = await import(
+    "../lib/leaderboard/seedMocks"
+  );
+  const seeded = await ensureMockLeaderboardIfSparse();
+  console.log(
+    seeded
+      ? "Leaderboard mock users seeded (sparse board)."
+      : "Leaderboard already has enough active scorers.",
+  );
 }
 
 main()

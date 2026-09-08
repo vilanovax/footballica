@@ -8,6 +8,7 @@ import { formatNumber, toLocaleDigits } from "@/lib/i18n/format";
 import { ResourceIcon } from "@/components/common/ResourceIcon";
 import { RankArt, medalKindForPlace } from "@/components/leaderboard/RankArt";
 import { shortClubName } from "@/lib/leaderboard/displayName";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 type LeaderboardPodiumProps = {
   rows: LeaderboardRow[];
@@ -26,34 +27,28 @@ const PLACES: Record<
   }
 > = {
   1: {
-    ring: "ring-[#f0c14a]",
+    ring: "ring-amber-300",
     glow: "shadow-[0_0_28px_rgba(250,204,21,0.55)]",
-    barOuter:
-      "bg-linear-to-b from-[#ffe07a] via-[#e0a800] to-[#9a6b00]",
-    barInner:
-      "bg-linear-to-b from-white/35 via-transparent to-black/25",
+    barOuter: "bg-linear-to-b from-amber-200 via-amber-400 to-amber-700",
+    barInner: "bg-linear-to-b from-white/35 via-transparent to-black/25",
     barHeight: "h-[5.25rem]",
     avatarSize: "h-[4.75rem] w-[4.75rem]",
     numberTone: "text-amber-950",
   },
   2: {
-    ring: "ring-[#c5cdd4]",
+    ring: "ring-slate-300",
     glow: "shadow-[0_0_18px_rgba(203,213,225,0.4)]",
-    barOuter:
-      "bg-linear-to-b from-[#eef2f5] via-[#a8b2bb] to-[#6b7580]",
-    barInner:
-      "bg-linear-to-b from-white/40 via-transparent to-black/20",
+    barOuter: "bg-linear-to-b from-slate-100 via-slate-300 to-slate-500",
+    barInner: "bg-linear-to-b from-white/40 via-transparent to-black/20",
     barHeight: "h-16",
     avatarSize: "h-14 w-14",
     numberTone: "text-slate-800",
   },
   3: {
-    ring: "ring-[#d4a574]",
+    ring: "ring-orange-300",
     glow: "shadow-[0_0_18px_rgba(192,132,87,0.45)]",
-    barOuter:
-      "bg-linear-to-b from-[#f5d6b8] via-[#c08457] to-[#8a5528]",
-    barInner:
-      "bg-linear-to-b from-white/30 via-transparent to-black/25",
+    barOuter: "bg-linear-to-b from-orange-200 via-orange-400 to-amber-800",
+    barInner: "bg-linear-to-b from-white/30 via-transparent to-black/25",
     barHeight: "h-12",
     avatarSize: "h-14 w-14",
     numberTone: "text-amber-950",
@@ -68,29 +63,15 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
   const byRank = new Map(rows.map((r) => [r.rank, r] as const));
 
   return (
-    <div className="relative mb-3 overflow-hidden rounded-bubble-xl bg-linear-to-br from-[#1c1408] via-[#0f172a] to-[#052e16] px-2.5 pb-2 pt-3 shadow-[0_0_0_1px_rgba(251,191,36,0.35),0_5px_0_0_rgba(0,0,0,0.32)]">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.05]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(-16deg, transparent, transparent 11px, #fff 11px, #fff 12px)",
-        }}
-        aria-hidden
-      />
+    <GamePanel tone="amber" className="mb-3 px-2.5 pb-2 pt-3">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(ellipse_70%_90%_at_50%_0%,rgba(251,191,36,0.28),transparent_70%)]"
       />
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute -end-8 top-0 h-28 w-28 rounded-full bg-amber-300/20 blur-3xl"
-        animate={{ opacity: [0.2, 0.45, 0.2] }}
-        transition={{ duration: 2.6, repeat: Infinity }}
-      />
 
       <div className="relative mb-1 flex items-center justify-center gap-1.5">
         <RankArt kind="trophy" size="sm" className="h-4 w-4" />
-        <p className="font-display text-[10px] font-black uppercase tracking-[0.18em] text-amber-200/85">
+        <p className="font-display text-xs font-black text-amber-200/90">
           {t("leaderboard.podiumTitle")}
         </p>
       </div>
@@ -119,18 +100,9 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
               ].join(" ")}
             >
               {isChampion && (
-                <motion.div
-                  className="mb-0.5"
-                  animate={{ y: [0, -3, 0], rotate: [0, -5, 5, 0] }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 2.4,
-                    ease: "easeInOut",
-                  }}
-                  aria-hidden
-                >
+                <div className="mb-0.5 motion-safe:animate-[podium-crown_2.4s_ease-in-out_infinite]" aria-hidden>
                   <RankArt kind="crown" size="md" className="h-7 w-7" />
-                </motion.div>
+                </div>
               )}
 
               <div className="relative">
@@ -147,6 +119,8 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
                 >
                   <AvatarImage
                     avatarKey={row.avatarKey}
+                    priority={isChampion}
+                    sizes={isChampion ? "76px" : "56px"}
                     className="h-full w-full rounded-full"
                   />
                 </div>
@@ -218,6 +192,6 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
         aria-hidden
         className="relative -mx-1 h-2 rounded-b-xl bg-linear-to-b from-black/40 to-black/10"
       />
-    </div>
+    </GamePanel>
   );
 }

@@ -7,6 +7,7 @@ import { LIVE_MODE_LABELS } from "@/lib/game/liveModes";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
 
 type DuelSpecialHelpSheetProps = {
   mode: LiveModeId | null;
@@ -91,28 +92,12 @@ function TikiHelpBody({
   return (
     <div className="flex flex-col gap-3.5">
       {/* Hero pitch — teaches the board at a glance */}
-      <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-[#0a1f14] via-[#0f172a] to-[#052e16] p-3 shadow-[0_0_0_1px_rgba(52,211,153,0.35),0_4px_0_0_rgba(0,0,0,0.35)]">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(-16deg, transparent, transparent 11px, #fff 11px, #fff 12px)",
-          }}
-        />
+      <div className="game-pinstripe relative overflow-hidden rounded-2xl bg-linear-to-br from-arena-deep via-arena to-arena-mid p-3 shadow-arena-ring">
         <div className="absolute -inset-s-10 top-0 h-28 w-28 rounded-full bg-emerald-400/15 blur-2xl" />
         <div className="absolute -inset-e-8 bottom-0 h-24 w-24 rounded-full bg-sky-400/10 blur-2xl" />
 
         <div className="relative mb-3 flex items-start gap-2.5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/35 bg-black/40 shadow-[0_3px_0_0_rgba(0,0,0,0.35)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/target.png"
-              alt=""
-              draggable={false}
-              className="h-6 w-6 object-contain"
-            />
-          </span>
+          <GameIconWell size="md" amber src="/icons/target.png" />
           <p className="min-w-0 pt-0.5 font-display text-sm font-extrabold leading-snug text-white">
             {t("duel.help.tikiTaka.pitch")}
           </p>

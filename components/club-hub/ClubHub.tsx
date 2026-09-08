@@ -40,6 +40,7 @@ import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
 import type { CampaignSeasonView } from "@/lib/game/campaignSeason";
 import { NextGoalCard } from "@/components/club-hub/NextGoalCard";
 import { HubTodayRail } from "@/components/club-hub/HubTodayRail";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 
 // Heavy / deferred hub panels — keep first Club paint lean.
@@ -230,7 +231,9 @@ export function ClubHub({
   }
 
   return (
-    <section className="relative flex flex-1 flex-col gap-3">
+    <section className="relative flex flex-1 flex-col">
+      {/* World: HUD + stadium share one pitch, not a stack of islands */}
+      <div className="flex flex-col gap-2">
       {/* Hub top bar — Arena panel chrome */}
       <GamePanel tone="emerald" className="p-2.5">
         <div
@@ -244,7 +247,7 @@ export function ClubHub({
             <Link
               href="/profile"
               aria-label={t("profile.eyebrow")}
-              className="shrink-0 rounded-full transition-transform active:scale-95"
+              className="game-icon-btn shrink-0 rounded-full p-0 transition-transform active:scale-95"
               style={clubAccentRingStyle(colorKey)}
             >
               <AvatarImage
@@ -260,7 +263,7 @@ export function ClubHub({
             </h1>
           </div>
 
-          <div className="flex shrink-0 items-center gap-0.5 rounded-2xl border border-white/12 bg-black/25 p-0.5">
+          <div className="flex shrink-0 items-center gap-0.5 rounded-2xl bg-black/30 p-0.5 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_3px_0_0_rgba(0,0,0,0.28)]">
             {ftueComplete && (
               <>
                 <motion.button
@@ -270,7 +273,7 @@ export function ClubHub({
                     openMissions("daily");
                   }}
                   aria-label={t("missions.openDrawer")}
-                  className="relative flex h-10 w-10 items-center justify-center rounded-xl"
+                  className="game-icon-btn relative"
                   whileTap={{ scale: 0.9 }}
                 >
                   <HubIcon kind="mission" size="md" priority />
@@ -286,7 +289,7 @@ export function ClubHub({
                   href="/shop"
                   aria-label={t("shop.title")}
                   onClick={() => playSound("click")}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-90"
+                  className="game-icon-btn active:scale-90"
                 >
                   <HubIcon kind="shop" size="md" />
                 </Link>
@@ -297,7 +300,7 @@ export function ClubHub({
                   disabled={newsPending}
                   aria-label={t("club.dailyNews")}
                   className={[
-                    "relative flex h-10 w-10 items-center justify-center rounded-xl",
+                    "game-icon-btn relative",
                     canClaimNews ? "" : "opacity-55",
                   ].join(" ")}
                   whileTap={{ scale: 0.9 }}
@@ -316,7 +319,7 @@ export function ClubHub({
               href="/settings"
               aria-label={t("nav.settings")}
               onClick={() => playSound("click")}
-              className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-90"
+              className="game-icon-btn active:scale-90"
             >
               <HubIcon kind="settings" size="md" />
             </Link>
@@ -338,7 +341,7 @@ export function ClubHub({
 
       {/* First viewport essence: stadium world */}
       <div className="relative">
-        <p className="mb-1.5 px-0.5 font-display text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+        <p className="mb-1 px-1 font-display text-xs font-black text-arena-muted">
           {t("club.yourStadium")}
         </p>
         <StadiumHero
@@ -351,8 +354,10 @@ export function ClubHub({
           celebrating={celebrating}
         />
       </div>
+      </div>
 
       {ftueComplete && (
+        <div className="hub-deck mt-3 flex flex-col gap-2">
         <NextGoalCard
           coinsPerWin={coinsPerWin}
           milestoneInput={{
@@ -363,10 +368,8 @@ export function ClubHub({
           }}
           onFocusUpgrade={focusUpgrade}
         />
-      )}
 
       {/* Secondary activities — progressive disclosure under the stadium */}
-      {ftueComplete && (
         <HubTodayRail
           mysteryStreak={club.mysteryStreak}
           campaignSeason={campaignSeason}
@@ -377,52 +380,37 @@ export function ClubHub({
             setClub((c) => ({ ...c, activeNewsBooster: null }))
           }
         />
-      )}
 
-      {ftueComplete && (
         <DuelInboxBanner
           count={duelInboxCount}
           items={duelInboxItems}
           variant="club"
         />
-      )}
 
-      {ftueComplete && (
         <BusinessPanel club={club} onClubUpdate={setClub} />
+        </div>
       )}
 
-      <div className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-emerald-400/30 bg-emerald-950/40 shadow-[0_2px_0_0_rgba(0,0,0,0.25)]"
-              aria-hidden
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/icons/upgrade.png"
-                alt=""
-                draggable={false}
-                className="h-5 w-5 object-contain"
-              />
-            </span>
-            <h2 className="font-display text-lg font-black text-foreground">
-              {t("club.upgrades")}
-            </h2>
-          </div>
-          <AnimatePresence>
-            {error && (
-              <motion.p
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0 }}
-                className="font-display text-xs font-bold text-destructive"
-              >
-                {error}
-              </motion.p>
-            )}
-          </AnimatePresence>
+      <div className="hub-deck mt-4 flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <GameIconWell size="sm" src="/icons/upgrade.png" />
+          <h2 className="font-display text-lg font-black text-arena-fg">
+            {t("club.upgrades")}
+          </h2>
         </div>
+        <AnimatePresence>
+          {error && (
+            <motion.p
+              role="alert"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="font-display text-xs font-bold text-destructive"
+            >
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
 
         {UPGRADE_LIST.map((def) => {
           const level = getClubLevel(club, def.key);

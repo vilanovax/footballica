@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import type { DailyMysterySnapshot } from "@/actions/mystery/getDailyMystery";
 import type { DailyGridSnapshot } from "@/actions/grid/getDailyGrid";
 import type { DailyStarPathSnapshot } from "@/actions/starpath/getDailyStarPath";
@@ -20,6 +19,10 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/config";
 import { playSound } from "@/lib/audio/SoundManager";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 
 type Props = {
   mystery: DailyMysterySnapshot | null;
@@ -156,7 +159,9 @@ function StarPathGotdCard({
       blurb={blurb}
       meta={
         done
-          ? `⭐ ${toLocaleDigits(starPath.score, locale)} · 🔥 ${toLocaleDigits(starPath.starPathStreak, locale)}`
+          ? `${t("starPath.scoreLabel")} ${toLocaleDigits(starPath.score, locale)} · ${t("gotd.streakNow", {
+              n: toLocaleDigits(starPath.starPathStreak, locale),
+            })}`
           : t("starPath.pathLabel", {
               n: toLocaleDigits(starPath.cluesRevealed, locale),
               max: toLocaleDigits(starPath.maxClues, locale),
@@ -200,7 +205,9 @@ function GridGotdCard({
       icon="/icons/guesses.png"
       title={t("play.gridTitle")}
       blurb={blurb}
-      meta={`${toLocaleDigits(grid.filled, locale)}/${toLocaleDigits(grid.totalCells, locale)} · 🔥 ${toLocaleDigits(grid.gridStreak, locale)}`}
+      meta={`${toLocaleDigits(grid.filled, locale)}/${toLocaleDigits(grid.totalCells, locale)} · ${t("gotd.streakNow", {
+        n: toLocaleDigits(grid.gridStreak, locale),
+      })}`}
       href="/play/grid"
       cta={cta}
       rotatesAt={rotatesAt}
@@ -242,7 +249,9 @@ function MemoryGotdCard({
       blurb={blurb}
       meta={
         done
-          ? `${toLocaleDigits(memory.pairsFound, locale)}/${toLocaleDigits(memory.pairCount, locale)} · 🔥 ${toLocaleDigits(memory.memoryStreak, locale)}`
+          ? `${toLocaleDigits(memory.pairsFound, locale)}/${toLocaleDigits(memory.pairCount, locale)} · ${t("memoryGotd.streak", {
+              n: toLocaleDigits(memory.memoryStreak, locale),
+            })}`
           : t("memoryGotd.pairsMeta", {
               n: toLocaleDigits(memory.pairCount, locale),
             })
@@ -288,57 +297,42 @@ function GotdShell({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2 px-0.5">
-        <h2 className="font-display text-[11px] font-black uppercase tracking-widest text-amber-800/80">
+        <h2 className="font-display text-xs font-black text-arena-muted">
           {t("play.gameOfTheDay")}
         </h2>
-        <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 font-display text-[10px] font-extrabold text-amber-900 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.45)]">
+        <GameChip tone="amber" className="text-[10px]">
           {kindLabel}
-        </span>
+        </GameChip>
       </div>
 
-      <article className="relative overflow-hidden rounded-bubble-xl bg-linear-to-br from-[#5c3d0a] via-[#0f172a] to-[#2a1c06] p-3.5 shadow-[0_0_0_1px_rgba(251,191,36,0.45),0_5px_0_0_rgba(0,0,0,0.3)]">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(-16deg, transparent, transparent 11px, #fff 11px, #fff 12px)",
-          }}
-          aria-hidden
-        />
+      <GamePanel tone="amber" className="p-3.5">
         <div
           aria-hidden
           className="pointer-events-none absolute -end-8 -top-10 h-36 w-36 rounded-full bg-amber-300/25 blur-3xl"
         />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-12 -start-6 h-32 w-32 rounded-full bg-emerald-400/15 blur-3xl"
-        />
 
         <div className="relative flex items-start gap-3">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-amber-300/40 bg-black/35 shadow-[0_3px_0_0_rgba(0,0,0,0.35)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={icon}
-              alt=""
-              aria-hidden
-              draggable={false}
-              className="h-10 w-10 object-contain drop-shadow-[0_3px_8px_rgba(0,0,0,0.4)]"
-            />
-          </span>
+          <GameIconWell
+            size="lg"
+            amber
+            src={icon}
+            className="h-14 w-14"
+            iconClassName="h-10 w-10"
+          />
           <div className="min-w-0 flex-1">
             <p className="font-display text-xl font-black leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
               {title}
             </p>
-            <p className="mt-1 font-display text-sm font-bold text-white/65">
+            <p className="mt-1 font-display text-sm font-bold text-white/70">
               {blurb}
             </p>
-            <p className="mt-1.5 font-display text-[11px] font-black text-amber-200/90">
+            <p className="mt-1.5 font-display text-[11px] font-black text-amber-200">
               {meta}
             </p>
           </div>
         </div>
 
-        <p className="relative mt-3 flex items-center justify-center gap-1.5 rounded-2xl bg-black/40 px-3 py-2 text-center font-display text-xs font-extrabold tabular-nums text-white/70 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]">
+        <GameTile className="relative mt-3 flex items-center justify-center gap-1.5 px-3 py-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/timer.png"
@@ -347,19 +341,19 @@ function GotdShell({
             draggable={false}
             className="h-4 w-4 object-contain opacity-90"
           />
-          {t("play.gotdRotatesIn", { time: countdown })}
-        </p>
+          <span className="font-display text-xs font-extrabold tabular-nums text-white/80">
+            {t("play.gotdRotatesIn", { time: countdown })}
+          </span>
+        </GameTile>
 
-        <motion.div className="relative mt-3" whileTap={{ y: 2 }}>
-          <Link
-            href={href}
-            onClick={() => playSound("click")}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-amber-300/50 bg-linear-to-b from-accent to-[hsl(38_92%_42%)] font-display text-base font-black text-accent-foreground shadow-[0_4px_0_0_rgba(120,70,0,0.5)] transition-transform active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(120,70,0,0.5)]"
-          >
-            {cta}
-          </Link>
-        </motion.div>
-      </article>
+        <Link
+          href={href}
+          onClick={() => playSound("click")}
+          className="game-cta game-cta-accent relative mt-3 w-full text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+        >
+          {cta}
+        </Link>
+      </GamePanel>
     </div>
   );
 }

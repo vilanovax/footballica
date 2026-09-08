@@ -123,7 +123,7 @@ export function BankBusinessSheet({
             <GameIconWell size="xl" amber src="/icons/coin.png" />
           </motion.div>
 
-          <p className="mt-3 font-display text-[11px] font-bold uppercase tracking-widest text-white/55">
+          <p className="mt-3 font-display text-[11px] font-black text-white/65">
             {t("club.biz.bankStatBalance")}
           </p>
           <motion.p
@@ -196,7 +196,7 @@ export function BankBusinessSheet({
             <div className="flex items-start gap-3">
               <GameIconWell size="lg" amber src="/icons/gift.png" className="bg-accent shadow-[0_4px_0_0_hsl(var(--accent-deep))]" />
               <div className="min-w-0 flex-1">
-                <p className="font-display text-[10px] font-black uppercase tracking-widest text-accent">
+                <p className="font-display text-[10px] font-black text-accent">
                   {t("club.biz.bankUpgradeTitle")}
                 </p>
                 <p className="mt-0.5 font-display text-xl font-black leading-tight text-white">

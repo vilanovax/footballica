@@ -46,10 +46,7 @@ export function RecentDuelHistory({
         <div className="min-w-0">
           <h2
             className={cn(
-              "font-display text-[11px] font-black uppercase tracking-widest",
-              playChrome
-                ? "text-muted-foreground"
-                : "tracking-[0.14em] text-muted-foreground",
+              "font-display text-[11px] font-black text-muted-foreground",
             )}
           >
             {title}
@@ -168,7 +165,7 @@ function HistoryRow({
       ) : (
         <Link
           href={`/play/duel/${d.id}`}
-          className="flex min-h-12 items-center gap-2.5 rounded-bubble-lg border-2 border-border/70 bg-surface/80 px-2.5 py-2 shadow-fantasy transition-transform active:scale-[0.98]"
+          className="flex min-h-touch items-center gap-2.5 rounded-bubble-lg bg-surface/80 px-2.5 py-2 shadow-[0_0_0_1px_hsl(var(--border)/0.7),0_3px_0_0_rgba(0,0,0,0.12)] transition-transform active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <AvatarImage
             avatarKey={themParty?.avatar}

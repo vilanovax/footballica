@@ -2,6 +2,10 @@
 
 import { motion } from "framer-motion";
 import { useTranslation } from "@/lib/i18n/useTranslation";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 type MissedPopupProps = {
   onContinue: () => void;
@@ -33,67 +37,57 @@ export function MissedPopup({ onContinue }: MissedPopupProps) {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        className="relative w-full max-w-xs overflow-hidden rounded-[1.5rem] bg-linear-to-b from-[#431407] via-[#0f172a] to-[#1c0a05] px-5 pb-5 pt-6 text-center shadow-[0_0_0_1px_rgba(251,113,133,0.45),0_16px_40px_rgba(0,0,0,0.55)]"
+        className="relative w-full max-w-xs"
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(-16deg, transparent, transparent 11px, #fff 11px, #fff 12px)",
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -end-10 top-0 h-28 w-28 rounded-full bg-rose-400/25 blur-3xl"
-        />
-
-        <motion.div
-          animate={{ rotate: [0, -10, 10, -6, 0] }}
-          transition={{ duration: 0.5 }}
-          className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-black/40 shadow-[0_0_0_1px_rgba(255,255,255,0.15),0_4px_0_0_rgba(0,0,0,0.35)]"
-          aria-hidden
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/icons/broken-heart.png"
-            alt=""
-            draggable={false}
-            className="h-10 w-10 object-contain"
+        <GamePanel tone="rose" className="px-5 pb-5 pt-6 text-center">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -end-10 top-0 h-28 w-28 rounded-full bg-rose-400/25 blur-3xl"
           />
-        </motion.div>
 
-        <h2 className="relative mt-3 font-display text-2xl font-black text-rose-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]">
-          {t("quiz.missed")}
-        </h2>
+          <motion.div
+            animate={{ rotate: [0, -10, 10, -6, 0] }}
+            transition={{ duration: 0.5 }}
+            className="relative mx-auto"
+            aria-hidden
+          >
+            <GameIconWell
+              size="lg"
+              src="/icons/broken-heart.png"
+              className="mx-auto h-16 w-16"
+              iconClassName="h-10 w-10"
+            />
+          </motion.div>
 
-        {/* Future-proof: disabled superpower slot (booster cards, PRD §5) */}
-        <button
-          type="button"
-          disabled
-          aria-disabled
-          className="relative mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-black/40 px-4 py-3 font-display text-sm font-black text-white/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/icons/energy.png"
-            alt=""
-            draggable={false}
-            className="h-5 w-5 object-contain opacity-50"
-          />
-          <span>{t("quiz.useSuperpower")}</span>
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/45">
-            {t("common.soon")}
-          </span>
-        </button>
+          <h2 className="relative mt-3 font-display text-2xl font-black text-rose-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]">
+            {t("quiz.missed")}
+          </h2>
 
-        <button
-          type="button"
-          onClick={onContinue}
-          className="relative mt-3 flex min-h-12 w-full items-center justify-center rounded-2xl border-2 border-amber-300/45 bg-linear-to-b from-accent to-[hsl(38_92%_42%)] font-display text-base font-black text-accent-foreground shadow-[0_4px_0_0_rgba(120,70,0,0.5)] transition-transform active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(120,70,0,0.5)]"
-        >
-          {t("common.continue")}
-        </button>
+          <button
+            type="button"
+            disabled
+            aria-disabled
+            className="relative mt-5 flex w-full items-center justify-center gap-2 rounded-bubble-xl bg-black/40 px-4 py-3 font-display text-sm font-black text-white/45 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
+          >
+            <GameIconWell
+              size="sm"
+              src="/icons/energy.png"
+              className="h-7 w-7 opacity-60"
+              iconClassName="h-4 w-4"
+            />
+            <span>{t("quiz.useSuperpower")}</span>
+            <GameChip className="text-[10px]">{t("common.soon")}</GameChip>
+          </button>
+
+          <GameCta
+            variant="accent"
+            block
+            className="relative mt-3"
+            onClick={onContinue}
+          >
+            {t("common.continue")}
+          </GameCta>
+        </GamePanel>
       </motion.div>
     </motion.div>
   );

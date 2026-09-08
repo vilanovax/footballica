@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Swords } from "lucide-react";
 import type { DuelInboxItem } from "@/actions/duel/getInboxCount";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
@@ -71,27 +70,20 @@ export function DuelInboxBanner({
         tone={isClub ? "rose" : "amber"}
         className="ring-1 ring-arena-amber/40"
       >
-        <motion.div
+        <div
           aria-hidden
           className="pointer-events-none absolute -end-10 top-0 h-28 w-28 rounded-full bg-amber-300/30 blur-2xl"
-          animate={{ opacity: [0.25, 0.55, 0.25] }}
-          transition={{ duration: 2.2, repeat: Infinity }}
         />
 
         <div className="relative flex items-center gap-3 px-3 pt-3">
           <span className="relative shrink-0">
-            <GameIconWell size="lg" amber className="h-14 w-14">
-              <motion.span
-                animate={{ rotate: [0, -10, 10, 0] }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 2.4,
-                  ease: "easeInOut",
-                }}
-              >
-                <Swords className="h-7 w-7 text-amber-100" aria-hidden />
-              </motion.span>
-            </GameIconWell>
+            <GameIconWell
+              size="lg"
+              amber
+              src="/icons/target.png"
+              className="h-14 w-14"
+              iconClassName="h-7 w-7"
+            />
             <span className="absolute -end-1.5 -top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-accent px-1 font-display text-[11px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)] ring-2 ring-arena">
               {toLocaleDigits(Math.min(count, 9), locale)}
               {count > 9 ? "+" : ""}
@@ -120,7 +112,14 @@ export function DuelInboxBanner({
             ) : null}
             {deadline ? (
               <GameChip tone="amber" className="mt-1 gap-1 px-2 py-0.5 text-[10px]">
-                ⏱ {deadline}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/timer.png"
+                  alt=""
+                  aria-hidden
+                  className="h-3 w-3 object-contain"
+                />
+                {deadline}
               </GameChip>
             ) : null}
           </div>

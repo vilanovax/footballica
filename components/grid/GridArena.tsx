@@ -252,7 +252,7 @@ export function GridArena({ initial }: Props) {
             href="/play"
             onClick={() => playSound("click")}
             aria-label={t("common.back")}
-            className="game-cta game-cta-ghost h-11 w-11 shrink-0 p-0"
+            className="game-cta game-cta-ghost game-icon-btn h-11 min-h-touch w-11 min-w-touch shrink-0 p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

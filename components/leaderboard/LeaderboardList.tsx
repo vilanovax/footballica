@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { AvatarImage } from "@/components/common/AvatarImage";
 import type { LeaderboardRow } from "@/actions/getLeaderboard";
-import type { HallOfFameWeek } from "@/actions/getHallOfFame";
+import {
+  getHallOfFame,
+  type HallOfFameWeek,
+} from "@/actions/getHallOfFame";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { formatNumber, toLocaleDigits } from "@/lib/i18n/format";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
@@ -21,28 +24,31 @@ import { RankArt, medalKindForPlace } from "@/components/leaderboard/RankArt";
 import { shortClubName } from "@/lib/leaderboard/displayName";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GamePanel } from "@/components/ui/game/GamePanel";
+import { RouteLoading } from "@/components/ui/RouteLoading";
 import { cn } from "@/lib/utils";
 
 type LeaderboardListProps = {
   rows: LeaderboardRow[];
   resetsInDays?: number;
-  hallOfFame?: HallOfFameWeek[];
   currentUserRow?: LeaderboardRow | null;
 };
 
 type TabKey = "weekly" | "hof";
 
+/** Only animate the first N rows — rest paint instantly to cut hydration TBT. */
+const ANIMATED_ROW_CAP = 12;
+
 const containerVariants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.035, delayChildren: 0.04 } },
+  visible: { transition: { staggerChildren: 0.03, delayChildren: 0.03 } },
 };
 
 const rowVariants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, y: 10 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 320, damping: 26 },
+    transition: { type: "spring", stiffness: 360, damping: 28 },
   },
 } as const;
 
@@ -56,12 +62,13 @@ function tierForRank(rank: number): "elite" | "contender" | "pack" | "climbing" 
 export function LeaderboardList({
   rows,
   resetsInDays = 7,
-  hallOfFame = [],
   currentUserRow = null,
 }: LeaderboardListProps) {
   const { t, locale } = useTranslation();
   const [tab, setTab] = useState<TabKey>("weekly");
   const [prizesOpen, setPrizesOpen] = useState(false);
+  const [hallOfFame, setHallOfFame] = useState<HallOfFameWeek[] | null>(null);
+  const [hofLoading, setHofLoading] = useState(false);
   const { showPodium, podiumRows, listRows } = useMemo(() => {
     const scored = rows.filter((r) => r.playState === "scored");
     const podium = scored.length >= 3 ? scored.slice(0, 3) : [];
@@ -126,22 +133,30 @@ export function LeaderboardList({
     if (next === tab) return;
     haptic(HAPTIC.light);
     setTab(next);
+    if (next === "hof" && hallOfFame === null && !hofLoading) {
+      setHofLoading(true);
+      void getHallOfFame()
+        .then(setHallOfFame)
+        .catch((err) => {
+          console.error("getHallOfFame", err);
+          setHallOfFame([]);
+        })
+        .finally(() => setHofLoading(false));
+    }
   }
 
   return (
     <section className="relative flex flex-1 flex-col">
       <header className="sticky top-0 z-20 -mx-1 bg-background/85 pb-2.5 pt-2 backdrop-blur-md">
         <GamePanel tone="emerald" className="p-3">
-          <motion.div
+          <div
             aria-hidden
             className="pointer-events-none absolute -end-8 top-0 h-24 w-24 rounded-full bg-emerald-300/25 blur-2xl"
-            animate={{ opacity: [0.2, 0.45, 0.2] }}
-            transition={{ duration: 2.6, repeat: Infinity }}
           />
 
           <div className="relative flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="font-display text-[10px] font-black uppercase tracking-widest text-emerald-200/75">
+              <p className="font-display text-xs font-black text-emerald-200/85">
                 {t("leaderboard.eyebrow")}
               </p>
               <h1 className="mt-0.5 font-display text-2xl font-black text-white drop-shadow-sm">
@@ -152,7 +167,15 @@ export function LeaderboardList({
             </div>
             {tab === "weekly" && (
               <GameChip tone="amber" className="shrink-0 gap-1 px-2.5 py-1.5 text-[11px]">
-                ⏳{" "}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/timer.png"
+                  alt=""
+                  aria-hidden
+                  width={14}
+                  height={14}
+                  className="h-3.5 w-3.5 object-contain"
+                />
                 {t("leaderboard.resetsIn", {
                   n: toLocaleDigits(resetsInDays, locale),
                 })}
@@ -163,7 +186,7 @@ export function LeaderboardList({
           <div
             role="tablist"
             aria-label={t("leaderboard.eyebrow")}
-            className="relative mt-3 grid grid-cols-2 gap-1.5 rounded-2xl border border-white/12 bg-black/30 p-1"
+            className="relative mt-3 grid grid-cols-2 gap-1.5 rounded-2xl bg-black/30 p-1 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
           >
             {(
               [
@@ -180,8 +203,8 @@ export function LeaderboardList({
                   aria-selected={active}
                   onClick={() => selectTab(item.key)}
                   className={[
-                    "relative z-10 flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 font-display text-sm font-black transition-colors",
-                    active ? "text-emerald-950" : "text-white/65",
+                    "relative z-10 flex min-h-touch items-center justify-center gap-1.5 rounded-xl px-2 font-display text-sm font-black transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring",
+                    active ? "text-emerald-950" : "text-white/70",
                   ].join(" ")}
                 >
                   {active && (
@@ -195,10 +218,7 @@ export function LeaderboardList({
                       }}
                     />
                   )}
-                  <span className="relative z-10">
-                    {item.key === "hof" ? "🏛️ " : "⚽ "}
-                    {item.label}
-                  </span>
+                  <span className="relative z-10">{item.label}</span>
                 </button>
               );
             })}
@@ -207,7 +227,11 @@ export function LeaderboardList({
       </header>
 
       {tab === "hof" ? (
-        <HallOfFamePanel weeks={hallOfFame} />
+        hallOfFame === null ? (
+          <RouteLoading label={t("leaderboard.hofTitle")} />
+        ) : (
+          <HallOfFamePanel weeks={hallOfFame} />
+        )
       ) : (
         <>
           {/* Chase card — your hunt */}
@@ -250,7 +274,7 @@ export function LeaderboardList({
             </button>
           )}
 
-          <div className="relative mb-1 overflow-hidden rounded-bubble-xl bg-linear-to-b from-[#052e16]/40 via-transparent to-transparent p-0.5">
+          <div className="relative mb-1 overflow-hidden rounded-bubble-xl bg-linear-to-b from-arena-deep/40 via-transparent to-transparent p-0.5">
             {showPodium && (
               <div ref={youOnPodium ? setYouAnchor : undefined}>
                 <LeaderboardPodium rows={podiumRows} />
@@ -258,7 +282,7 @@ export function LeaderboardList({
             )}
 
             <div className="mb-1.5 flex items-center justify-between px-1">
-              <p className="font-display text-[10px] font-black uppercase tracking-widest text-emerald-800/70">
+              <p className="font-display text-xs font-black text-emerald-800/80">
                 {t("leaderboard.tableTitle")}
               </p>
               <p className="font-display text-[10px] font-black text-emerald-800/55">
@@ -275,7 +299,7 @@ export function LeaderboardList({
                 showStickyYou ? "pb-36" : "pb-28",
               ].join(" ")}
             >
-              {listRows.map((row) => {
+              {listRows.map((row, index) => {
                 const isYou = sticky?.userId === row.userId;
                 return (
                   <li
@@ -283,7 +307,10 @@ export function LeaderboardList({
                     className="list-none"
                     ref={isYou && youInList ? setYouAnchor : undefined}
                   >
-                    <LeaderboardRowItem row={row} />
+                    <LeaderboardRowItem
+                      row={row}
+                      animate={index < ANIMATED_ROW_CAP}
+                    />
                   </li>
                 );
               })}
@@ -312,7 +339,7 @@ export function LeaderboardList({
           {WEEKLY_PRIZE_TIERS.map((tier) => (
             <li
               key={tier.place}
-              className="flex items-center justify-between gap-3 rounded-2xl border-2 border-white/12 bg-black/30 px-3 py-2.5 shadow-[0_3px_0_0_rgba(0,0,0,0.3)]"
+              className="flex items-center justify-between gap-3 rounded-2xl bg-black/30 px-3 py-2.5 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_3px_0_0_rgba(0,0,0,0.3)]"
             >
               <span className="inline-flex items-center gap-2 font-display text-sm font-black text-white">
                 <RankArt
@@ -378,16 +405,14 @@ function YourHuntCard({
       className="mb-3"
     >
       <GamePanel tone="emerald" className="p-3">
-      <motion.div
+      <div
         aria-hidden
         className="pointer-events-none absolute -end-8 top-0 h-24 w-24 rounded-full bg-emerald-300/30 blur-2xl"
-        animate={{ opacity: [0.2, 0.5, 0.2] }}
-        transition={{ duration: 2.4, repeat: Infinity }}
       />
 
       <div className="relative flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p className="font-display text-[10px] font-black uppercase tracking-widest text-emerald-200/75">
+          <p className="font-display text-xs font-black text-emerald-200/85">
             {t("leaderboard.yourHunt")}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -444,9 +469,11 @@ function YourHuntCard({
 function LeaderboardRowItem({
   row,
   sticky,
+  animate = true,
 }: {
   row: LeaderboardRow;
   sticky?: boolean;
+  animate?: boolean;
 }) {
   const { t, locale } = useTranslation();
   const unplayed = row.playState === "unplayed";
@@ -455,8 +482,7 @@ function LeaderboardRowItem({
   const tone =
     sticky || you || hot ? "emerald" : unplayed ? "sky" : "emerald";
 
-  return (
-    <motion.div variants={sticky ? undefined : rowVariants}>
+  const body = (
       <GamePanel
         tone={tone as "emerald" | "sky"}
         className={cn(
@@ -493,6 +519,7 @@ function LeaderboardRowItem({
 
       <AvatarImage
         avatarKey={row.avatarKey}
+        sizes="36px"
         className={[
           "relative h-9 w-9 shrink-0 rounded-full ring-2",
           you ? "ring-accent/80" : "ring-white/20",
@@ -542,6 +569,11 @@ function LeaderboardRowItem({
         </p>
       </div>
       </GamePanel>
-    </motion.div>
   );
+
+  if (sticky || !animate) {
+    return body;
+  }
+
+  return <motion.div variants={rowVariants}>{body}</motion.div>;
 }

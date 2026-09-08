@@ -224,7 +224,7 @@ export function SponsorOfficeSheet({
       ) : (
         <>
           <div className="mt-4 flex flex-col gap-2">
-            <p className="font-display text-[11px] font-black uppercase tracking-widest text-white/50">
+            <p className="font-display text-[11px] font-black text-white/60">
               {t("club.sponsor.slotsTitle", {
                 n: toLocaleDigits(sponsor.slots, locale),
               })}
@@ -303,7 +303,7 @@ export function SponsorOfficeSheet({
 
           {pickSlot != null && (
             <div className="mt-4 flex flex-col gap-2">
-              <p className="font-display text-[11px] font-black uppercase tracking-widest text-white/50">
+              <p className="font-display text-[11px] font-black text-white/60">
                 {t("club.sponsor.catalogTitle")}
               </p>
               {sponsor.offers.map((offer) => {
@@ -320,10 +320,10 @@ export function SponsorOfficeSheet({
                       void sign(pickSlot, offer.key);
                     }}
                     className={[
-                      "flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 px-3 py-2.5 text-start",
+                      "flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-start shadow-[0_0_0_1px_rgba(255,255,255,0.12)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70",
                       offer.canAfford
-                        ? "border-sky-300/40 bg-sky-500/15"
-                        : "border-white/10 bg-white/5 opacity-55",
+                        ? "bg-sky-500/15 shadow-[0_0_0_1px_rgba(125,211,252,0.4),0_3px_0_0_rgba(0,0,0,0.25)]"
+                        : "bg-white/5 opacity-55",
                     ].join(" ")}
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/30 font-display text-[10px] font-black text-white/80">
@@ -377,7 +377,7 @@ export function SponsorOfficeSheet({
 
           {sponsor.upgradeCost != null && (
             <GameOffer className="mt-4">
-              <p className="font-display text-[10px] font-black uppercase tracking-widest text-accent">
+              <p className="font-display text-[10px] font-black text-accent">
                 {t("club.biz.nextUpgrade")}
               </p>
               <p className="font-display text-sm font-bold text-white/80">

@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Flag } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import type { CareerPathPayload, HigherLowerPayload } from "@/lib/quiz/formats";
 import type { QuizQuestionType } from "@/lib/quiz/types";
@@ -52,17 +51,21 @@ export function QuestionCard({
           className="pointer-events-none absolute -end-8 -top-10 h-28 w-28 rounded-full bg-emerald-400/20 blur-3xl"
         />
         <div className="relative flex items-start justify-between gap-3">
-          <GameChip tone="emerald" className="uppercase tracking-wider">
-            {category}
-          </GameChip>
+          <GameChip tone="emerald">{category}</GameChip>
           <button
             type="button"
             aria-label={t("report.flag")}
             title={t("report.flag")}
             onClick={onReport}
-            className="-me-1 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/35 text-white/50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)] transition-colors active:text-rose-300"
+            className="game-icon-btn -me-1 -mt-1 shrink-0 rounded-full bg-black/35 text-white/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)] transition-colors active:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
           >
-            <Flag className="h-4 w-4" strokeWidth={2.25} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/target.png"
+              alt=""
+              draggable={false}
+              className="h-4 w-4 object-contain opacity-80"
+            />
           </button>
         </div>
         <p className="relative mt-3 font-display text-xl font-black leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">

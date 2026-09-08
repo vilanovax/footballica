@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/shell/BottomNav";
 import { Toaster } from "@/components/ui/sonner";
@@ -17,51 +18,54 @@ type AppShellProps = {
  */
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+  const isAdmin = Boolean(pathname?.startsWith("/admin"));
 
-  if (pathname?.startsWith("/admin")) {
+  useEffect(() => {
+    document.documentElement.classList.toggle("player-pitch", !isAdmin);
+    return () => document.documentElement.classList.remove("player-pitch");
+  }, [isAdmin]);
+
+  if (isAdmin) {
     return <>{children}</>;
   }
 
-  // Auth + FTUE screens: no bottom nav chrome.
   const bareChrome =
     pathname === "/login" || pathname?.startsWith("/onboarding");
   const onboardingMood = pathname?.startsWith("/onboarding");
-
-  // Focused match / daily puzzle arenas — hide tab bar for immersion.
-  // Exit via in-arena close (X); Play hub keeps the nav.
   const immersivePlay = isImmersivePlayRoute(pathname);
   const fullBleedMood = isFullBleedMoodRoute(pathname);
   const hideNav = bareChrome || immersivePlay;
-  const pitchShell = Boolean(fullBleedMood || onboardingMood);
 
   return (
-    <div
-      className={[
-        "relative mx-auto flex min-h-dvh w-full max-w-mobile flex-col overflow-x-hidden",
-        // Mystery / onboarding paint pitch-dark — kill Day Match cream.
-        pitchShell ? "bg-[hsl(var(--arena-bg))]" : "",
-      ].join(" ")}
-    >
-      <main
+    <div className="hub-ground min-h-dvh w-full">
+      <div
         className={[
-          "flex flex-1 flex-col",
-          fullBleedMood
-            ? "px-0 pt-0 pb-0"
-            : [
-                "px-4 pt-[max(1rem,env(safe-area-inset-top))]",
-                // Extra clearance for floating Play FAB + iOS home indicator.
-                hideNav
-                  ? immersivePlay
-                    ? "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
-                    : "pb-8"
-                  : "pb-[calc(7.75rem+env(safe-area-inset-bottom,0px))]",
-              ].join(" "),
+          "relative mx-auto flex min-h-dvh w-full max-w-mobile flex-col overflow-x-hidden",
+          onboardingMood || fullBleedMood
+            ? "bg-[hsl(var(--arena-bg))]"
+            : "",
         ].join(" ")}
       >
-        {children}
-      </main>
-      {!hideNav && <BottomNav />}
-      <Toaster position="top-center" />
+        <main
+          className={[
+            "flex flex-1 flex-col",
+            fullBleedMood
+              ? "px-0 pt-0 pb-0"
+              : [
+                  "px-4 pt-[max(1rem,env(safe-area-inset-top))]",
+                  hideNav
+                    ? immersivePlay
+                      ? "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+                      : "pb-8"
+                    : "pb-[calc(7.75rem+env(safe-area-inset-bottom,0px))]",
+                ].join(" "),
+          ].join(" ")}
+        >
+          {children}
+        </main>
+        {!hideNav && <BottomNav />}
+        <Toaster position="top-center" />
+      </div>
     </div>
   );
 }
@@ -83,7 +87,7 @@ function isImmersivePlayRoute(pathname: string | null | undefined): boolean {
 /**
  * Arenas that paint edge-to-edge dark (no shell inset).
  * Mystery is excluded: content is black, but top/bottom shell margins
- * keep the Day Match game background.
+ * keep the player pitch.
  */
 function isFullBleedMoodRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;

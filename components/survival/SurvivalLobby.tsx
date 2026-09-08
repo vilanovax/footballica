@@ -58,7 +58,7 @@ export function SurvivalLobby({
             iconClassName="h-7 w-7"
           />
           <div className="min-w-0 flex-1">
-            <p className="font-display text-[11px] font-bold uppercase tracking-widest text-rose-200/70">
+            <p className="font-display text-xs font-bold text-rose-200/85">
               {t("survival.eyebrow")}
             </p>
             <h1 className="mt-0.5 font-display text-2xl font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
@@ -135,16 +135,17 @@ export function SurvivalLobby({
         </GamePanel>
       </motion.div>
 
-      {liveCount > 0 ? <TrophyShowcase challenges={challenges} /> : null}
-
       {liveCount > 0 ? (
-        <PremiumChallenges
-          challenges={challenges}
-          coins={coins}
-          variant="lobby"
-        />
+        <div className="hub-deck flex flex-col gap-3">
+          <TrophyShowcase challenges={challenges} />
+          <PremiumChallenges
+            challenges={challenges}
+            coins={coins}
+            variant="lobby"
+          />
+        </div>
       ) : (
-        <p className="text-center font-display text-xs font-bold text-muted-foreground">
+        <p className="text-center font-display text-xs font-bold text-arena-muted">
           {t("survival.noChallenges")}
         </p>
       )}

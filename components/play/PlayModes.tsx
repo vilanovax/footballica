@@ -96,8 +96,8 @@ export function PlayModes({
 
       {gotd}
 
-      <div className="flex flex-col gap-2.5">
-        <h2 className="px-0.5 font-display text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+      <div className="hub-deck flex flex-col gap-2">
+        <h2 className="px-0.5 font-display text-xs font-black text-arena-muted">
           {t("play.groupSolo")}
         </h2>
         <MatchCard
@@ -133,8 +133,8 @@ export function PlayModes({
         />
       </div>
 
-      <div className="flex flex-col gap-2.5">
-        <h2 className="px-0.5 font-display text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+      <div className="hub-deck flex flex-col gap-2">
+        <h2 className="px-0.5 font-display text-xs font-black text-arena-muted">
           {t("play.groupOnline")}
         </h2>
         <MatchCard

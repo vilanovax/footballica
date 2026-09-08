@@ -52,8 +52,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#EAF7E8" },
-    { media: "(prefers-color-scheme: dark)", color: "#0B1524" },
+    { media: "(prefers-color-scheme: light)", color: "#07130D" },
+    { media: "(prefers-color-scheme: dark)", color: "#07130D" },
   ],
   viewportFit: "cover",
 };
@@ -66,7 +66,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fontDisplay.variable} ${fontBody.variable} ${fontFa.variable} h-full antialiased`}
+      className={`${fontDisplay.variable} ${fontBody.variable} ${fontFa.variable} player-pitch h-full antialiased`}
       /* Default = Day Match. Set data-theme="dark" for Night Match.
          LanguageProvider updates lang + dir on the client. */
     >

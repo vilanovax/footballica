@@ -253,8 +253,10 @@ export function MissionBoard({
                 : "border-white/12 bg-black/35 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]",
             ].join(" ")
           : [
-              "rounded-bubble-xl border-2 bg-surface p-4 shadow-fantasy",
-              isDaily ? "border-secondary/40" : "border-border",
+              "rounded-bubble-xl bg-surface p-4 shadow-fantasy",
+              isDaily
+                ? "shadow-[0_0_0_1px_hsl(var(--secondary)/0.4),0_4px_0_0_rgba(0,0,0,0.08)]"
+                : "shadow-[0_0_0_1px_hsl(var(--border)),0_4px_0_0_rgba(0,0,0,0.08)]",
               board.chestReady ? "ring-2 ring-accent/55" : "",
             ].join(" "),
       ].join(" ")}
@@ -549,7 +551,7 @@ export function MissionBoard({
                         className={[
                           "ms-auto inline-flex h-11 w-11 items-center justify-center rounded-full disabled:opacity-60",
                           dark
-                            ? "border-2 border-amber-300/50 bg-accent/30 shadow-[0_0_18px_rgba(251,191,36,0.4)]"
+                            ? "bg-accent/30 shadow-[0_0_0_1px_rgba(252,211,77,0.5),0_0_18px_rgba(251,191,36,0.4)]"
                             : "bg-accent/25 shadow-[0_0_16px_hsl(var(--accent)/0.4)] ring-2 ring-accent/50",
                         ].join(" ")}
                       >
@@ -745,11 +747,11 @@ function ChestButton({
           compact ? "h-14 w-14 rounded-2xl" : "h-16 w-16 rounded-bubble-lg",
           dark
             ? ready
-              ? "border-2 border-amber-300/55 bg-accent/25 shadow-[0_0_24px_rgba(251,191,36,0.45)]"
-              : "border-2 border-white/15 bg-black/45 shadow-[0_3px_0_0_rgba(0,0,0,0.4)]"
+              ? "bg-accent/25 shadow-[0_0_0_1px_rgba(252,211,77,0.5),0_0_24px_rgba(251,191,36,0.45)]"
+              : "bg-black/45 shadow-[0_0_0_1px_rgba(255,255,255,0.14),0_3px_0_0_rgba(0,0,0,0.4)]"
             : ready
-              ? "border-2 border-accent bg-accent/30 shadow-[0_0_28px_hsl(var(--accent)/0.55)] ring-2 ring-accent/40"
-              : "border-2 border-border bg-muted/50 shadow-fantasy",
+              ? "bg-accent/30 shadow-[0_0_28px_hsl(var(--accent)/0.55)] ring-2 ring-accent/40"
+              : "bg-muted/50 shadow-[0_0_0_1px_hsl(var(--border)),0_3px_0_0_rgba(0,0,0,0.12)]",
         ].join(" ")}
         aria-label={t("missions.claimChest")}
       >

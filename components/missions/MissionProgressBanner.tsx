@@ -49,8 +49,8 @@ export function MissionProgressBanner({
       <div className="flex items-center justify-between gap-2">
         <p
           className={[
-            "font-display text-[11px] font-bold uppercase tracking-widest",
-            arena ? "text-amber-200/85" : "text-secondary",
+            "font-display text-[11px] font-black",
+            arena ? "text-amber-200/90" : "text-secondary",
           ].join(" ")}
         >
           {title}

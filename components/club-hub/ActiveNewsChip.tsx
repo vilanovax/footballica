@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   BOOSTER_DURATION_HOURS,
@@ -8,7 +8,10 @@ import {
   newspaperEventById,
 } from "@/lib/boosters/boosters";
 import type { ActiveNewsBoosterSnapshot } from "@/lib/club/upgrades";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 
@@ -42,31 +45,35 @@ export function ActiveNewsChip({
 }: ActiveNewsChipProps) {
   const { t, locale } = useTranslation();
   const expiresAt = new Date(booster.expiresAt).getTime();
-  const [remainingMs, setRemainingMs] = useState(() =>
-    Math.max(0, expiresAt - Date.now()),
-  );
+  // Stay off `Date.now()` until after hydrate — SSR and the first client render
+  // must print the same placeholder or React reports a 1s countdown mismatch.
+  const [remainingMs, setRemainingMs] = useState<number | null>(null);
+  const onExpiredRef = useRef(onExpired);
+  onExpiredRef.current = onExpired;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const tick = () => {
       const ms = Math.max(0, expiresAt - Date.now());
       setRemainingMs(ms);
-      if (ms <= 0) onExpired?.();
+      if (ms <= 0) onExpiredRef.current?.();
     };
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [expiresAt, onExpired]);
+  }, [expiresAt]);
 
-  if (remainingMs <= 0) return null;
+  if (remainingMs !== null && remainingMs <= 0) return null;
+
+  const liveMs = remainingMs ?? 0;
 
   const catalog = newspaperEventById(booster.headline);
   const isCoin = booster.type === "COIN_BOOST";
   const labelKey = isCoin ? "news.activeChipCoin" : "news.activeChipFan";
-  const remainPct = Math.min(
-    100,
-    Math.round((remainingMs / BOOSTER_DURATION_MS) * 100),
-  );
-  const urgent = remainingMs < 5 * 60_000;
+  const remainPct =
+    remainingMs === null
+      ? 0
+      : Math.min(100, Math.round((liveMs / BOOSTER_DURATION_MS) * 100));
+  const urgent = remainingMs !== null && liveMs < 5 * 60_000;
   const eventTitle = catalog
     ? t(`news.events.${catalog.id}`)
     : booster.headline;
@@ -80,11 +87,55 @@ export function ActiveNewsChip({
       whileTap={{ scale: 0.97 }}
       onClick={onOpen}
       aria-label={t("club.dailyNews")}
-      className="w-full"
+      className="w-full rounded-bubble-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
     >
+      {compact ? (
+      <GameTile
+        tone={isCoin ? "amber" : "sky"}
+        className="min-h-11 overflow-hidden"
+      >
+        <div className="relative flex items-center justify-between gap-2 px-2.5 py-2">
+          <span className="flex min-w-0 items-center gap-2 font-display text-xs font-black text-white">
+            <GameIconWell
+              size="sm"
+              amber={isCoin}
+              src={isCoin ? "/icons/coin.png" : "/icons/fans.png"}
+              className="h-8 w-8"
+            />
+            <span className="min-w-0 truncate">
+              {t(labelKey, { mult: formatMultiplier(booster.multiplier) })}
+            </span>
+          </span>
+          <GameChip
+            tone={urgent ? "default" : "amber"}
+            className={[
+              "shrink-0 min-w-14 px-2 py-1 text-center text-[10px] tabular-nums",
+              urgent ? "bg-rose-500/30 text-rose-100" : "",
+            ].join(" ")}
+          >
+            {remainingMs === null
+              ? "\u2014"
+              : toLocaleDigits(formatRemaining(liveMs), locale)}
+          </GameChip>
+        </div>
+        <div className="relative h-1 bg-black/45" aria-hidden>
+          <motion.div
+            className={[
+              "h-full",
+              urgent
+                ? "bg-linear-to-r from-rose-400 to-orange-300"
+                : "bg-linear-to-r from-emerald-400 to-lime-300",
+            ].join(" ")}
+            initial={false}
+            animate={{ width: `${remainPct}%` }}
+            transition={{ duration: 0.4 }}
+          />
+        </div>
+      </GameTile>
+      ) : (
       <GamePanel
-        tone={isCoin || compact ? "amber" : "sky"}
-        className={compact ? "min-h-11" : "min-h-12"}
+        tone={isCoin ? "amber" : "sky"}
+        className="min-h-12"
       >
         <div
           className={[
@@ -93,14 +144,11 @@ export function ActiveNewsChip({
           ].join(" ")}
         >
           <span className="flex min-w-0 items-center gap-2 font-display font-black text-white">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <GameIconWell
+              size="sm"
+              amber={isCoin}
               src={isCoin ? "/icons/coin.png" : "/icons/fans.png"}
-              alt=""
-              draggable={false}
-              className={
-                compact ? "h-5 w-5 object-contain" : "h-6 w-6 object-contain"
-              }
+              className={compact ? "h-8 w-8" : "h-9 w-9"}
             />
             <span
               className={[
@@ -116,17 +164,18 @@ export function ActiveNewsChip({
               )}
             </span>
           </span>
-          <span
+          <GameChip
+            tone={urgent ? "default" : "amber"}
             className={[
-              "shrink-0 rounded-bubble font-display font-black tabular-nums ring-1",
+              "shrink-0 min-w-14 text-center tabular-nums",
               compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1.5 text-xs",
-              urgent
-                ? "bg-rose-500/30 text-rose-100 ring-rose-300/40"
-                : "bg-black/40 text-white/95 ring-white/20",
+              urgent ? "bg-rose-500/30 text-rose-100" : "",
             ].join(" ")}
           >
-            {toLocaleDigits(formatRemaining(remainingMs), locale)}
-          </span>
+            {remainingMs === null
+              ? "\u2014"
+              : toLocaleDigits(formatRemaining(liveMs), locale)}
+          </GameChip>
         </div>
 
         <div className="relative h-1 bg-black/45" aria-hidden>
@@ -143,6 +192,7 @@ export function ActiveNewsChip({
           />
         </div>
       </GamePanel>
+      )}
     </motion.button>
   );
 }

@@ -7,6 +7,11 @@ import type { UnlockedBadge } from "@/actions/resolveMatch";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { playSound } from "@/lib/audio/SoundManager";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { GameTile } from "@/components/ui/game/GameTile";
 
 type Props = {
   open: boolean;
@@ -47,7 +52,7 @@ export function GotdResultModal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center"
+          className="fixed inset-0 z-80 flex items-end justify-center sm:items-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -66,161 +71,172 @@ export function GotdResultModal({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 28, opacity: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className={[
-              "relative z-10 mx-4 mb-[max(1rem,env(safe-area-inset-bottom))] w-full max-w-sm overflow-hidden rounded-bubble-xl bg-linear-to-b from-[#0a1f14] via-[#0f172a] to-[#071410] p-5 sm:mb-0",
-              win
-                ? "shadow-[0_0_0_1px_rgba(251,191,36,0.4),0_24px_60px_rgba(0,0,0,0.55)]"
-                : "shadow-[0_0_0_1px_rgba(251,113,133,0.35),0_24px_60px_rgba(0,0,0,0.55)]",
-            ].join(" ")}
+            className="relative z-10 mx-4 mb-[max(1rem,env(safe-area-inset-bottom))] w-full max-w-sm sm:mb-0"
           >
-            <div
-              aria-hidden
-              className={[
-                "pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b to-transparent",
-                win ? "from-amber-400/15" : "from-rose-500/15",
-              ].join(" ")}
-            />
-            <div
-              className={[
-                "relative mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-black/40",
-                win
-                  ? "shadow-[0_0_0_1px_rgba(251,191,36,0.45),0_3px_0_0_rgba(0,0,0,0.35)]"
-                  : "shadow-[0_0_0_1px_rgba(251,113,133,0.4),0_3px_0_0_rgba(0,0,0,0.35)]",
-              ].join(" ")}
+            <GamePanel
+              tone={win ? "amber" : "rose"}
+              className="overflow-hidden p-5"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={win ? "/icons/coin.png" : "/icons/broken-heart.png"}
-                alt=""
-                draggable={false}
-                className="h-8 w-8 object-contain"
-              />
-            </div>
-
-            <h2
-              id="gotd-result-title"
-              className="relative text-center font-display text-xl font-black text-white"
-            >
-              {win
-                ? t("gotd.winTitle")
-                : streakBroken
-                  ? t("gotd.streakBrokenTitle")
-                  : t("gotd.loseTitle")}
-            </h2>
-            <p className="relative mt-1 text-center font-display text-sm font-bold text-white/55">
-              {win
-                ? t(
-                    kind === "mystery"
-                      ? "gotd.winBodyMystery"
-                      : kind === "grid"
-                        ? "gotd.winBodyGrid"
-                        : kind === "memory"
-                          ? "gotd.winBodyMemory"
-                          : "gotd.winBodyStarPath",
-                  )
-                : streakBroken
-                  ? t("gotd.streakBrokenBody", {
-                      n: toLocaleDigits(previousStreak, locale),
-                    })
-                  : t("gotd.loseBody")}
-            </p>
-
-            {win && rewards && (
-              <div className="mt-4 space-y-2 rounded-2xl bg-black/35 p-3 ring-1 ring-white/10">
-                <RewardLine
-                  label={t("gotd.baseCoins")}
-                  value={`+${toLocaleDigits(rewards.baseCoins, locale)}`}
-                  gold
-                />
-                {rewards.streakBonus > 0 && (
-                  <RewardLine
-                    label={t("gotd.streakBonus", {
-                      n: toLocaleDigits(rewards.streakDays, locale),
-                      pct: toLocaleDigits(
-                        Math.round(rewards.streakMultiplierPerDay * 100),
-                        locale,
-                      ),
-                    })}
-                    value={`+${toLocaleDigits(rewards.streakBonus, locale)}`}
-                    gold
-                  />
-                )}
-                {rewards.perfectBonus > 0 && (
-                  <RewardLine
-                    label={t("gotd.perfectBonus")}
-                    value={`+${toLocaleDigits(rewards.perfectBonus, locale)}`}
-                    gold
-                  />
-                )}
-                <div className="border-t border-white/10 pt-2">
-                  <RewardLine
-                    label={t("gotd.totalCoins")}
-                    value={`+${toLocaleDigits(rewards.coinsEarned, locale)}`}
-                    gold
-                    bold
-                  />
-                  <RewardLine
-                    label={t("gotd.totalXp")}
-                    value={`+${toLocaleDigits(rewards.xpEarned, locale)}`}
-                    bold
-                  />
-                </div>
-                {currentStreak > 0 && (
-                  <p className="pt-1 text-center font-display text-xs font-bold text-amber-200/90">
-                    🔥 {t("gotd.streakNow", {
-                      n: toLocaleDigits(currentStreak, locale),
-                    })}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {win && unlockedBadges.length > 0 && (
-              <div className="mt-3 flex flex-wrap justify-center gap-2">
-                {unlockedBadges.map((b) => (
-                  <span
-                    key={b.slug}
-                    className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2.5 py-1 font-display text-[11px] font-bold text-amber-100 ring-1 ring-amber-300/35"
-                  >
-                    <span>{b.emoji}</span>
-                    {locale === "fa" ? b.nameFa : b.nameEn}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {shareCode ? (
-              <pre className="mt-4 rounded-2xl bg-black/35 px-3 py-3 text-center font-display text-base leading-relaxed text-white/85 ring-1 ring-white/10">
-                {shareCode}
-              </pre>
-            ) : null}
-
-            <div className="mt-4 flex flex-col gap-2">
-              {onShare && shareCode ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    playSound("click");
-                    onShare();
-                  }}
-                  className="flex min-h-touch w-full items-center justify-center rounded-2xl bg-white/10 font-display text-base font-extrabold text-white ring-1 ring-white/15"
-                >
-                  {t("gotd.share")}
-                </button>
-              ) : null}
-              <Link
-                href={playHref}
-                onClick={() => playSound("click")}
+              <div
+                aria-hidden
                 className={[
-                  "flex min-h-touch w-full items-center justify-center rounded-2xl font-display text-base font-extrabold text-white",
-                  win
-                    ? "bg-amber-500/90 shadow-[0_6px_0_0_rgba(146,64,14,0.9)]"
-                    : "bg-rose-500/90 shadow-[0_6px_0_0_rgba(136,19,55,0.9)]",
+                  "pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b to-transparent",
+                  win ? "from-amber-400/15" : "from-rose-500/15",
                 ].join(" ")}
+              />
+
+              <GameIconWell
+                size="lg"
+                amber={win}
+                src={win ? "/icons/coin.png" : "/icons/broken-heart.png"}
+                className="relative mx-auto"
+              />
+
+              <h2
+                id="gotd-result-title"
+                className="relative mt-3 text-center font-display text-xl font-black text-white"
               >
-                {t("gotd.backPlay")}
-              </Link>
-            </div>
+                {win
+                  ? t("gotd.winTitle")
+                  : streakBroken
+                    ? t("gotd.streakBrokenTitle")
+                    : t("gotd.loseTitle")}
+              </h2>
+              <p className="relative mt-1 text-center font-display text-sm font-bold text-white/70">
+                {win
+                  ? t(
+                      kind === "mystery"
+                        ? "gotd.winBodyMystery"
+                        : kind === "grid"
+                          ? "gotd.winBodyGrid"
+                          : kind === "memory"
+                            ? "gotd.winBodyMemory"
+                            : "gotd.winBodyStarPath",
+                    )
+                  : streakBroken
+                    ? t("gotd.streakBrokenBody", {
+                        n: toLocaleDigits(previousStreak, locale),
+                      })
+                    : t("gotd.loseBody")}
+              </p>
+
+              {win && rewards && (
+                <GameTile
+                  tone="amber"
+                  className="relative mt-4 space-y-2 px-3 py-3 text-start"
+                >
+                  <RewardLine
+                    label={t("gotd.baseCoins")}
+                    value={`+${toLocaleDigits(rewards.baseCoins, locale)}`}
+                    gold
+                  />
+                  {rewards.streakBonus > 0 && (
+                    <RewardLine
+                      label={t("gotd.streakBonus", {
+                        n: toLocaleDigits(rewards.streakDays, locale),
+                        pct: toLocaleDigits(
+                          Math.round(rewards.streakMultiplierPerDay * 100),
+                          locale,
+                        ),
+                      })}
+                      value={`+${toLocaleDigits(rewards.streakBonus, locale)}`}
+                      gold
+                    />
+                  )}
+                  {rewards.perfectBonus > 0 && (
+                    <RewardLine
+                      label={t("gotd.perfectBonus")}
+                      value={`+${toLocaleDigits(rewards.perfectBonus, locale)}`}
+                      gold
+                    />
+                  )}
+                  <div className="border-t border-white/10 pt-2">
+                    <RewardLine
+                      label={t("gotd.totalCoins")}
+                      value={`+${toLocaleDigits(rewards.coinsEarned, locale)}`}
+                      gold
+                      bold
+                    />
+                    <RewardLine
+                      label={t("gotd.totalXp")}
+                      value={`+${toLocaleDigits(rewards.xpEarned, locale)}`}
+                      bold
+                    />
+                  </div>
+                  {currentStreak > 0 && (
+                    <div className="flex justify-center pt-1">
+                      <GameChip tone="amber" className="gap-1.5 px-2.5 py-1">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src="/icons/streak.png"
+                          alt=""
+                          aria-hidden
+                          className="h-3.5 w-3.5 object-contain"
+                        />
+                        {t("gotd.streakNow", {
+                          n: toLocaleDigits(currentStreak, locale),
+                        })}
+                      </GameChip>
+                    </div>
+                  )}
+                </GameTile>
+              )}
+
+              {win && unlockedBadges.length > 0 && (
+                <div className="relative mt-3 flex flex-wrap justify-center gap-2">
+                  {unlockedBadges.map((b) => (
+                    <GameChip
+                      key={b.slug}
+                      tone="amber"
+                      className="gap-1 px-2.5 py-1 text-[11px]"
+                    >
+                      {b.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={b.imageUrl}
+                          alt=""
+                          className="h-3.5 w-3.5 object-contain"
+                        />
+                      ) : (
+                        <span aria-hidden>{b.emoji}</span>
+                      )}
+                      {locale === "fa" ? b.nameFa : b.nameEn}
+                    </GameChip>
+                  ))}
+                </div>
+              )}
+
+              {shareCode ? (
+                <pre className="relative mt-4 rounded-2xl bg-black/35 px-3 py-3 text-center font-display text-base leading-relaxed text-white/85 shadow-[0_0_0_1px_rgba(255,255,255,0.1)]">
+                  {shareCode}
+                </pre>
+              ) : null}
+
+              <div className="relative mt-4 flex flex-col gap-2">
+                {onShare && shareCode ? (
+                  <GameCta
+                    variant="ghost"
+                    block
+                    onClick={() => {
+                      playSound("click");
+                      onShare();
+                    }}
+                  >
+                    {t("gotd.share")}
+                  </GameCta>
+                ) : null}
+                <Link
+                  href={playHref}
+                  onClick={() => playSound("click")}
+                  className={[
+                    "game-cta flex w-full min-h-14 items-center justify-center",
+                    win ? "game-cta-accent" : "game-cta-danger",
+                  ].join(" ")}
+                >
+                  {t("gotd.backPlay")}
+                </Link>
+              </div>
+            </GamePanel>
           </motion.div>
         </motion.div>
       )}
@@ -243,8 +259,8 @@ function RewardLine({
     <div className="flex items-center justify-between gap-3">
       <span
         className={[
-          "font-display text-xs font-bold text-white/60",
-          bold ? "text-sm text-white/85" : "",
+          "font-display text-xs font-bold text-white/70",
+          bold ? "text-sm text-white/90" : "",
         ].join(" ")}
       >
         {label}
@@ -252,9 +268,7 @@ function RewardLine({
       <span
         className={[
           "font-display text-sm font-black tabular-nums",
-          gold
-            ? "text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.35)]"
-            : "text-sky-200",
+          gold ? "text-amber-300" : "text-sky-200",
           bold ? "text-base" : "",
         ].join(" ")}
       >

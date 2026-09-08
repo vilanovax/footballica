@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Home, Play, Trophy, User } from "lucide-react";
 import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { useTranslation } from "@/lib/i18n/useTranslation";
@@ -19,23 +18,23 @@ const tabs = [
   {
     href: "/club",
     labelKey: "nav.club",
-    icon: Home,
+    iconSrc: "/icons/stadium.png",
   },
   {
     href: "/play",
     labelKey: "nav.play",
-    icon: Play,
+    iconSrc: "/icons/memory-ball.png",
     featured: true,
   },
   {
     href: "/leaderboard",
     labelKey: "nav.ranks",
-    icon: Trophy,
+    iconSrc: "/icons/trophy.png",
   },
   {
     href: "/profile",
     labelKey: "nav.profile",
-    icon: User,
+    iconSrc: "/icons/crown.png",
   },
 ] as const;
 
@@ -180,8 +179,8 @@ export function BottomNav() {
           leaveOpen ? "pointer-events-none opacity-0" : "opacity-100",
         ].join(" ")}
       >
-        <div className="flex items-end justify-between gap-1 rounded-bubble-xl border border-border bg-nav/95 px-2 py-2 shadow-nav-float backdrop-blur-md">
-          {tabs.map(({ href, labelKey, icon: Icon, ...rest }) => {
+        <div className="flex items-end justify-between gap-1 rounded-bubble-xl bg-nav/95 px-2 py-2 shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.22),0_8px_24px_-4px_rgba(0,0,0,0.55)] backdrop-blur-md">
+          {tabs.map(({ href, labelKey, iconSrc, ...rest }) => {
             const label = t(labelKey);
             const featured = "featured" in rest && rest.featured;
             const active =
@@ -200,7 +199,7 @@ export function BottomNav() {
                       : label
                   }
                   tabIndex={leaveOpen ? -1 : undefined}
-                  className="relative -mt-6 flex min-h-touch min-w-16 flex-col items-center gap-0.5"
+                  className="relative -mt-6 flex min-h-touch min-w-16 flex-col items-center gap-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                   <span
                     className={[
@@ -210,7 +209,14 @@ export function BottomNav() {
                       active ? "ring-2 ring-accent/70" : "",
                     ].join(" ")}
                   >
-                    <Icon className="h-7 w-7 fill-white/20" strokeWidth={2.5} />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={iconSrc}
+                      alt=""
+                      aria-hidden
+                      draggable={false}
+                      className="h-8 w-8 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
+                    />
                     {duelInbox > 0 && (
                       <span className="absolute -end-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[11px] font-bold text-accent-foreground ring-2 ring-nav">
                         {toLocaleDigits(Math.min(duelInbox, 9), locale)}
@@ -218,7 +224,7 @@ export function BottomNav() {
                       </span>
                     )}
                   </span>
-                  <span className="font-display text-xs font-semibold text-accent-deep">
+                  <span className="font-display text-xs font-semibold text-accent">
                     {label}
                   </span>
                 </Link>
@@ -233,7 +239,7 @@ export function BottomNav() {
                 aria-current={active ? "page" : undefined}
                 tabIndex={leaveOpen ? -1 : undefined}
                 className={[
-                  "relative flex min-h-touch min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-bubble px-2 py-2 transition-colors",
+                  "relative flex min-h-touch min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-bubble px-2 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                   active
                     ? "text-nav-active"
                     : "text-nav-foreground hover:text-foreground",
@@ -247,9 +253,16 @@ export function BottomNav() {
                     className="absolute inset-0 rounded-bubble bg-nav-active/10 shadow-[0_0_16px_hsl(var(--accent)/0.55)] ring-1 ring-accent/40"
                   />
                 )}
-                <Icon
-                  className="relative h-6 w-6"
-                  strokeWidth={active ? 2.75 : 2}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={iconSrc}
+                  alt=""
+                  aria-hidden
+                  draggable={false}
+                  className={[
+                    "relative h-6 w-6 object-contain",
+                    active ? "opacity-100" : "opacity-80",
+                  ].join(" ")}
                 />
                 <span className="relative font-display text-xs font-semibold">
                   {label}

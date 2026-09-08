@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
 import {
   nextMilestone,
   winsAway,
@@ -12,6 +11,7 @@ import type { UpgradeKey } from "@/lib/club/upgrades";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { UpgradeIcon } from "@/components/club-hub/UpgradeIcon";
+import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
 import { playSound } from "@/lib/audio/SoundManager";
@@ -79,35 +79,28 @@ export function NextGoalCard({
           haptic(HAPTIC.tap);
           onFocusUpgrade?.(goal.key);
         }}
-        className="block w-full text-start"
+        className="block w-full rounded-bubble-xl text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
       >
         <GamePanel tone={tone} className="px-3 py-3">
           <div className="relative flex items-center gap-3">
-            <motion.div
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 1.4, repeat: Infinity }}
+            <GameIconWell
+              size="lg"
+              amber
+              className="bg-accent/20 shadow-[0_0_0_1px_hsl(var(--accent)/0.55),0_3px_0_0_rgba(0,0,0,0.35)]"
             >
-              <GameIconWell
-                size="lg"
-                amber
-                className="bg-accent/20 shadow-[0_0_0_1px_hsl(var(--accent)/0.55),0_3px_0_0_rgba(0,0,0,0.35)]"
-              >
-                <UpgradeIcon
-                  upgradeKey={goal.key}
-                  size="md"
-                  className="h-9 w-9!"
-                />
-              </GameIconWell>
-            </motion.div>
+              <UpgradeIcon
+                upgradeKey={goal.key}
+                size="md"
+                className="h-9 w-9!"
+              />
+            </GameIconWell>
 
             <div className="min-w-0 flex-1">
-              <p className="font-display text-[10px] font-black uppercase tracking-[0.14em] text-lime-300/90">
-                {t("club.nextGoalReady")}
-              </p>
-              <p className="mt-0.5 truncate font-display text-sm font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
+              <GameChip tone="emerald">{t("club.nextGoalReady")}</GameChip>
+              <p className="mt-1 truncate font-display text-sm font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
                 {t("club.nextGoalBuy", { name })}
               </p>
-              <p className="mt-1 font-display text-[11px] font-bold text-white/55">
+              <p className="mt-1 font-display text-[11px] font-bold text-white/70">
                 {t("club.nextGoalJump")}
               </p>
             </div>
@@ -131,7 +124,10 @@ export function NextGoalCard({
   }
 
   return (
-    <Link href="/play" className="block">
+    <Link
+      href="/play"
+      className="block rounded-bubble-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+    >
       <motion.div whileTap={{ scale: 0.98 }}>
         <GamePanel tone={tone} className="px-3 py-3">
           <div className="relative flex items-center gap-3">
@@ -144,10 +140,8 @@ export function NextGoalCard({
             </GameIconWell>
 
             <div className="min-w-0 flex-1">
-              <p className="font-display text-[10px] font-black uppercase tracking-[0.14em] text-white/55">
-                {t("club.nextGoalLabel")}
-              </p>
-              <p className="mt-0.5 font-display text-sm font-black leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
+              <GameChip>{t("club.nextGoalLabel")}</GameChip>
+              <p className="mt-1 font-display text-sm font-black leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
                 {t("club.nextGoalWins", {
                   n: toLocaleDigits(wins === Infinity ? 0 : wins, locale),
                   name,
@@ -170,9 +164,13 @@ export function NextGoalCard({
               </p>
             </div>
 
-            <ChevronRight
-              className="h-5 w-5 shrink-0 text-white/50 rtl:rotate-180"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/back.png"
+              alt=""
               aria-hidden
+              draggable={false}
+              className="h-4 w-4 shrink-0 opacity-60 ltr:rotate-180"
             />
           </div>
         </GamePanel>

@@ -46,7 +46,7 @@ export function TrophyShowcase({ challenges }: TrophyShowcaseProps) {
     <div className="flex flex-col gap-2.5">
       <div className="px-0.5">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <h2 className="font-display text-xs font-black text-arena-muted">
             {t("survival.trophyShowcase")}
           </h2>
           <span className="rounded-full bg-accent/15 px-2 py-0.5 font-display text-[10px] font-extrabold text-accent-deep">
@@ -92,12 +92,12 @@ export function TrophyShowcase({ challenges }: TrophyShowcaseProps) {
               onClick={() => scrollToChallenge(c.id)}
               aria-label={`${title} — ${t(`survival.trophyState.${state}`)}`}
               className={[
-                "relative flex w-20 shrink-0 flex-col items-center gap-1 rounded-2xl border-2 px-1.5 py-2.5 transition-transform active:scale-95",
+                "relative flex w-20 shrink-0 flex-col items-center gap-1 rounded-2xl px-1.5 py-2.5 transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                 state === "conquered"
-                  ? "border-amber-400/90 bg-linear-to-b from-amber-100 to-amber-50 shadow-[0_0_12px_rgba(251,191,36,0.45)]"
+                  ? "bg-linear-to-b from-amber-100 to-amber-50 shadow-[0_0_0_1px_rgba(251,191,36,0.9),0_0_12px_rgba(251,191,36,0.45)]"
                   : state === "unlocked"
-                    ? "border-accent/40 bg-surface shadow-fantasy-sm"
-                    : "border-slate-600/40 bg-slate-800/90",
+                    ? "bg-surface shadow-[0_0_0_1px_hsl(var(--accent)/0.35),0_3px_0_0_rgba(0,0,0,0.12)]"
+                    : "bg-slate-800/90 shadow-[0_0_0_1px_rgba(71,85,105,0.45)]",
               ].join(" ")}
             >
               <span

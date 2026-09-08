@@ -251,7 +251,7 @@ export function PenaltyMatch({
               <p className="truncate font-display text-sm font-black text-amber-200">
                 {t("quiz.penaltyMode")}
               </p>
-              <p className="truncate font-display text-[11px] font-bold text-white/50">
+              <p className="truncate font-display text-[11px] font-bold text-white/70">
                 {t("quiz.kickOf", {
                   n: toLocaleDigits(currentIndex + 1, lang),
                   total: toLocaleDigits(questions.length, lang),

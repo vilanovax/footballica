@@ -71,7 +71,7 @@ export const FuseTimer = forwardRef<FuseTimerHandle, FuseTimerProps>(
         <div
           ref={flameRef}
           className={[
-            "pointer-events-none absolute top-1/2 text-xl leading-none drop-shadow will-change-[left]",
+            "pointer-events-none absolute top-1/2 h-3.5 w-3.5 will-change-[left]",
             paused
               ? ""
               : "motion-safe:animate-[fuse-flicker-flame_0.45s_ease-in-out_infinite]",
@@ -79,7 +79,8 @@ export const FuseTimer = forwardRef<FuseTimerHandle, FuseTimerProps>(
           style={{ left: "calc(100% - 12px)", transform: "translateY(-50%)" }}
           aria-hidden
         >
-          🔥
+          <span className="absolute inset-0 rounded-full bg-amber-300 shadow-[0_0_10px_2px_rgba(251,191,36,0.85)]" />
+          <span className="absolute inset-0.5 rounded-full bg-orange-500/90" />
         </div>
       </div>
     );

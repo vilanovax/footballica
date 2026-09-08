@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { playSound } from "@/lib/audio/SoundManager";
 import {
@@ -9,6 +8,7 @@ import {
   isLiveOpsThemeKey,
   type LiveOpsThemeKey,
 } from "@/lib/game/liveOpsTheme";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 export type ThemeWeekBannerProps = {
   themeKey: string | null;
@@ -50,25 +50,23 @@ export function ThemeWeekBanner({
     t("play.themeWeekBlurb");
 
   return (
-    <article className="relative overflow-hidden rounded-3xl border border-amber-400/45 bg-linear-to-br from-amber-500/20 via-surface to-secondary/10 p-4 shadow-fantasy">
-      <p className="font-display text-[10px] font-bold uppercase tracking-widest text-amber-800 dark:text-amber-200">
+    <GamePanel tone="amber" className="p-4">
+      <p className="relative font-display text-xs font-black text-amber-200/90">
         {t("play.themeWeek")}
       </p>
-      <p className="mt-1 font-display text-lg font-black text-foreground">
+      <p className="relative mt-1 font-display text-lg font-black text-white">
         {title}
       </p>
-      <p className="mt-0.5 font-body text-sm font-bold text-foreground/75">
+      <p className="relative mt-0.5 font-display text-sm font-bold text-white/70">
         {blurb}
       </p>
-      <motion.div className="mt-3" whileTap={{ y: 3 }}>
-        <Link
-          href={href}
-          onClick={() => playSound("click")}
-          className="game-cta game-cta-accent flex min-h-11 w-full items-center justify-center gap-2 font-display text-sm font-extrabold"
-        >
-          {ctaLabel ?? t("play.themeWeekCta")}
-        </Link>
-      </motion.div>
-    </article>
+      <Link
+        href={href}
+        onClick={() => playSound("click")}
+        className="game-cta game-cta-accent relative mt-3 w-full text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+      >
+        {ctaLabel ?? t("play.themeWeekCta")}
+      </Link>
+    </GamePanel>
   );
 }

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Play } from "lucide-react";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 import { useTranslation } from "@/lib/i18n/useTranslation";
@@ -55,7 +54,7 @@ export function MysteryDailyChip({ mysteryStreak }: Props) {
           </div>
 
           <span className="relative inline-flex min-h-9 shrink-0 items-center gap-1 rounded-bubble bg-accent px-2.5 py-1.5 font-display text-[11px] font-black text-accent-foreground shadow-[0_3px_0_0_rgba(0,0,0,0.35)]">
-            <Play className="h-3.5 w-3.5 fill-current" aria-hidden />
+            <span aria-hidden>▶</span>
             {t("play.mysteryCta")}
           </span>
         </GamePanel>

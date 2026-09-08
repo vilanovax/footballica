@@ -14,16 +14,16 @@ type HallOfFamePanelProps = {
 
 const RANK_STYLE: Record<number, { ring: string; glow: string }> = {
   1: {
-    ring: "border-[#e0a800]",
-    glow: "bg-gradient-to-r from-[#fff8e1] via-[#ffe082] to-[#ffca28] shadow-[0_0_20px_rgba(224,168,0,0.35)]",
+    ring: "shadow-[0_0_0_1px_rgba(251,191,36,0.75)]",
+    glow: "bg-linear-to-r from-amber-50 via-amber-200 to-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.35)]",
   },
   2: {
-    ring: "border-[#9aa4ad]",
-    glow: "bg-gradient-to-r from-[#f8fafc] to-[#e2e8f0]",
+    ring: "shadow-[0_0_0_1px_rgba(148,163,184,0.7)]",
+    glow: "bg-linear-to-r from-slate-50 to-slate-200",
   },
   3: {
-    ring: "border-[#c08457]",
-    glow: "bg-gradient-to-r from-[#fdf4ed] to-[#f0d5b8]",
+    ring: "shadow-[0_0_0_1px_rgba(217,119,6,0.55)]",
+    glow: "bg-linear-to-r from-orange-50 to-amber-200",
   },
 };
 
@@ -48,7 +48,7 @@ export function HallOfFamePanel({ weeks }: HallOfFamePanelProps) {
 
   if (weeks.length === 0) {
     return (
-      <div className="mt-4 rounded-bubble-xl border-2 border-dashed border-[#e0a800]/50 bg-[#fff8e1]/40 px-4 py-10 text-center">
+      <div className="mt-4 rounded-bubble-xl bg-amber-50/50 px-4 py-10 text-center shadow-[0_0_0_1px_dashed_rgba(251,191,36,0.55)]">
         <div className="flex justify-center" aria-hidden>
           <RankArt kind="trophy" size="lg" className="h-12 w-12" />
         </div>
@@ -70,25 +70,29 @@ export function HallOfFamePanel({ weeks }: HallOfFamePanelProps) {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: wi * 0.05 }}
-          className="overflow-hidden rounded-bubble-xl border-2 border-[#e0a800]/40 bg-surface shadow-fantasy"
+          className="overflow-hidden rounded-bubble-xl bg-surface shadow-[0_0_0_1px_rgba(251,191,36,0.4),0_4px_0_0_rgba(0,0,0,0.08)]"
         >
-          <header className="flex items-center gap-2 border-b border-[#e0a800]/25 bg-gradient-to-r from-[#fff8e1] to-transparent px-4 py-2.5">
-            <span aria-hidden className="text-lg">
-              🏛️
-            </span>
-            <h2 className="font-display text-sm font-black tracking-wide text-[#8a6a00]">
+          <header className="flex items-center gap-2 border-b border-amber-500/25 bg-linear-to-r from-amber-50 to-transparent px-4 py-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/trophy.png"
+              alt=""
+              aria-hidden
+              className="h-5 w-5 object-contain"
+            />
+            <h2 className="font-display text-sm font-black tracking-wide text-amber-900">
               {weekLabel(week.tehranWeekKey, locale, t)}
             </h2>
           </header>
 
           <ol className="flex flex-col gap-2 p-3">
             {week.entries.map((entry) => {
-              const style = RANK_STYLE[entry.rank] ?? RANK_STYLE[3];
+              const style = RANK_STYLE[entry.rank] ?? RANK_STYLE[3]!;
               return (
                 <li
                   key={entry.id}
                   className={[
-                    "flex items-center gap-3 rounded-bubble border-2 p-3",
+                    "flex items-center gap-3 rounded-bubble p-3",
                     style.ring,
                     style.glow,
                     entry.isCurrentUser ? "ring-2 ring-primary/50" : "",
@@ -110,6 +114,7 @@ export function HallOfFamePanel({ weeks }: HallOfFamePanelProps) {
                   </span>
                   <AvatarImage
                     avatarKey={entry.avatarKey}
+                    sizes="44px"
                     className="h-11 w-11 shrink-0 rounded-full ring-2 ring-white/80"
                   />
                   <div className="min-w-0 flex-1">
@@ -122,7 +127,7 @@ export function HallOfFamePanel({ weeks }: HallOfFamePanelProps) {
                       </span>
                     )}
                     {entry.rank === 1 && (
-                      <p className="mt-0.5 font-display text-[11px] font-bold text-[#8a6a00]">
+                      <p className="mt-0.5 font-display text-[11px] font-bold text-amber-900">
                         {t("leaderboard.champion")}
                       </p>
                     )}

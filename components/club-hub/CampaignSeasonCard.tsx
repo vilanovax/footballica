@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronRight, Lock, Play } from "lucide-react";
 import type { CampaignSeasonView } from "@/lib/game/campaignSeason";
 import { campaignSeasonActive } from "@/lib/game/campaignSeason";
 import { useTranslation } from "@/lib/i18n/useTranslation";
@@ -90,7 +89,7 @@ export function CampaignSeasonCard({
         >
           <div className="flex items-center gap-3">
             <span
-              className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/25 bg-black/35 shadow-[0_3px_0_0_rgba(0,0,0,0.35)]"
+              className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-black/35 shadow-[0_0_0_1px_rgba(255,255,255,0.25),0_3px_0_0_rgba(0,0,0,0.35)]"
               aria-hidden
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -102,7 +101,7 @@ export function CampaignSeasonCard({
               />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="font-display text-[10px] font-black uppercase tracking-[0.14em] text-emerald-200/75">
+              <p className="font-display text-[10px] font-black text-emerald-200/85">
                 {t("campaign.eyebrow")}
               </p>
               <h2 className="font-display text-sm font-black leading-tight text-white drop-shadow-sm">
@@ -119,10 +118,10 @@ export function CampaignSeasonCard({
             </div>
             <span
               className={[
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-2 shadow-[0_3px_0_0_rgba(0,0,0,0.35)]",
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_3px_0_0_rgba(0,0,0,0.35)]",
                 rewardReady
-                  ? "border-amber-300/60 bg-accent"
-                  : "border-white/20 bg-black/30",
+                  ? "bg-accent shadow-[0_0_0_1px_rgba(252,211,77,0.55),0_3px_0_0_rgba(0,0,0,0.35)]"
+                  : "bg-black/30",
               ].join(" ")}
               aria-label={t("campaign.openPath")}
               title={t("campaign.openPath")}
@@ -191,9 +190,12 @@ export function CampaignSeasonCard({
               {t("campaign.openPath")}
             </span>
           </span>
-          <ChevronRight
-            className="h-4 w-4 shrink-0 text-amber-200/80 rtl:rotate-180"
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/back.png"
+            alt=""
             aria-hidden
+            className="h-4 w-4 shrink-0 rotate-180 object-contain opacity-80 rtl:rotate-0"
           />
         </button>
       )}
@@ -206,7 +208,7 @@ export function CampaignSeasonCard({
           ].join(" ")}
         >
           <div className="mb-2.5 flex items-center justify-between gap-2">
-            <p className="font-display text-[10px] font-black uppercase tracking-[0.14em] text-white/55">
+            <p className="font-display text-[10px] font-black text-white/65">
               {t("campaign.chapters")}
             </p>
             <div className="flex items-center gap-2">
@@ -239,12 +241,12 @@ export function CampaignSeasonCard({
                     onClick={() => playSound("click")}
                     aria-label={`${title} — ${statusLabel}`}
                     className={[
-                      "flex min-h-12 items-center gap-2.5 rounded-2xl border-2 px-2.5 py-2 shadow-[0_3px_0_0_rgba(0,0,0,0.28)] transition-transform active:translate-y-px active:shadow-none",
+                      "flex min-h-touch items-center gap-2.5 rounded-2xl px-2.5 py-2 shadow-[0_3px_0_0_rgba(0,0,0,0.28)] transition-transform active:translate-y-px active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70",
                       ch.conquered
-                        ? "border-emerald-400/45 bg-emerald-950/55"
+                        ? "bg-emerald-950/55 shadow-[0_0_0_1px_rgba(52,211,153,0.4),0_3px_0_0_rgba(0,0,0,0.28)]"
                         : ch.unlocked
-                          ? "border-white/25 bg-black/40"
-                          : "border-white/10 bg-black/25 opacity-70",
+                          ? "bg-black/40 shadow-[0_0_0_1px_rgba(255,255,255,0.22),0_3px_0_0_rgba(0,0,0,0.28)]"
+                          : "bg-black/25 opacity-70 shadow-[0_0_0_1px_rgba(255,255,255,0.1)]",
                     ].join(" ")}
                   >
                     <span
@@ -286,11 +288,18 @@ export function CampaignSeasonCard({
                         />
                       ) : ch.unlocked ? (
                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-[0_3px_0_0_rgba(0,0,0,0.4)]">
-                          <Play className="ms-0.5 h-4 w-4 fill-current" />
+                          <span className="ms-0.5 font-display text-sm font-black" aria-hidden>
+                            ▶
+                          </span>
                         </span>
                       ) : (
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/50 ring-1 ring-white/15">
-                          <Lock className="h-3.5 w-3.5" />
+                        <span
+                          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/50 shadow-[0_0_0_1px_rgba(255,255,255,0.15)]"
+                          aria-hidden
+                        >
+                          <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-current">
+                            <path d="M8 1a3 3 0 0 0-3 3v2H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1V4a3 3 0 0 0-3-3Zm1.5 5h-3V4a1.5 1.5 0 1 1 3 0v2Z" />
+                          </svg>
                         </span>
                       )}
                     </span>

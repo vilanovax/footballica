@@ -23,6 +23,8 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
 
 export { countMissionRewardsReady, hasMissionRewardReady };
 
@@ -241,16 +243,8 @@ export function MissionDrawer({
             animate={{ y: 0 }}
             exit={{ y: "105%" }}
             transition={{ type: "spring", stiffness: 420, damping: 36 }}
-            className="relative z-10 flex max-h-[84dvh] flex-col overflow-hidden rounded-t-[1.75rem] border-t-[3px] border-emerald-400/40 bg-linear-to-b from-[#0a1f14] via-[#0f172a] to-[#052e16] shadow-[0_-20px_50px_rgba(0,0,0,0.55)]"
+            className="game-pinstripe relative z-10 flex max-h-[84dvh] flex-col overflow-hidden rounded-t-[1.75rem] bg-linear-to-b from-arena-deep via-arena to-arena-mid shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.35),0_-20px_50px_rgba(0,0,0,0.55)]"
           >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 opacity-[0.05]"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(-16deg, transparent, transparent 12px, #fff 12px, #fff 13px)",
-              }}
-            />
             <div
               aria-hidden
               className="pointer-events-none absolute -end-16 top-0 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl"
@@ -273,18 +267,11 @@ export function MissionDrawer({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 text-start">
                   <div className="flex items-center gap-2.5">
-                    <span
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-2 border-white/20 bg-black/35 shadow-[0_3px_0_0_rgba(0,0,0,0.35)]"
-                      aria-hidden
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/icons/hub-mission.png"
-                        alt=""
-                        draggable={false}
-                        className="h-7 w-7 object-contain"
-                      />
-                    </span>
+                    <GameIconWell
+                      size="md"
+                      src="/icons/hub-mission.png"
+                      className="h-11 w-11 shrink-0"
+                    />
                     <div className="min-w-0">
                       <h2 className="font-display text-xl font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]">
                         {t("missions.drawerTitle")}
@@ -433,7 +420,7 @@ export function MissionDrawer({
                     className="space-y-3"
                   >
                     <div className="rounded-2xl border border-emerald-400/25 bg-black/35 px-3 py-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
-                      <p className="font-display text-[11px] font-black uppercase tracking-widest text-emerald-300/90">
+                      <p className="font-display text-[11px] font-black text-emerald-300/95">
                         {t("campaign.eyebrow")}
                       </p>
                       <p className="mt-0.5 font-display text-sm font-bold text-white/85">
@@ -457,7 +444,7 @@ export function MissionDrawer({
 
                     {hasChapters && (
                       <div className="space-y-2">
-                        <p className="font-display text-[11px] font-black uppercase tracking-wide text-white/45">
+                        <p className="font-display text-[11px] font-black text-white/55">
                           {t("campaign.chapters")}
                         </p>
                         <ul className="flex flex-col gap-1.5">
@@ -575,18 +562,13 @@ export function MissionDrawer({
             </div>
 
             {activeStats.ready ? (
-              <div className="relative shrink-0 border-t border-white/10 bg-[#071510]/95 px-4 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
-                <motion.button
-                  type="button"
+              <div className="relative shrink-0 border-t border-white/10 bg-arena/95 px-4 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
+                <GameCta
+                  variant="accent"
+                  block
                   disabled={claimingAll}
                   onClick={handleClaimAll}
-                  animate={{ scale: [1, 1.015, 1] }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 1.35,
-                    ease: "easeInOut",
-                  }}
-                  className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl border-2 border-amber-300/50 bg-linear-to-b from-accent to-[hsl(38_92%_42%)] font-display text-base font-black text-accent-foreground shadow-[0_4px_0_0_rgba(120,70,0,0.55),0_0_24px_rgba(251,191,36,0.35)] transition-transform active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(120,70,0,0.55)] disabled:opacity-60"
+                  className="min-h-13 text-base"
                   aria-label={
                     claimingAll
                       ? t("missions.claiming")
@@ -608,14 +590,14 @@ export function MissionDrawer({
                     : claimableTotal > 1
                       ? t("missions.drawerClaimAll")
                       : t("missions.drawerClaimReward")}
-                </motion.button>
+                </GameCta>
               </div>
             ) : continueHref ? (
-              <div className="relative shrink-0 border-t border-white/10 bg-[#071510]/95 px-4 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
+              <div className="relative shrink-0 border-t border-white/10 bg-arena/95 px-4 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
                 <Link
                   href={continueHref}
                   onClick={close}
-                  className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl border-2 border-emerald-400/40 bg-linear-to-b from-emerald-500 to-emerald-800 font-display text-base font-black text-white shadow-[0_4px_0_0_rgba(0,0,0,0.45),0_0_20px_rgba(16,185,129,0.3)] transition-transform active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(0,0,0,0.45)]"
+                  className="game-cta game-cta-primary flex min-h-13 w-full items-center justify-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import type { QuizLocale } from "@/lib/quiz/types";
+import { GameTile } from "@/components/ui/game/GameTile";
 
 type ExplanationFactProps = {
   explanation: { en: string; fa: string } | null | undefined;
@@ -34,15 +35,17 @@ export function ExplanationFact({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
           transition={{ type: "spring", stiffness: 320, damping: 28, delay: 0.18 }}
-          className="rounded-2xl bg-amber-500/12 px-3.5 py-3 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]"
+          className="overflow-hidden"
           role="note"
         >
-          <p className="font-display text-[11px] font-black uppercase tracking-widest text-amber-200">
+          <GameTile tone="amber" className="px-3.5 py-3">
+          <p className="font-display text-xs font-black text-amber-200">
             {t("quiz.didYouKnow")}
           </p>
           <p className="mt-1 font-display text-sm font-bold leading-snug text-white/85">
             {text}
           </p>
+          </GameTile>
         </motion.div>
       ) : null}
     </AnimatePresence>

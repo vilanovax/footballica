@@ -64,14 +64,14 @@ export function SurvivalResult({
 
   if (save.status === "saving") {
     return (
-      <section className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-6 text-center">
+      <section className="relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-arena px-6 text-center text-arena-fg">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-linear-to-b from-destructive/10 via-transparent to-primary/8"
+          className="pointer-events-none absolute inset-0 bg-linear-to-b from-arena-deep via-arena to-arena-mid"
         />
         <motion.div
-          animate={{ scale: [1, 1.08, 1], y: [0, -5, 0] }}
-          transition={{ repeat: Infinity, duration: 1.05, ease: "easeInOut" }}
+          animate={{ scale: [1, 1.06, 1] }}
+          transition={{ repeat: Infinity, duration: 1.15, ease: "easeInOut" }}
           aria-hidden
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -82,7 +82,7 @@ export function SurvivalResult({
             className="h-24 w-24 object-contain drop-shadow-[0_6px_16px_rgba(220,38,38,0.3)]"
           />
         </motion.div>
-        <h1 className="relative mt-4 font-display text-2xl font-black text-foreground">
+        <h1 className="relative mt-4 font-display text-2xl font-black text-white">
           {t("result.saving")}
         </h1>
       </section>

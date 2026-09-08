@@ -72,7 +72,7 @@ export function SurvivalCategoryPicker({
             iconClassName="h-7 w-7"
           />
           <div className="min-w-0 flex-1">
-            <p className="font-display text-[11px] font-bold uppercase tracking-widest text-rose-200/70">
+            <p className="font-display text-xs font-bold text-rose-200/85">
               {t("survival.eyebrow")}
             </p>
             <h1 className="mt-0.5 font-display text-2xl font-black text-white">

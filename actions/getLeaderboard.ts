@@ -1,18 +1,25 @@
 "use server";
 
+import { after } from "next/server";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSessionUserId } from "@/lib/auth/session";
-import { normalizeClubName } from "@/lib/auth/blacklist";
 import { isAvatarKey, type AvatarKey } from "@/lib/onboarding/avatars";
 import {
   ensureWeeklyLeagueReset,
   tehranWeekDaysRemaining,
 } from "@/lib/game/weeklyLeague";
 import { displayClubName } from "@/lib/leaderboard/displayName";
+import {
+  LEADERBOARD_CACHE_TAG,
+  LEADERBOARD_REVALIDATE_SECONDS,
+} from "@/lib/leaderboard/cacheTags";
+import {
+  ensureMockLeaderboardIfSparse,
+  MIN_USERS_FOR_UI,
+} from "@/lib/leaderboard/seedMocks";
 
 const TOP_N = 50;
-const MIN_USERS_FOR_UI = 10;
-const SEED_COUNT = 14;
 
 export type LeaderboardPlayState = "scored" | "playedZero" | "unplayed";
 
@@ -35,81 +42,35 @@ export type LeaderboardPayload = {
   currentUserRow: LeaderboardRow | null;
 };
 
-const AVATAR_KEYS: AvatarKey[] = [
-  "TACTICAL_COACH",
-  "YOUNG_DIRECTOR",
-  "VETERAN_FAN",
-  "GOALKEEPER_LEGEND",
-  "SUPER_FAN",
-  "CLUB_LEGEND",
-  "OLD_GAFFER",
-  "STAR_MANAGER",
-  "COSMIC_COACH",
+/** Shared standings without per-viewer flags (safe to cache across sessions). */
+type CachedStandingRow = Omit<LeaderboardRow, "isCurrentUser">;
+
+type CachedStandings = {
+  rows: CachedStandingRow[];
+  resetsInDays: number;
+};
+
+const LEADERBOARD_SELECT = {
+  id: true,
+  displayName: true,
+  managerAvatar: true,
+  weeklyXp: true,
+  club: {
+    select: {
+      name: true,
+      avatar: true,
+      matchesPlayed: true,
+      lastPlayedDate: true,
+    },
+  },
+} as const;
+
+/** Same order as `compareActiveUsers` — used for Top-N SQL take. */
+const ACTIVE_ORDER_BY = [
+  { weeklyXp: "desc" as const },
+  { club: { matchesPlayed: "asc" as const } },
+  { id: "asc" as const },
 ];
-
-/** Unique clean club labels for cold-start seed (no timestamp clutter). */
-const MOCK_CLUBS = [
-  "Night Lions",
-  "Blue Falcons",
-  "Iron Rovers",
-  "Golden Titans",
-  "Swift Wanderers",
-  "Royal Kings",
-  "Cosmic Comets",
-  "Shadow Wolves",
-  "Emerald United",
-  "Crimson Dynamo",
-  "Silver Athletic",
-  "Phoenix Sporting",
-  "Thunder Inter",
-  "Oasis Real",
-  "Harbor Galaxy",
-  "Desert Strikers",
-] as const;
-
-function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-async function seedMockUsers(count: number): Promise<void> {
-  const stamp = Date.now();
-  const n = Math.min(count, MOCK_CLUBS.length);
-  const rows = Array.from({ length: n }).map((_, i) => {
-    const avatar = AVATAR_KEYS[i % AVATAR_KEYS.length]!;
-    const clubName = MOCK_CLUBS[i]!;
-    return {
-      email: `mock_${stamp}_${i}@footballica.local`,
-      displayName: clubName,
-      avatar,
-      weeklyXp: randomInt(50, 2000),
-      matchesPlayed: randomInt(1, 20),
-      // Unique key; display name stays human-readable.
-      nameNormalized: normalizeClubName(`${clubName} seed ${stamp} ${i}`),
-    };
-  });
-
-  await prisma.$transaction(
-    rows.map((r) =>
-      prisma.user.create({
-        data: {
-          email: r.email,
-          displayName: r.displayName,
-          managerAvatar: r.avatar,
-          weeklyXp: r.weeklyXp,
-          xp: r.weeklyXp,
-          club: {
-            create: {
-              name: r.displayName,
-              nameNormalized: r.nameNormalized,
-              avatar: r.avatar,
-              matchesPlayed: r.matchesPlayed,
-            },
-          },
-        },
-      }),
-    ),
-  );
-}
 
 function toAvatarKey(value: string | null): AvatarKey {
   return value && isAvatarKey(value) ? value : "TACTICAL_COACH";
@@ -148,11 +109,7 @@ function compareActiveUsers(a: RawUser, b: RawUser): number {
   return a.id.localeCompare(b.id);
 }
 
-function toRow(
-  u: RawUser,
-  rank: number,
-  currentUserId: string | null,
-): LeaderboardRow {
+function toCachedRow(u: RawUser, rank: number): CachedStandingRow {
   return {
     rank,
     userId: u.id,
@@ -161,13 +118,87 @@ function toRow(
     weeklyXp: u.weeklyXp,
     matchesPlayed: u.club?.matchesPlayed ?? 0,
     playState: playStateOf(u),
-    isCurrentUser: currentUserId !== null && currentUserId === u.id,
+  };
+}
+
+function stampViewer(
+  row: CachedStandingRow,
+  currentUserId: string | null,
+): LeaderboardRow {
+  return {
+    ...row,
+    isCurrentUser: currentUserId !== null && currentUserId === row.userId,
   };
 }
 
 /**
+ * How many active scorers rank strictly above `me` (same rules as
+ * `compareActiveUsers`). Used only when the sticky user is outside Top N.
+ */
+async function countRanksAbove(me: RawUser): Promise<number> {
+  const matches = me.club?.matchesPlayed ?? 0;
+  return prisma.user.count({
+    where: {
+      isBot: false,
+      weeklyXp: { gt: 0 },
+      OR: [
+        { weeklyXp: { gt: me.weeklyXp } },
+        {
+          weeklyXp: me.weeklyXp,
+          club: { matchesPlayed: { lt: matches } },
+        },
+        {
+          weeklyXp: me.weeklyXp,
+          club: { matchesPlayed: matches },
+          id: { lt: me.id },
+        },
+        ...(matches > 0
+          ? [
+              {
+                weeklyXp: me.weeklyXp,
+                club: { is: null },
+              } as const,
+            ]
+          : [
+              {
+                weeklyXp: me.weeklyXp,
+                club: { is: null },
+                id: { lt: me.id },
+              } as const,
+            ]),
+      ],
+    },
+  });
+}
+
+async function loadTopStandings(): Promise<CachedStandings> {
+  const top = (await prisma.user.findMany({
+    where: { isBot: false, weeklyXp: { gt: 0 } },
+    select: LEADERBOARD_SELECT,
+    orderBy: ACTIVE_ORDER_BY,
+    take: TOP_N,
+  })) as RawUser[];
+
+  top.sort(compareActiveUsers);
+
+  return {
+    resetsInDays: tehranWeekDaysRemaining(),
+    rows: top.map((u, index) => toCachedRow(u, index + 1)),
+  };
+}
+
+const getCachedTopStandings = unstable_cache(
+  loadTopStandings,
+  ["leaderboard-top-v1"],
+  {
+    revalidate: LEADERBOARD_REVALIDATE_SECONDS,
+    tags: [LEADERBOARD_CACHE_TAG],
+  },
+);
+
+/**
  * Weekly league standings: humans with weeklyXp > 0 only (Top 50).
- * Unplayed / zero-XP players are excluded from the table.
+ * Shared Top-N is cached ~45s; viewer flags + sticky row stay per-request.
  */
 export async function getLeaderboard(): Promise<LeaderboardPayload> {
   try {
@@ -176,58 +207,51 @@ export async function getLeaderboard(): Promise<LeaderboardPayload> {
     console.error("ensureWeeklyLeagueReset in getLeaderboard", err);
   }
 
-  const activeCount = await prisma.user.count({
-    where: { isBot: false, weeklyXp: { gt: 0 } },
-  });
-  if (activeCount < MIN_USERS_FOR_UI) {
-    await seedMockUsers(SEED_COUNT);
+  const currentUserId = await getSessionUserId();
+  let standings = await getCachedTopStandings();
+
+  // Cold board: never block prod reads; await only in local/dev for DX.
+  if (standings.rows.length < MIN_USERS_FOR_UI) {
+    if (process.env.NODE_ENV === "development") {
+      try {
+        await ensureMockLeaderboardIfSparse();
+        standings = await loadTopStandings();
+      } catch (err) {
+        console.error("ensureMockLeaderboardIfSparse", err);
+      }
+    } else {
+      after(() => {
+        void ensureMockLeaderboardIfSparse()
+          .then((seeded) => {
+            if (seeded) revalidateTag(LEADERBOARD_CACHE_TAG, "max");
+          })
+          .catch((err) => console.error("ensureMockLeaderboardIfSparse", err));
+      });
+    }
   }
 
-  const currentUserId = await getSessionUserId();
-
-  const users = (await prisma.user.findMany({
-    where: { isBot: false },
-    select: {
-      id: true,
-      displayName: true,
-      managerAvatar: true,
-      weeklyXp: true,
-      club: {
-        select: {
-          name: true,
-          avatar: true,
-          matchesPlayed: true,
-          lastPlayedDate: true,
-        },
-      },
-    },
-  })) as RawUser[];
-
-  // Only this week's active scorers appear in the league table.
-  const ranked = users
-    .filter((u) => u.weeklyXp > 0)
-    .sort(compareActiveUsers);
-  const top = ranked.slice(0, TOP_N);
-  const rows = top.map((u, index) => toRow(u, index + 1, currentUserId));
+  const rows = standings.rows.map((r) => stampViewer(r, currentUserId));
 
   let currentUserRow: LeaderboardRow | null =
     rows.find((r) => r.isCurrentUser) ?? null;
 
-  // Sticky "you" bar even when you haven't scored this week yet.
   if (!currentUserRow && currentUserId) {
-    const me = users.find((u) => u.id === currentUserId);
+    const me = (await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: LEADERBOARD_SELECT,
+    })) as RawUser | null;
+
     if (me) {
-      const activeIdx = ranked.findIndex((u) => u.id === currentUserId);
-      currentUserRow = toRow(
-        me,
-        activeIdx >= 0 ? activeIdx + 1 : 0,
-        currentUserId,
-      );
+      let rank = 0;
+      if (me.weeklyXp > 0) {
+        rank = (await countRanksAbove(me)) + 1;
+      }
+      currentUserRow = stampViewer(toCachedRow(me, rank), currentUserId);
     }
   }
 
   return {
-    resetsInDays: tehranWeekDaysRemaining(),
+    resetsInDays: standings.resetsInDays,
     rows,
     currentUserRow,
   };

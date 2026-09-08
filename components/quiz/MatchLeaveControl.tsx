@@ -49,7 +49,7 @@ export function MatchLeaveControl({
         type="button"
         onClick={requestLeave}
         aria-label={t("quiz.leaveConfirm")}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black/40 text-white/70 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_3px_0_0_rgba(0,0,0,0.35)] transition-transform active:scale-90"
+        className="game-icon-btn shrink-0 rounded-xl bg-black/40 text-white/70 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_3px_0_0_rgba(0,0,0,0.35)] transition-transform active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

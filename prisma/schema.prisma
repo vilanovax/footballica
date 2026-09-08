@@ -224,6 +224,8 @@ model User {
   duelsAsOpponent   DuelMatch[] @relation("DuelOpponent")
 
   @@index([weeklyXp])
+  /// Leaderboard Top-N: `where isBot=false AND weeklyXp>0 ORDER BY weeklyXp`.
+  @@index([isBot, weeklyXp])
   @@index([xp])
   @@index([isBot, botEnabled, botDifficulty])
 }

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
 import { GameTile } from "@/components/ui/game/GameTile";
@@ -35,25 +36,21 @@ const TIER_SCENE = [
     tone: "emerald" as GamePanelTone,
     glow: "bg-stone-400/20",
     art: "grayscale brightness-75 contrast-110",
-    tip: "🪨",
   },
   {
     tone: "amber" as GamePanelTone,
     glow: "bg-amber-400/25",
     art: "sepia-[.35] brightness-90 contrast-105",
-    tip: "🚧",
   },
   {
     tone: "emerald" as GamePanelTone,
     glow: "bg-emerald-400/30",
     art: "brightness-100 saturate-110",
-    tip: "🌱",
   },
   {
     tone: "sky" as GamePanelTone,
     glow: "bg-sky-300/35",
     art: "brightness-110 saturate-125 drop-shadow-[0_0_18px_rgba(125,211,252,0.45)]",
-    tip: "💡",
   },
 ] as const;
 
@@ -73,6 +70,7 @@ export function StadiumHero({
   celebrating,
 }: StadiumHeroProps) {
   const { t, locale } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const [sheetOpen, setSheetOpen] = useState(false);
   const tierIndex = Math.min(
     Math.max(0, stadiumLevel),
@@ -97,45 +95,43 @@ export function StadiumHero({
         type="button"
         onClick={openSheet}
         aria-label={t("stadium.openDetails")}
-        className="w-full text-start transition-transform active:translate-y-px"
+        className="w-full text-start transition-transform active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
       >
         <GamePanel
           tone={scene.tone}
-          className="aspect-16/11 w-full"
+          className="aspect-16/11 w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
         >
-        <motion.div
+        <div
           aria-hidden
           className={[
             "pointer-events-none absolute -end-10 top-0 h-36 w-36 rounded-full blur-3xl",
             scene.glow,
           ].join(" ")}
-          animate={{ opacity: [0.25, 0.55, 0.25] }}
-          transition={{ duration: 3.2, repeat: Infinity }}
         />
 
-        {/* Floodlight beams — level 3+ */}
+        {/* Floodlight beams — level 3+ (the stadium's one ambient moment) */}
         {floodlit && (
           <>
             <motion.div
               aria-hidden
               className="pointer-events-none absolute start-[12%] top-0 h-[55%] w-10 origin-top bg-linear-to-b from-sky-200/35 to-transparent"
               style={{ transform: "skewX(-12deg)" }}
-              animate={{ opacity: [0.35, 0.7, 0.35] }}
+              animate={reduceMotion ? undefined : { opacity: [0.35, 0.7, 0.35] }}
               transition={{ duration: 2.2, repeat: Infinity }}
             />
             <motion.div
               aria-hidden
               className="pointer-events-none absolute end-[12%] top-0 h-[55%] w-10 origin-top bg-linear-to-b from-sky-200/35 to-transparent"
               style={{ transform: "skewX(12deg)" }}
-              animate={{ opacity: [0.35, 0.7, 0.35] }}
+              animate={reduceMotion ? undefined : { opacity: [0.35, 0.7, 0.35] }}
               transition={{ duration: 2.2, repeat: Infinity, delay: 0.35 }}
             />
             <span
-              className="absolute start-3 top-2 h-2.5 w-8 rounded-sm bg-sky-100/90 shadow-[0_0_12px_rgba(186,230,253,0.9)]"
+              className="absolute start-3 top-2 h-2.5 w-8 rounded-sm bg-sky-100/90 shadow-[0_3px_8px_rgba(186,230,253,0.7)]"
               aria-hidden
             />
             <span
-              className="absolute end-3 top-2 h-2.5 w-8 rounded-sm bg-sky-100/90 shadow-[0_0_12px_rgba(186,230,253,0.9)]"
+              className="absolute end-3 top-2 h-2.5 w-8 rounded-sm bg-sky-100/90 shadow-[0_3px_8px_rgba(186,230,253,0.7)]"
               aria-hidden
             />
           </>
@@ -145,8 +141,8 @@ export function StadiumHero({
         <div className="absolute inset-x-0 top-[6%] flex justify-center">
           <motion.div
             className="relative"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+            animate={celebrating && !reduceMotion ? { y: [0, -6, 0] } : undefined}
+            transition={{ duration: 0.7 }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -167,7 +163,7 @@ export function StadiumHero({
           aria-hidden
         >
           {Array.from({ length: crowdN }).map((_, i) => (
-            <motion.span
+            <span
               key={`${crowdN}-${i}`}
               className={[
                 "inline-block h-1.5 w-1.5 rounded-full sm:h-2 sm:w-2",
@@ -180,12 +176,6 @@ export function StadiumHero({
                       : "bg-stone-300/70",
               ].join(" ")}
               style={{ opacity: 0.45 + (i / crowdN) * 0.5 }}
-              animate={{ opacity: [0.4, 0.95, 0.4] }}
-              transition={{
-                repeat: Infinity,
-                duration: 1.4 + (i % 5) * 0.2,
-                delay: i * 0.05,
-              }}
             />
           ))}
         </div>
@@ -195,10 +185,10 @@ export function StadiumHero({
           className={[
             "absolute inset-x-0 bottom-0 h-[42%]",
             stadiumLevel >= 2
-              ? "bg-linear-to-b from-[#166534] to-[#052e16]"
+              ? "bg-linear-to-b from-arena-success to-arena"
               : stadiumLevel >= 1
-                ? "bg-linear-to-b from-[#92400e] to-[#451a03]"
-                : "bg-linear-to-b from-[#57534e] to-[#1c1917]",
+                ? "bg-linear-to-b from-arena-amber/70 to-arena-mid"
+                : "bg-linear-to-b from-stone-500/80 to-arena",
           ].join(" ")}
           aria-hidden
         >
@@ -235,9 +225,9 @@ export function StadiumHero({
           pulse={celebrating}
         />
 
-        {/* Bottom HUD */}
-        <div className="absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/85 via-black/55 to-transparent px-3 pb-2.5 pt-10">
-          <div className="mb-1.5 h-1.5 overflow-hidden rounded-full bg-black/50 ring-1 ring-white/15">
+        {/* Bottom HUD — fans are the stadium's one number */}
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/90 via-black/55 to-transparent px-3 pb-2.5 pt-10">
+          <div className="mb-1.5 h-1.5 overflow-hidden rounded-full bg-black/50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)]">
             <motion.div
               className={[
                 "h-full rounded-full",
@@ -250,27 +240,26 @@ export function StadiumHero({
               transition={{ type: "spring", stiffness: 140, damping: 22 }}
             />
           </div>
-          <p className="font-display text-[11px] font-black text-white/90">
-            {scene.tip} {t("stadium.lvl")}{" "}
-            {toLocaleDigits(stadiumLevel, locale)} ·{" "}
-            {t(`stadium.tiers.${tierIndex}`)}
-          </p>
-          <p className="mt-0.5 font-display text-sm font-black text-white">
-            {toLocaleDigits(fans, locale)}
-            <span className="text-white/45">
-              /{toLocaleDigits(cap, locale)}
-            </span>{" "}
-            {t("stadium.fans")}
-            <span className="ms-1.5 text-[11px] font-bold text-amber-200/90">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              <p className="font-display text-sm font-black text-white">
+                {toLocaleDigits(fans, locale)}
+                <span className="text-white/55">
+                  /{toLocaleDigits(cap, locale)}
+                </span>{" "}
+                {t("stadium.fans")}
+              </p>
+              <p className="mt-0.5 font-display text-[11px] font-bold text-white/75">
+                {t("stadium.lvl")} {toLocaleDigits(stadiumLevel, locale)} ·{" "}
+                {t(`stadium.tiers.${tierIndex}`)}
+              </p>
+            </div>
+            <GameChip tone={fillPct >= 90 ? "amber" : "emerald"}>
               {toLocaleDigits(fillPct, locale)}%
-            </span>
-          </p>
-          <p className="mt-0.5 font-display text-[10px] font-bold text-white/55">
-            ⚡ {toLocaleDigits(maxStamina, locale)} ·{" "}
-            {t("stadium.regenEvery", {
-              n: toLocaleDigits(regenMinutes, locale),
-            })}{" "}
-            · {t("stadium.tapDetails")}
+            </GameChip>
+          </div>
+          <p className="mt-1 font-display text-[10px] font-bold text-white/65">
+            {t("stadium.tapDetails")}
           </p>
         </div>
 
@@ -371,7 +360,7 @@ export function StadiumHero({
           />
         </ul>
 
-        <p className="mt-3 text-center font-display text-[11px] font-bold text-white/40">
+        <p className="mt-3 text-balance text-center font-display text-[11px] font-bold leading-snug text-white/55">
           {t("stadium.tapUpgradesHint")}
         </p>
       </BottomSheet>
@@ -396,41 +385,29 @@ function FacilityBadge({
   return (
     <motion.div
       className={[
-        "absolute bottom-[44%] z-10 flex items-center gap-1 rounded-xl border-2 px-1.5 py-1 shadow-[0_3px_0_0_rgba(0,0,0,0.35)]",
+        "absolute bottom-[44%] z-10",
         side === "start" ? "start-2" : "end-2",
-        grown
-          ? "border-white/25 bg-black/55"
-          : "border-white/10 bg-black/40 opacity-70",
+        grown ? "" : "opacity-70",
       ].join(" ")}
-      animate={
-        pulse
-          ? { scale: [1, 1.12, 1] }
-          : grown
-            ? { y: [0, -2, 0] }
-            : undefined
-      }
-      transition={
-        pulse
-          ? { duration: 0.5 }
-          : grown
-            ? { repeat: Infinity, duration: 2.8, ease: "easeInOut" }
-            : undefined
-      }
+      animate={pulse ? { scale: [1, 1.08, 1] } : undefined}
+      transition={pulse ? { duration: 0.5 } : undefined}
       aria-hidden
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={iconSrc}
-        alt=""
-        draggable={false}
-        className={[
-          "object-contain",
-          grown ? "h-5 w-5" : "h-4 w-4 opacity-70",
-        ].join(" ")}
-      />
-      <span className="font-display text-[9px] font-extrabold leading-none text-white">
-        {label}
-      </span>
+      <GameChip tone={grown ? "emerald" : "default"} className="px-1.5 py-1">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={iconSrc}
+          alt=""
+          draggable={false}
+          className={[
+            "object-contain",
+            grown ? "h-4 w-4" : "h-3.5 w-3.5 opacity-70",
+          ].join(" ")}
+        />
+        <span className="font-display text-[9px] font-extrabold leading-none">
+          {label}
+        </span>
+      </GameChip>
     </motion.div>
   );
 }

@@ -164,7 +164,7 @@ export function StarPathArena({ initial }: Props) {
 
       {/* Club path */}
       <div className="relative z-10 mt-4 flex flex-col gap-2 px-3">
-        <p className="font-display text-[11px] font-extrabold uppercase tracking-widest text-white/45">
+        <p className="font-display text-[11px] font-extrabold text-white/55">
           {t("starPath.pathLabel", {
             n: toLocaleDigits(starPath.cluesRevealed, locale),
             max: toLocaleDigits(starPath.maxClues, locale),

@@ -12,6 +12,9 @@ export const HELPER_KEYS: HelperKey[] = ["hint", "extraTime", "fifty", "reroll"]
 
 export type HelperMeta = {
   key: HelperKey;
+  /** PNG under /public/icons — preferred over emoji chrome. */
+  iconSrc: string;
+  /** Legacy emoji kept for non-UI callers / admin previews. */
   emoji: string;
   /** i18n key for the short button label. */
   labelKey: string;
@@ -20,10 +23,34 @@ export type HelperMeta = {
 };
 
 export const HELPER_META: Record<HelperKey, HelperMeta> = {
-  hint: { key: "hint", emoji: "🎙️", labelKey: "quiz.helpers.hint", removes: 1 },
-  extraTime: { key: "extraTime", emoji: "⏱️", labelKey: "quiz.helpers.extraTime", removes: 0 },
-  fifty: { key: "fifty", emoji: "🎥", labelKey: "quiz.helpers.fifty", removes: 2 },
-  reroll: { key: "reroll", emoji: "🔁", labelKey: "quiz.helpers.reroll", removes: 0 },
+  hint: {
+    key: "hint",
+    iconSrc: "/icons/help.png",
+    emoji: "🎙️",
+    labelKey: "quiz.helpers.hint",
+    removes: 1,
+  },
+  extraTime: {
+    key: "extraTime",
+    iconSrc: "/icons/timer.png",
+    emoji: "⏱️",
+    labelKey: "quiz.helpers.extraTime",
+    removes: 0,
+  },
+  fifty: {
+    key: "fifty",
+    iconSrc: "/icons/guesses.png",
+    emoji: "🎥",
+    labelKey: "quiz.helpers.fifty",
+    removes: 2,
+  },
+  reroll: {
+    key: "reroll",
+    iconSrc: "/icons/energy.png",
+    emoji: "🔁",
+    labelKey: "quiz.helpers.reroll",
+    removes: 0,
+  },
 };
 
 export function isHelperKey(value: unknown): value is HelperKey {

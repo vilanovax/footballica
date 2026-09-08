@@ -52,7 +52,7 @@ export function FtueCoach({ avatarKey, name, line, cta }: FtueCoachProps) {
           </motion.div>
 
           <div className="min-w-0 flex-1">
-            <p className="font-display text-xs font-bold uppercase tracking-widest text-amber-200">
+            <p className="font-display text-xs font-black text-amber-200">
               {name}
             </p>
             <p className="mt-1 font-display text-sm font-bold leading-snug text-white">

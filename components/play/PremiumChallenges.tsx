@@ -10,6 +10,10 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 export type PlayChallengeCard = {
   id: string;
@@ -90,13 +94,11 @@ export function PremiumChallenges({
 
   return (
     <div className="flex flex-col gap-3">
-      <div>
-        <h2 className="font-display text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          {variant === "lobby"
-            ? t("survival.lobbyChallenges")
-            : t("play.groupChallenges")}
-        </h2>
-      </div>
+      <h2 className="font-display text-xs font-black text-arena-muted">
+        {variant === "lobby"
+          ? t("survival.lobbyChallenges")
+          : t("play.groupChallenges")}
+      </h2>
 
       <ul className="flex flex-col gap-3">
         {challenges.map((c) => {
@@ -112,48 +114,46 @@ export function PremiumChallenges({
               id={`challenge-${c.id}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={[
-                "scroll-mt-24 overflow-hidden rounded-bubble-xl border-2 p-3.5 shadow-fantasy-sm transition-[box-shadow]",
-                c.conquered
-                  ? "border-primary/40 bg-linear-to-br from-primary/15 to-surface"
-                  : "border-accent/45 bg-linear-to-br from-accent/18 to-surface",
-              ].join(" ")}
+              className="scroll-mt-24"
             >
-              <div className="flex items-center gap-3">
+              <GamePanel
+                tone={c.conquered ? "emerald" : "amber"}
+                className="p-3.5"
+              >
+              <div className="relative flex items-center gap-3">
                 <span
-                  className={[
-                    "flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-4xl shadow-fantasy-sm",
-                    c.conquered
-                      ? "bg-primary/20 drop-shadow-[0_0_10px_rgba(255,215,0,0.55)]"
-                      : "bg-accent/25",
-                  ].join(" ")}
+                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-black/30 text-4xl shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_3px_0_0_rgba(0,0,0,0.28)]"
                   aria-hidden
                 >
                   {badge}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <h3 className="font-display text-xl font-extrabold leading-tight text-foreground">
+                    <h3 className="font-display text-xl font-extrabold leading-tight text-white">
                       {title}
                     </h3>
                     {c.conquered ? (
-                      <span className="rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-bold text-primary-foreground">
+                      <GameChip tone="emerald">
                         {t("play.challengeDone")}
-                      </span>
+                      </GameChip>
                     ) : null}
                     {c.unlocked && !c.conquered ? (
-                      <span className="rounded-full bg-accent/30 px-2 py-0.5 font-display text-[10px] font-bold text-accent-deep">
+                      <GameChip tone="amber">
                         {t("play.challengeUnlockedBadge")}
-                      </span>
+                      </GameChip>
                     ) : null}
                     {c.themeKey ? (
-                      <span className="rounded-full bg-amber-500/25 px-2 py-0.5 font-display text-[10px] font-bold text-amber-900 dark:text-amber-100">
-                        {t("play.themeWeek")}
-                      </span>
+                      <GameChip tone="amber">{t("play.themeWeek")}</GameChip>
                     ) : null}
                   </div>
-                  <p className="mt-0.5 font-display text-xs font-bold text-muted-foreground">
-                    🎯 {toLocaleDigits(c.targetScore, locale)}
+                  <p className="mt-0.5 flex flex-wrap items-center gap-1 font-display text-xs font-bold text-white/70">
+                    <GameIconWell
+                      size="sm"
+                      src="/icons/target.png"
+                      className="h-5 w-5"
+                      iconClassName="h-3.5 w-3.5"
+                    />
+                    {toLocaleDigits(c.targetScore, locale)}
                     {c.bestScore > 0
                       ? ` · ${t("play.challengeBest", {
                           n: toLocaleDigits(c.bestScore, locale),
@@ -163,8 +163,7 @@ export function PremiumChallenges({
                 </div>
               </div>
 
-              {/* Bare meta icons — no chip boxes, all challenges */}
-              <div className="mt-3 flex flex-wrap items-center gap-3">
+              <div className="relative mt-3 flex flex-wrap items-center gap-3">
                 {expires ? (
                   <MetaStat
                     icon="/icons/timer.png"
@@ -194,38 +193,41 @@ export function PremiumChallenges({
                 ) : (
                   <MetaStat
                     icon="/icons/done.png"
-                    label="✓"
+                    label={t("play.challengeUnlockedBadge")}
                     tone={c.conquered ? "mint" : "muted"}
                   />
                 )}
               </div>
 
-              <div className="mt-3.5">
+              <div className="relative mt-3.5">
                 {c.unlocked ? (
-                  <button
-                    type="button"
+                  <GameCta
+                    variant="accent"
+                    block
+                    className="text-sm"
                     onClick={() => playChallenge(c)}
-                    className="game-cta game-cta-accent w-full min-h-12 py-2.5 text-sm"
                   >
                     {c.conquered
                       ? t("play.challengeReplay")
                       : t("play.challengePlay")}
-                  </button>
+                  </GameCta>
                 ) : (
-                  <button
-                    type="button"
+                  <GameCta
+                    variant="accent"
+                    block
+                    className="text-sm"
                     disabled={busy}
                     onClick={() => unlock(c)}
-                    className="game-cta game-cta-accent w-full min-h-12 py-2.5 text-sm disabled:opacity-60"
                   >
                     {busy
                       ? t("play.challengeUnlocking")
                       : t("play.challengeUnlockCta", {
                           n: toLocaleDigits(c.unlockCostCoins, locale),
                         })}
-                  </button>
+                  </GameCta>
                 )}
               </div>
+              </GamePanel>
             </motion.li>
           );
         })}
@@ -247,12 +249,12 @@ function MetaStat({
 }) {
   const text =
     tone === "gold"
-      ? "text-amber-900"
+      ? "text-amber-200"
       : tone === "mint"
-        ? "text-emerald-700"
+        ? "text-emerald-200"
         : tone === "muted"
-          ? "text-muted-foreground"
-          : "text-foreground";
+          ? "text-white/60"
+          : "text-white";
 
   return (
     <span

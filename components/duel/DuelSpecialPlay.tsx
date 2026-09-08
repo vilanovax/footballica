@@ -154,11 +154,17 @@ export function DuelSpecialPlay({ duelId, duel, mode, onDone }: Props) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
         <motion.span
-          className="text-4xl"
+          className="inline-flex"
           animate={{ y: [0, -8, 0], opacity: [0.6, 1, 0.6] }}
           transition={{ duration: 1.1, repeat: Infinity }}
+          aria-hidden
         >
-          ⚽️
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/memory-ball.png"
+            alt=""
+            className="h-12 w-12 object-contain"
+          />
         </motion.span>
       </div>
     );
@@ -642,12 +648,12 @@ export function DuelSpecialPlay({ duelId, duel, mode, onDone }: Props) {
                         haptic(HAPTIC.tap);
                       }}
                       className={[
-                        "relative flex min-h-[4.25rem] flex-col items-center justify-center rounded-2xl border-2 px-1 py-1.5 text-center transition-colors",
+                        "relative flex min-h-[4.25rem] flex-col items-center justify-center rounded-2xl px-1 py-1.5 text-center transition-colors",
                         filled
-                          ? "border-emerald-400/55 bg-linear-to-br from-emerald-500/35 to-teal-600/30 text-white shadow-[0_0_18px_rgba(52,211,153,0.25)]"
+                          ? "bg-linear-to-br from-emerald-500/35 to-teal-600/30 text-white shadow-[0_0_0_1px_rgba(52,211,153,0.5),0_0_18px_rgba(52,211,153,0.25)]"
                           : selected
-                            ? "border-amber-300 bg-amber-400/25 text-white ring-2 ring-amber-300/40"
-                            : "border-white/12 bg-white/[0.04] text-white/50 hover:bg-white/10",
+                            ? "bg-amber-400/25 text-white shadow-[0_0_0_1px_rgba(252,211,77,0.8)] ring-2 ring-amber-300/40"
+                            : "bg-white/[0.04] text-white/50 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] hover:bg-white/10",
                       ].join(" ")}
                     >
                       {filled ? (
@@ -725,7 +731,7 @@ function SpecialArena({
   return (
     <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[#071410]" />
+        <div className="absolute inset-0 bg-arena" />
         <div
           className={`absolute inset-x-0 top-0 h-48 bg-linear-to-b ${theme.flood} to-transparent`}
         />

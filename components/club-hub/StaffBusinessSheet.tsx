@@ -210,7 +210,7 @@ export function StaffBusinessSheet({
 
         {staff.enabled && listRows.length > 0 && (
           <div className="mt-4">
-            <p className="mb-2 font-display text-[11px] font-black uppercase tracking-widest text-arena-muted/70">
+            <p className="mb-2 font-display text-[11px] font-black text-arena-muted">
               {t("club.staff.hireTitle")}
             </p>
             <div className="flex flex-col gap-2.5">

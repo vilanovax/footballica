@@ -28,7 +28,7 @@ export function RouteLoading({ label }: RouteLoadingProps) {
         </span>
       </div>
       {label ? (
-        <p className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
+        <p className="font-display text-sm font-black text-muted-foreground">
           {label}
         </p>
       ) : (

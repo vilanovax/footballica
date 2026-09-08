@@ -158,7 +158,7 @@ export function DuelScorecard({
 
         <div className="relative flex flex-col gap-2">
           <div className="flex items-center justify-between px-1">
-            <p className="font-display text-[11px] font-extrabold uppercase tracking-widest text-white/45">
+            <p className="font-display text-[11px] font-extrabold text-white/55">
               {t("duel.scorecard.board")}
             </p>
             <p className="font-display text-[11px] font-bold text-white/35">
@@ -627,10 +627,15 @@ function AnswerPip({
         initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay, type: "spring", stiffness: 420, damping: 18 }}
-        className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[10px] shadow-[0_2px_0_0_rgb(4,120,87)] ring-1 ring-emerald-300/50"
+        className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-500 shadow-[0_2px_0_0_rgb(4,120,87)] ring-1 ring-emerald-300/50"
         aria-label="Correct"
       >
-        ⚽️
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icons/memory-ball.png"
+          alt=""
+          className="h-3.5 w-3.5 object-contain"
+        />
       </motion.span>
     );
   }

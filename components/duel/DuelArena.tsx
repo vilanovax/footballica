@@ -773,11 +773,16 @@ export function DuelArena({
     <section className="flex flex-1 flex-col items-center justify-center gap-4">
       <motion.div
         aria-hidden
-        className="text-5xl"
+        className="inline-flex"
         animate={{ y: [0, -10, 0], opacity: [0.75, 1, 0.75] }}
         transition={{ duration: 1.1, repeat: Infinity, ease: [0.22, 1, 0.36, 1] }}
       >
-        ⚽️
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icons/memory-ball.png"
+          alt=""
+          className="h-14 w-14 object-contain"
+        />
       </motion.div>
       <button
         type="button"

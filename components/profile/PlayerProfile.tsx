@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Pencil } from "lucide-react";
 import type { ProfileSnapshot } from "@/lib/player/current";
 import type { Locale } from "@/lib/i18n/config";
 import { useTranslation } from "@/lib/i18n/useTranslation";
@@ -356,7 +355,7 @@ export function PlayerProfile({
               className="h-24 w-24 rounded-full shadow-fantasy ring-2 ring-black/40"
             />
             <div
-              className="absolute -start-1 -top-1 flex h-10 min-w-10 flex-col items-center justify-center rounded-full border-2 border-amber-100/90 bg-linear-to-b from-amber-200 via-yellow-400 to-amber-600 px-1 shadow-[0_3px_0_0_rgba(120,70,0,0.45)]"
+              className="absolute -start-1 -top-1 flex h-10 min-w-10 flex-col items-center justify-center rounded-full bg-linear-to-b from-amber-200 via-yellow-400 to-amber-600 px-1 shadow-[0_0_0_2px_rgba(254,243,199,0.9),0_3px_0_0_rgba(120,70,0,0.45)]"
               aria-label={t("profile.level", {
                 n: toLocaleDigits(level.level, locale),
               })}
@@ -372,14 +371,14 @@ export function PlayerProfile({
               type="button"
               onClick={() => setPickingFlag(true)}
               aria-label={t("profile.flag.title")}
-              className="absolute -end-1 -bottom-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#052e16] bg-black/70 text-2xl shadow-[0_3px_0_0_rgba(0,0,0,0.4)] transition-transform active:scale-90"
+              className="absolute -end-1 -bottom-1 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-2xl shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.45),0_3px_0_0_rgba(0,0,0,0.4)] transition-transform active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
             >
               {flag.emoji}
             </button>
           </motion.div>
 
           <div className="min-w-0 flex-1 pt-0.5">
-            <p className="font-display text-[11px] font-black uppercase tracking-[0.16em] text-emerald-300/90">
+            <p className="font-display text-xs font-black text-emerald-300/90">
               {t(`profile.title.${titleBand}`)}
             </p>
             <h1
@@ -390,7 +389,7 @@ export function PlayerProfile({
             >
               {profile.clubName}
             </h1>
-            <p className="mt-0.5 line-clamp-2 break-words font-display text-sm font-bold text-white/50">
+            <p className="mt-0.5 line-clamp-2 break-words font-display text-sm font-bold text-white/70">
               {profile.stadiumName || t("profile.noStadium")}
             </p>
           </div>
@@ -399,9 +398,15 @@ export function PlayerProfile({
             type="button"
             onClick={() => setEditing(true)}
             aria-label={t("profile.edit.button")}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/85 shadow-[0_3px_0_0_rgba(0,0,0,0.35)] transition-transform active:scale-95"
+            className="game-icon-btn flex shrink-0 items-center justify-center rounded-full bg-black/40 text-white/85 shadow-[0_0_0_1px_rgba(255,255,255,0.15),0_3px_0_0_rgba(0,0,0,0.35)] transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
           >
-            <Pencil className="h-4 w-4" strokeWidth={2.5} />
+            <svg
+              viewBox="0 0 20 20"
+              className="h-4 w-4 fill-current"
+              aria-hidden
+            >
+              <path d="M13.6 2.4a1.5 1.5 0 0 1 2.1 0l1.9 1.9a1.5 1.5 0 0 1 0 2.1l-9.2 9.2a1.5 1.5 0 0 1-.7.4l-3.3.7a.75.75 0 0 1-.9-.9l.7-3.3a1.5 1.5 0 0 1 .4-.7l9-9.4Zm1.1 1.1-9 9.4-.3 1.5 1.5-.3 9-9.4-1.2-1.2Z" />
+            </svg>
           </button>
         </div>
 
@@ -415,10 +420,10 @@ export function PlayerProfile({
             aria-label={t("missions.openDrawer")}
             whileTap={{ scale: 0.98 }}
             className={[
-              "relative mt-3.5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 font-display text-sm font-black shadow-[0_3px_0_0_rgba(0,0,0,0.35)]",
+              "relative mt-3.5 flex min-h-touch w-full items-center justify-center gap-2 rounded-bubble-xl font-display text-sm font-black shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_3px_0_0_rgba(0,0,0,0.35)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring",
               missionReadyCount > 0
-                ? "border-amber-300/45 bg-linear-to-b from-amber-500/35 to-amber-900/50 text-amber-50"
-                : "border-white/15 bg-black/40 text-white",
+                ? "bg-linear-to-b from-amber-500/35 to-amber-900/50 text-amber-50 shadow-[0_0_0_1px_hsl(var(--arena-ring-amber)/0.45),0_3px_0_0_rgba(0,0,0,0.35)]"
+                : "bg-black/40 text-white",
             ].join(" ")}
           >
             <HubIcon kind="mission" size="sm" />
@@ -530,7 +535,7 @@ export function PlayerProfile({
             </p>
             <Link
               href="/play"
-              className="mt-4 inline-flex h-11 min-w-[10rem] items-center justify-center rounded-2xl border-2 border-emerald-400/40 bg-linear-to-b from-emerald-500 to-emerald-800 px-5 font-display text-sm font-black text-white shadow-[0_3px_0_0_rgba(0,0,0,0.4)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.4)]"
+              className="mt-4 game-cta game-cta-primary inline-flex h-11 min-w-40 items-center justify-center px-5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
             >
               {t("profile.scoreboardEmptyCta")}
             </Link>
@@ -636,7 +641,7 @@ export function PlayerProfile({
         <div className="relative flex flex-col gap-3.5">
           {nearUnlock.length > 0 && (
             <div>
-              <p className="mb-2 font-display text-[10px] font-black uppercase tracking-widest text-amber-200/85">
+              <p className="mb-2 font-display text-[10px] font-black text-amber-200/90">
                 {t("profile.trophyNear")}
               </p>
               <ul className="flex flex-col gap-1.5">
@@ -657,7 +662,7 @@ export function PlayerProfile({
 
           {unlockedHonors.length > 0 && (
             <div>
-              <p className="mb-2 font-display text-[10px] font-black uppercase tracking-widest text-emerald-200/80">
+              <p className="mb-2 font-display text-[10px] font-black text-emerald-200/90">
                 {t("profile.trophyHonors")}
               </p>
               {honorsUseScroll ? (
@@ -709,19 +714,22 @@ export function PlayerProfile({
                 className="flex min-h-12 w-full items-center justify-between gap-2 px-3 py-2.5"
                 aria-expanded={othersOpen}
               >
-                <span className="font-display text-[10px] font-black uppercase tracking-widest text-white/55">
+                <span className="font-display text-[10px] font-black text-white/65">
                   {t("profile.trophyOther")}
                 </span>
                 <span className="flex items-center gap-1.5 font-display text-[10px] font-bold text-white/55">
                   {othersOpen
                     ? t("profile.trophyOtherHide")
                     : t("profile.trophyOtherShow")}
-                  <ChevronDown
+                  <span
+                    aria-hidden
                     className={[
-                      "h-4 w-4 transition-transform",
+                      "inline-block text-sm leading-none transition-transform",
                       othersOpen ? "rotate-180" : "",
                     ].join(" ")}
-                  />
+                  >
+                    ▾
+                  </span>
                 </span>
               </button>
               <AnimatePresence initial={false}>
@@ -1075,9 +1083,9 @@ type TrophyInspectSheetProps = {
 };
 
 const TIER_SHEET_WASH: Record<BadgeTier, string> = {
-  bronze: "from-amber-900/90 via-[#1a140c] to-[#0f172a]",
-  silver: "from-slate-600/80 via-[#151a22] to-[#0f172a]",
-  gold: "from-amber-700/85 via-[#1a1608] to-[#0f172a]",
+  bronze: "from-amber-900/90 via-arena to-arena-mid",
+  silver: "from-slate-600/80 via-arena to-arena-mid",
+  gold: "from-amber-700/85 via-arena to-arena-mid",
 };
 
 function TrophyInspectSheet({

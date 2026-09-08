@@ -77,7 +77,7 @@ export function MysteryShareCard(props: Props) {
       className="overflow-hidden rounded-3xl border border-amber-400/35 bg-linear-to-b from-amber-500/20 via-surface to-surface shadow-fantasy"
     >
       <div className="border-b border-amber-400/20 px-4 py-3 text-center">
-        <p className="font-display text-[11px] font-bold uppercase tracking-widest text-amber-800 dark:text-amber-200">
+        <p className="font-display text-[11px] font-black text-amber-800 dark:text-amber-200">
           Footballica
         </p>
         <p className="font-display text-lg font-black text-foreground">

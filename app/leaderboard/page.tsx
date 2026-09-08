@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getLeaderboard } from "@/actions/getLeaderboard";
-import { getHallOfFame } from "@/actions/getHallOfFame";
 import { LeaderboardList } from "@/components/leaderboard/LeaderboardList";
 import { RouteLoading } from "@/components/ui/RouteLoading";
 import { getCurrentUser } from "@/lib/player/current";
@@ -22,16 +21,13 @@ export default async function LeaderboardPage() {
 }
 
 async function LeaderboardLoader() {
-  const [board, hallOfFame] = await Promise.all([
-    getLeaderboard(),
-    getHallOfFame(),
-  ]);
+  // Hall of Fame loads on tab switch (client) — keep weekly path lean.
+  const board = await getLeaderboard();
 
   return (
     <LeaderboardList
       rows={board.rows}
       resetsInDays={board.resetsInDays}
-      hallOfFame={hallOfFame}
       currentUserRow={board.currentUserRow}
     />
   );

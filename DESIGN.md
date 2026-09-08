@@ -9,7 +9,7 @@ Admin CMS (`.admin`) stays on shadcn Slate and is out of scope.
 
 | Surface | When | Tokens |
 |--------|------|--------|
-| **App chrome** | Hub shell, nav, light Day Match panels | `--background`, `--surface`, `--primary`, `--accent` |
+| **Player pitch** | All player chrome (`html.player-pitch`, `.hub-ground`) — Club, Play, ranks, profile, shop, settings, login | `--arena-*` bed; `--foreground` / `--nav` remapped to pitch |
 | **Arena chrome** | Bottom sheets, match arenas, result modals, immersive game UI | `--arena-*` — always pitch-dark |
 
 Arena does **not** flip with Day/Night. Immersion > theme sync.
@@ -73,6 +73,8 @@ Prefer these over copying hex shadows:
 | `.game-cta` + `-accent` / `-primary` / `-ghost` / `-danger` | Actions |
 | `.game-input` | Search / text on pitch |
 | `.game-offer` + `.game-offer-inner` | Upgrade / sponsor frame |
+| `.hub-ground` | Player chrome page pitch (AppShell) |
+| `.hub-deck` | Nested grouping bed for related tiles |
 
 Fantasy light buttons remain: `.btn-fantasy-primary|secondary|accent` (Hub / Day Match).
 

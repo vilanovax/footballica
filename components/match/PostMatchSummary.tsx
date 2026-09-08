@@ -413,7 +413,7 @@ export function PostMatchSummary({
               className="flex w-full flex-col gap-2.5"
             >
               <div className="flex items-center justify-between gap-2 px-0.5">
-                <p className="font-display text-[11px] font-bold uppercase tracking-widest text-white/45">
+                <p className="font-display text-[11px] font-black text-white/55">
                   {t("result.achievementsSection")}
                 </p>
                 {achievements?.streakNote && (
@@ -548,7 +548,7 @@ export function PostMatchSummary({
                         <span aria-hidden>{achievements.milestone.icon}</span>
                       </GameIconWell>
                       <div className="min-w-0 flex-1">
-                        <p className="font-display text-[0.65rem] font-bold uppercase tracking-widest text-amber-200/80">
+                        <p className="font-display text-[0.65rem] font-black text-amber-200/90">
                           {achievements.milestone.eyebrow}
                         </p>
                         <p className="mt-0.5 font-display text-sm font-bold leading-snug text-white">

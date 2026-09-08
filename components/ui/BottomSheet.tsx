@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 
@@ -139,9 +138,15 @@ export function BottomSheet({
                   type="button"
                   aria-label={closeLabel}
                   onClick={onClose}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-transform active:scale-90"
+                  className="game-icon-btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted transition-transform active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
-                  <X className="h-5 w-5" strokeWidth={2.5} />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/icons/close.png"
+                    alt=""
+                    aria-hidden
+                    className="h-4 w-4 object-contain opacity-70"
+                  />
                 </button>
               )}
             </div>

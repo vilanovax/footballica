@@ -185,13 +185,13 @@ export function Shop({
         />
 
         <div className="relative flex items-center justify-between gap-2">
-          <p className="font-display text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/85">
+          <p className="font-display text-xs font-black text-amber-200/90">
             {t("shop.eyebrow")}
           </p>
           <Link
             href="/club"
             onClick={() => playSound("click")}
-            className="game-cta game-cta-ghost h-10 min-w-10 gap-1.5 px-3 font-display text-xs font-black"
+            className="game-cta game-cta-ghost min-h-touch gap-1.5 px-3 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -211,20 +211,16 @@ export function Shop({
             animate={
               coinPulse
                 ? { y: [0, -10, 0], scale: [1, 1.18, 1], rotate: [0, -8, 6, 0] }
-                : { y: [0, -4, 0] }
+                : undefined
             }
-            transition={
-              coinPulse
-                ? { duration: 0.55 }
-                : { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
-            }
+            transition={coinPulse ? { duration: 0.55 } : undefined}
           >
             <GameIconWell amber className="h-16 w-16">
               <ResourceIcon kind="coin" size="xl" className="h-12 w-12!" />
             </GameIconWell>
           </motion.div>
 
-          <p className="mt-1 font-display text-[11px] font-black uppercase tracking-widest text-white/50">
+          <p className="mt-1 font-display text-[11px] font-black text-white/65">
             {t("shop.budget")}
           </p>
           <motion.p

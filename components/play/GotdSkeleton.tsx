@@ -5,7 +5,7 @@
 export function GotdSkeleton() {
   return (
     <div
-      className="relative overflow-hidden rounded-bubble-xl bg-linear-to-br from-[#5c3d0a]/80 via-[#0f172a] to-[#2a1c06] p-3.5 shadow-[0_0_0_1px_rgba(251,191,36,0.35),0_4px_0_0_rgba(0,0,0,0.28)]"
+      className="relative overflow-hidden rounded-bubble-xl bg-linear-to-br from-amber-950/80 via-arena to-arena-deep p-3.5 shadow-arena-ring-amber"
       role="status"
       aria-busy="true"
       aria-label="Loading game of the day"

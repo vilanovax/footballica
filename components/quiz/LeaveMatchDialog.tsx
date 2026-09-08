@@ -1,8 +1,10 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/useTranslation";
+import { GameCta } from "@/components/ui/game/GameCta";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 type LeaveMatchDialogProps = {
   open: boolean;
@@ -23,7 +25,7 @@ export function LeaveMatchDialog({
       {open && (
         <motion.div
           key="leave-match-dialog"
-          className="fixed inset-0 z-[70] flex items-center justify-center px-5"
+          className="fixed inset-0 z-70 flex items-center justify-center px-5"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -40,50 +42,52 @@ export function LeaveMatchDialog({
             aria-modal="true"
             aria-labelledby="leave-match-title"
             aria-describedby="leave-match-desc"
-            className="relative w-full max-w-[22rem] overflow-hidden rounded-bubble-xl border border-border bg-surface p-6 pt-7 text-center shadow-fantasy-lg"
+            className="relative w-full max-w-[22rem]"
             initial={{ scale: 0.92, y: 18, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.96, y: 10, opacity: 0 }}
             transition={{ type: "spring", stiffness: 420, damping: 28 }}
           >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-accent/20 to-transparent"
-            />
+            <GamePanel tone="amber" className="p-6 pt-7 text-center">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -end-8 top-0 h-28 w-28 rounded-full bg-amber-300/25 blur-3xl"
+              />
 
-            <div className="relative mx-auto mb-5 flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full bg-accent text-accent-foreground shadow-[0_5px_0_0_hsl(var(--accent-deep)),0_10px_24px_hsl(var(--accent)/0.35)] ring-4 ring-accent/25">
-              <AlertTriangle className="h-8 w-8" strokeWidth={2.75} />
-            </div>
+              <GameIconWell
+                size="xl"
+                amber
+                src="/icons/broken-heart.png"
+                className="relative mx-auto"
+              />
 
-            <h2
-              id="leave-match-title"
-              className="relative font-display text-xl font-bold tracking-tight text-foreground"
-            >
-              {t("quiz.leaveTitle")}
-            </h2>
-            <p
-              id="leave-match-desc"
-              className="relative mt-2.5 text-sm leading-relaxed text-muted-foreground"
-            >
-              {t("quiz.leaveBody")}
-            </p>
-
-            <div className="relative mt-7 flex flex-col gap-2.5">
-              <button
-                type="button"
-                onClick={onStay}
-                className="game-cta game-cta-primary w-full"
+              <h2
+                id="leave-match-title"
+                className="relative mt-4 font-display text-xl font-black text-white"
               >
-                {t("quiz.leaveStay")}
-              </button>
-              <button
-                type="button"
-                onClick={onLeave}
-                className="flex min-h-touch w-full items-center justify-center rounded-bubble border-2 border-destructive/50 bg-destructive/10 px-5 py-3 font-display text-base font-bold text-destructive transition-transform active:scale-[0.98] active:bg-destructive/15"
+                {t("quiz.leaveTitle")}
+              </h2>
+              <p
+                id="leave-match-desc"
+                className="relative mt-2.5 font-display text-sm font-bold leading-relaxed text-white/70"
               >
-                {t("quiz.leaveConfirm")}
-              </button>
-            </div>
+                {t("quiz.leaveBody")}
+              </p>
+
+              <div className="relative mt-7 flex flex-col gap-2.5">
+                <GameCta variant="primary" block onClick={onStay}>
+                  {t("quiz.leaveStay")}
+                </GameCta>
+                <GameCta
+                  variant="ghost"
+                  block
+                  onClick={onLeave}
+                  className="bg-rose-500/15 text-rose-100 shadow-[inset_0_0_0_1px_hsl(var(--arena-ring-rose)/0.45)]"
+                >
+                  {t("quiz.leaveConfirm")}
+                </GameCta>
+              </div>
+            </GamePanel>
           </motion.div>
         </motion.div>
       )}

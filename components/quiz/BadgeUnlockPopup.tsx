@@ -61,10 +61,10 @@ export function BadgeUnlockPopup({ badges, onClose }: BadgeUnlockPopupProps) {
           aria-hidden
           className="pointer-events-none absolute inset-0 overflow-hidden"
         >
-          {["✨", "⭐", "🎉", "💫", "🏅"].map((spark, i) => (
+          {Array.from({ length: 5 }).map((_, i) => (
             <motion.span
-              key={spark + i}
-              className="absolute text-xl"
+              key={i}
+              className="absolute h-2 w-2 rounded-full bg-amber-400/80"
               style={{
                 left: `${12 + i * 18}%`,
                 top: `${18 + (i % 3) * 10}%`,
@@ -73,13 +73,10 @@ export function BadgeUnlockPopup({ badges, onClose }: BadgeUnlockPopupProps) {
               animate={{
                 opacity: [0, 1, 0],
                 y: [-10, -40, -70],
-                scale: [0.4, 1.1, 0.8],
-                rotate: [-12, 8, 20],
+                scale: [0.4, 1.2, 0.6],
               }}
               transition={{ duration: 1.4, delay: 0.1 + i * 0.08 }}
-            >
-              {spark}
-            </motion.span>
+            />
           ))}
         </div>
 

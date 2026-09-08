@@ -23,6 +23,10 @@ import { ExplanationFact } from "./ExplanationFact";
 import { HelperDock } from "./HelperDock";
 import { GoalBurst } from "./GoalBurst";
 import { MatchLeaveControl } from "./MatchLeaveControl";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { ResourceIcon } from "@/components/common/ResourceIcon";
 
 // Post-match / rare chrome — keep out of the kickoff JS chunk.
 const MatchResult = dynamic(() =>
@@ -220,53 +224,69 @@ export function QuickMatch({
   }
 
   return (
-    <section className="relative flex flex-1 flex-col">
+    <section className="relative -mx-4 flex flex-1 flex-col bg-arena px-4 text-arena-fg">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-linear-to-b from-arena-deep via-arena to-arena-mid" />
+        <div className="game-pinstripe absolute inset-0 opacity-60" />
+        <div className="absolute -end-16 top-0 h-48 w-48 rounded-full bg-lime-300/12 blur-3xl" />
+        <div className="absolute -start-20 top-40 h-40 w-40 rounded-full bg-emerald-400/15 blur-3xl" />
+      </div>
+
       {process.env.NODE_ENV === "development" ? <FormatDevToggle /> : null}
       <div
-        className={["flex flex-1 flex-col gap-5", shake ? "animate-screen-shake" : ""].join(" ")}
+        className={[
+          "relative z-10 flex flex-1 flex-col gap-4",
+          shake ? "animate-screen-shake" : "",
+        ].join(" ")}
         onAnimationEnd={() => setShake(false)}
       >
-        <header className="flex flex-col gap-3 pt-2">
-          <div className="flex items-center gap-2">
+        <GamePanel tone="emerald" className="px-3 py-2.5">
+          <div className="relative flex items-center gap-2">
             <MatchLeaveControl
               setPaused={setPaused}
               onConfirmLeave={handleLeaveMatch}
             />
-            <p className="min-w-0 flex-1 font-display text-sm font-bold uppercase tracking-widest text-secondary">
-              {t("quiz.quickMode")}
-            </p>
-            <p className="shrink-0 font-display text-sm font-semibold text-muted-foreground">
-              {t("quiz.questionOf", {
-                n: toLocaleDigits(currentIndex + 1, lang),
-                total: toLocaleDigits(questions.length, lang),
-              })}
-            </p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-display text-sm font-black text-lime-200">
+                {t("quiz.quickMode")}
+              </p>
+              <p className="truncate font-display text-[11px] font-bold text-white/70">
+                {t("quiz.questionOf", {
+                  n: toLocaleDigits(currentIndex + 1, lang),
+                  total: toLocaleDigits(questions.length, lang),
+                })}
+              </p>
+            </div>
+            <GameIconWell size="md" amber src="/icons/energy.png" />
           </div>
 
-          {/* Live score + streak chips — the rapid-fire "keep the run alive" hook */}
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 font-display text-sm font-bold text-primary">
-              ⚽️ {toLocaleDigits(goals, lang)}
-            </span>
-            <motion.span
-              key={streak}
-              initial={streak >= 2 ? { scale: 0.6 } : false}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 320, damping: 16 }}
-              className={[
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-display text-sm font-bold transition-colors",
-                streak >= 2
-                  ? "bg-accent/20 text-accent-deep"
-                  : "bg-muted text-muted-foreground",
-              ].join(" ")}
+          <div className="relative mt-2.5 flex flex-wrap items-center gap-2">
+            <GameChip tone="emerald" className="gap-1 px-2.5 py-1 text-sm">
+              <ResourceIcon kind="xp" size="sm" className="h-3.5 w-3.5" />
+              {toLocaleDigits(goals, lang)}
+            </GameChip>
+            <GameChip
+              tone={streak >= 2 ? "amber" : "default"}
+              className="gap-1 px-2.5 py-1 text-sm"
             >
-              🔥 {toLocaleDigits(streak, lang)}
-            </motion.span>
-            <div className="flex-1" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/streak.png"
+                alt=""
+                aria-hidden
+                className="h-3.5 w-3.5 object-contain"
+              />
+              {toLocaleDigits(streak, lang)}
+            </GameChip>
           </div>
 
-          <QuickTimer ref={timerRef} paused={locked || paused} />
-        </header>
+          <div className="relative mt-2.5">
+            <QuickTimer ref={timerRef} paused={locked || paused} />
+          </div>
+        </GamePanel>
 
         <QuestionCard
           key={question.id}

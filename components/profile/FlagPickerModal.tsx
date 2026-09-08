@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Check, Lock } from "lucide-react";
 import { setClubFlag } from "@/actions/setClubFlag";
 import {
   CLUB_FLAGS,
@@ -317,14 +316,19 @@ function FlagGrid({
             ) : null}
 
             {isSelected ? (
-              <span className="absolute -end-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-arena-success text-white shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
-                <Check className="h-3 w-3" strokeWidth={3} />
+              <span className="absolute -end-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-arena-success font-display text-[10px] font-black text-white shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
+                ✓
               </span>
             ) : null}
 
             {!unlocked ? (
-              <span className="absolute -end-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white/90 shadow-[0_0_0_1px_rgba(255,255,255,0.15)]">
-                <Lock className="h-2.5 w-2.5" strokeWidth={3} />
+              <span
+                className="absolute -end-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white/90 shadow-[0_0_0_1px_rgba(255,255,255,0.15)]"
+                aria-hidden
+              >
+                <svg viewBox="0 0 16 16" className="h-2.5 w-2.5 fill-current">
+                  <path d="M8 1a3 3 0 0 0-3 3v2H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1V4a3 3 0 0 0-3-3Zm1.5 5h-3V4a1.5 1.5 0 1 1 3 0v2Z" />
+                </svg>
               </span>
             ) : null}
           </motion.button>

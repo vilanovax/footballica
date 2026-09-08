@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
-import { ChevronLeft, Zap } from "lucide-react";
 import { startDuel } from "@/actions/duel/startDuel";
 import type { DuelSnapshot } from "@/lib/duel/snapshot";
 import { useTranslation } from "@/lib/i18n/useTranslation";
@@ -177,7 +176,7 @@ export function DuelLobby({
             iconClassName="h-7 w-7"
           />
           <div className="min-w-0 flex-1">
-            <p className="font-display text-[11px] font-bold uppercase tracking-widest text-amber-100/70">
+            <p className="font-display text-[11px] font-black text-amber-100/80">
               {t("duel.eyebrow")}
             </p>
             <h1 className="mt-0.5 font-display text-2xl font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
@@ -192,7 +191,7 @@ export function DuelLobby({
         {activeCount > 0 ? (
           <div className="relative mt-3 flex flex-wrap gap-1.5">
             {turnCount > 0 ? (
-              <GameChip tone="amber" className="uppercase tracking-wide">
+              <GameChip tone="amber" className="gap-1.5 tracking-normal">
                 <motion.span
                   className="h-1.5 w-1.5 rounded-full bg-accent"
                   animate={{ opacity: [1, 0.35, 1] }}
@@ -356,12 +355,24 @@ function KickoffBlock({
                   ease: "linear",
                 }}
                 aria-hidden
+                className="inline-flex"
               >
-                ⚽️
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/memory-ball.png"
+                  alt=""
+                  className="h-5 w-5 object-contain"
+                />
               </motion.span>
             ) : (
               <>
-                <Zap className="h-4 w-4 fill-current" strokeWidth={2.5} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/energy.png"
+                  alt=""
+                  aria-hidden
+                  className="h-4 w-4 object-contain"
+                />
                 <span className="max-w-[7rem] truncate">{startLabel}</span>
               </>
             )}
@@ -382,8 +393,6 @@ function KickoffBlock({
           <AvatarRing pulse avatarKey={yourAvatar} />
           <motion.span
             className="rounded-full bg-accent px-3 py-1 font-display text-sm font-black text-accent-foreground shadow-[0_3px_0_0_hsl(var(--accent-deep))]"
-            animate={{ scale: [1, 1.06, 1] }}
-            transition={{ repeat: Infinity, duration: 1.6 }}
           >
             VS
           </motion.span>
@@ -421,8 +430,14 @@ function KickoffBlock({
                     ease: "linear",
                   }}
                   aria-hidden
+                  className="inline-flex"
                 >
-                  ⚽️
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/icons/memory-ball.png"
+                    alt=""
+                    className="h-5 w-5 object-contain"
+                  />
                 </motion.span>
                 {startingLabel}
               </motion.span>
@@ -434,7 +449,13 @@ function KickoffBlock({
                 exit={{ opacity: 0 }}
                 className="flex items-center gap-2"
               >
-                <Zap className="h-5 w-5 fill-current" strokeWidth={2.5} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/energy.png"
+                  alt=""
+                  aria-hidden
+                  className="h-5 w-5 object-contain"
+                />
                 {startLabel}
               </motion.span>
             )}
@@ -693,10 +714,12 @@ function FixtureCard({
             ) : null}
           </div>
 
-          <ChevronLeft
-            className="relative h-5 w-5 shrink-0 text-white/50 transition-transform group-active:-translate-x-0.5 rtl:rotate-180"
-            strokeWidth={2.5}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/back.png"
+            alt=""
             aria-hidden
+            className="relative h-5 w-5 shrink-0 object-contain opacity-55 transition-transform group-active:-translate-x-0.5 rtl:rotate-180"
           />
         </GamePanel>
       </Link>

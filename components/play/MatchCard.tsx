@@ -42,7 +42,7 @@ const TONE: Record<
   MatchCardTone,
   {
     panel: GamePanelTone;
-    cta: string;
+    ctaVariant: "primary" | "accent" | "danger";
     iconSrc: string;
     wash: string;
     amberWell?: boolean;
@@ -50,25 +50,25 @@ const TONE: Record<
 > = {
   penalty: {
     panel: "emerald",
-    cta: "game-cta game-cta-primary flex-1 font-display text-sm font-black",
+    ctaVariant: "primary",
     iconSrc: "/icons/target.png",
     wash: "bg-emerald-400/20",
   },
   quick: {
     panel: "emerald",
-    cta: "game-cta game-cta-primary flex-1 font-display text-sm font-black",
+    ctaVariant: "primary",
     iconSrc: "/icons/energy.png",
     wash: "bg-lime-300/20",
   },
   survival: {
     panel: "rose",
-    cta: "game-cta flex-1 bg-rose-500 font-display text-sm font-black text-white shadow-[0_5px_0_0_rgb(136,19,55)] active:shadow-[0_2px_0_0_rgb(136,19,55)]",
+    ctaVariant: "danger",
     iconSrc: "/icons/heart.png",
     wash: "bg-rose-400/20",
   },
   duel: {
     panel: "amber",
-    cta: "game-cta game-cta-accent flex-1 font-display text-sm font-black",
+    ctaVariant: "accent",
     iconSrc: "/icons/trophy.png",
     wash: "bg-amber-300/20",
     amberWell: true,
@@ -163,7 +163,7 @@ export function MatchCard({
                 </GameChip>
               ) : null}
             </div>
-            <p className="mt-0.5 font-display text-xs font-bold text-white/55">
+            <p className="mt-0.5 font-display text-xs font-bold text-white/70">
               {blurb}
             </p>
           </div>
@@ -231,7 +231,13 @@ export function MatchCard({
               playSound("click");
               haptic(HAPTIC.tap);
             }}
-            className={style.cta}
+            className={cn(
+              "game-cta flex-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring",
+              style.ctaVariant === "primary" && "game-cta-primary",
+              style.ctaVariant === "accent" && "game-cta-accent",
+              style.ctaVariant === "danger" &&
+                "bg-rose-500 text-white shadow-[0_5px_0_0_rgb(136,19,55)] active:translate-y-[3px] active:shadow-[0_2px_0_0_rgb(136,19,55)]",
+            )}
           >
             {ctaLabel}
           </Link>
@@ -239,7 +245,7 @@ export function MatchCard({
             type="button"
             aria-label={t("play.modeInfo")}
             onClick={openInfo}
-            className="game-cta game-cta-ghost h-12 w-12 shrink-0 p-0"
+            className="game-cta game-cta-ghost game-icon-btn h-12 w-12 shrink-0 p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
           >
             <GameIcon src="/icons/help.png" className="h-8 w-8" />
           </button>
@@ -402,7 +408,7 @@ function StatTile({
 }) {
   return (
     <GameTile className="flex flex-col items-center gap-1.5 px-2 py-3 text-center">
-      <span className="font-display text-[10px] font-black uppercase tracking-wide text-white/45">
+      <span className="font-display text-[10px] font-black text-white/65">
         {label}
       </span>
       <span className="flex h-7 items-center justify-center">{icon}</span>

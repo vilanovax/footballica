@@ -49,7 +49,7 @@ function SectionHeader({
           <p className="font-display text-base font-black text-white drop-shadow-sm">
             {title}
           </p>
-          <p className="mt-0.5 font-display text-[11px] font-bold text-white/55">
+          <p className="mt-0.5 font-display text-[11px] font-bold text-white/70">
             {desc}
           </p>
         </div>
@@ -319,13 +319,13 @@ export default function SettingsPage() {
       ))}
 
       <footer className="mt-auto pt-2 text-center">
-        <p className="font-display text-lg font-black tracking-wide text-emerald-700/80">
+        <p className="font-display text-lg font-black tracking-wide text-arena-fg">
           Footballica
         </p>
-        <p className="mt-0.5 font-display text-[11px] font-bold text-muted-foreground">
+        <p className="mt-0.5 font-display text-[11px] font-bold text-arena-muted">
           {t("settings.tagline")}
         </p>
-        <p className="mt-1 font-display text-[11px] font-bold tabular-nums text-muted-foreground/70">
+        <p className="mt-1 font-display text-[11px] font-bold tabular-nums text-arena-muted/80">
           v0.1.0
         </p>
       </footer>

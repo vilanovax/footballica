@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
 import type { UpgradeDef, UpgradeKey } from "@/lib/club/upgrades";
 import {
   fansSoftCap,
@@ -11,6 +10,7 @@ import {
 import { staminaRegenIntervalMinutes } from "@/lib/club/stamina";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { GameCta } from "@/components/ui/game/GameCta";
+import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GameOffer } from "@/components/ui/game/GameOffer";
 import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
@@ -29,25 +29,19 @@ const UPGRADE_PANEL_TONE: Record<UpgradeKey, GamePanelTone> = {
 
 const UPGRADE_SKIN: Record<
   UpgradeKey,
-  { row: string; glow: string; pip: string; rim: string }
+  { glow: string; pip: string }
 > = {
   STADIUM: {
-    row: "from-[#0f3d2e] via-[#145c45] to-[#0a281c]",
     glow: "bg-emerald-400/40",
     pip: "bg-emerald-400",
-    rim: "border-emerald-400/45",
   },
   TRAINING_GROUND: {
-    row: "from-[#0c2d4a] via-[#134e75] to-[#081f33]",
     glow: "bg-sky-400/40",
     pip: "bg-sky-400",
-    rim: "border-sky-400/45",
   },
   MEDICAL: {
-    row: "from-[#3d1520] via-[#7a1f3d] to-[#2a0f16]",
     glow: "bg-rose-400/40",
     pip: "bg-rose-400",
-    rim: "border-rose-400/45",
   },
 };
 
@@ -140,9 +134,9 @@ export function UpgradeCard({
               }
             : undefined
         }
-        transition={spotlight ? { repeat: Infinity, duration: 1.6 } : undefined}
+        transition={spotlight ? { repeat: 2, duration: 1.2 } : undefined}
         className={[
-          "scroll-mt-24",
+          "scroll-mt-24 rounded-bubble-xl",
           spotlight ? "z-50" : "",
           locked ? "pointer-events-none opacity-45" : "",
         ].join(" ")}
@@ -159,14 +153,12 @@ export function UpgradeCard({
           ].join(" ")}
         >
         {affordable && (
-          <motion.div
+          <div
             aria-hidden
             className={[
               "pointer-events-none absolute -end-8 top-0 h-28 w-28 rounded-full blur-2xl",
               skin.glow,
             ].join(" ")}
-            animate={{ opacity: [0.3, 0.65, 0.3], scale: [1, 1.08, 1] }}
-            transition={{ duration: 2.2, repeat: Infinity }}
           />
         )}
 
@@ -175,8 +167,10 @@ export function UpgradeCard({
             <GameIconWell size="lg" amber={affordable}>
               <UpgradeIcon upgradeKey={def.key} size="md" className="h-9 w-9!" />
             </GameIconWell>
-            <span className="absolute -bottom-1 -start-1 rounded-full bg-black/65 px-1.5 py-0.5 font-display text-[9px] font-black text-white ring-1 ring-white/30">
-              Lv{toLocaleDigits(level, locale)}
+            <span className="absolute -bottom-1 -start-1">
+              <GameChip className="px-1.5 py-0.5 text-[9px]">
+                Lv{toLocaleDigits(level, locale)}
+              </GameChip>
             </span>
           </div>
 
@@ -186,12 +180,10 @@ export function UpgradeCard({
                 {t(`upgrades.${def.key}.name`)}
               </p>
               {spotlight && def.key === "STADIUM" && level === 0 && (
-                <span className="rounded-full bg-amber-400/25 px-2 py-0.5 font-display text-[10px] font-black text-amber-100 ring-1 ring-amber-300/45">
-                  {t("ftue.firstUpgradeLabel")}
-                </span>
+                <GameChip tone="amber">{t("ftue.firstUpgradeLabel")}</GameChip>
               )}
               {isMax && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/30 px-2 py-0.5 font-display text-[10px] font-black text-amber-100 ring-1 ring-amber-300/50">
+                <GameChip tone="amber">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/icons/crown.png"
@@ -200,7 +192,7 @@ export function UpgradeCard({
                     className="h-3 w-3 object-contain"
                   />
                   MAX
-                </span>
+                </GameChip>
               )}
             </div>
             {impact ? (
@@ -235,7 +227,7 @@ export function UpgradeCard({
 
           <div className="flex shrink-0 flex-col items-end gap-1.5">
             {isMax ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/25 px-2.5 py-1.5 font-display text-[11px] font-black text-amber-100 ring-1 ring-amber-300/40">
+              <GameChip tone="amber" className="px-2.5 py-1.5">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/icons/crown.png"
@@ -244,34 +236,17 @@ export function UpgradeCard({
                   className="h-3.5 w-3.5 object-contain"
                 />
                 MAX
-              </span>
+              </GameChip>
             ) : (
-              <motion.button
-                type="button"
+              <GameCta
                 data-upgrade-buy
                 disabled={disabled}
                 onClick={(e) => {
                   e.stopPropagation();
                   onUpgrade();
                 }}
-                whileTap={disabled ? undefined : { y: 2 }}
-                animate={
-                  affordable
-                    ? { scale: [1, 1.04, 1] }
-                    : undefined
-                }
-                transition={
-                  affordable
-                    ? { duration: 1.4, repeat: Infinity }
-                    : undefined
-                }
                 aria-label={`${t("upgrades.upgrade")} ${toLocaleDigits(cost ?? 0, locale)}`}
-                className={[
-                  "inline-flex min-h-11 items-center gap-1 rounded-bubble px-3 py-2 font-display text-[11px] font-black shadow-[0_3px_0_0_rgba(0,0,0,0.4)]",
-                  canAfford && !pending && !locked
-                    ? "bg-accent text-accent-foreground"
-                    : "cursor-not-allowed bg-white/15 text-white/55",
-                ].join(" ")}
+                className="min-h-11 gap-1 px-3 py-2 text-[11px]"
               >
                 {pending ? (
                   "…"
@@ -293,11 +268,15 @@ export function UpgradeCard({
                     </span>
                   </>
                 )}
-              </motion.button>
+              </GameCta>
             )}
-            <ChevronRight
-              className="h-4 w-4 text-white/45 rtl:rotate-180"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/back.png"
+              alt=""
               aria-hidden
+              draggable={false}
+              className="h-3.5 w-3.5 opacity-50 ltr:rotate-180"
             />
           </div>
         </div>
@@ -328,22 +307,13 @@ export function UpgradeCard({
           />
 
           <div className="relative flex flex-col items-center px-4 pb-5 pt-5">
-            <motion.div
-              animate={{ y: [0, -4, 0] }}
-              transition={{
-                repeat: Infinity,
-                duration: 2.4,
-                ease: "easeInOut",
-              }}
-            >
-              <GameIconWell size="xl" amber>
+            <GameIconWell size="xl" amber>
                 <UpgradeIcon
                   upgradeKey={def.key}
                   size="lg"
                   className="h-12 w-12!"
                 />
               </GameIconWell>
-            </motion.div>
 
             <div className="mt-2.5 flex items-center gap-1">
               {Array.from({ length: def.maxLevel }, (_, i) => (
@@ -358,7 +328,7 @@ export function UpgradeCard({
               ))}
             </div>
 
-            <p className="mt-2 font-display text-[11px] font-bold uppercase tracking-widest text-white/55">
+            <p className="mt-2 font-display text-[11px] font-black text-white/65">
               {t(heroLabelKey)}
             </p>
             <motion.p
@@ -400,7 +370,7 @@ export function UpgradeCard({
                   iconClassName="h-7 w-7"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="font-display text-[10px] font-black uppercase tracking-widest text-accent">
+                  <p className="font-display text-[10px] font-black text-accent">
                     {t("upgrades.nextLevel")}
                   </p>
                   <p className="font-display text-lg font-black text-white">

@@ -256,7 +256,7 @@ export function TikiTakaBoard({
     return (
       <section className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-4">
         <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-[#071410]" />
+          <div className="absolute inset-0 bg-arena" />
           <div className="absolute inset-x-0 top-0 h-40 bg-linear-to-b from-emerald-500/20 to-transparent" />
         </div>
         <motion.div
@@ -294,7 +294,7 @@ export function TikiTakaBoard({
   return (
     <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[#071410]" />
+        <div className="absolute inset-0 bg-arena" />
         <div className="absolute inset-x-0 top-0 h-52 bg-linear-to-b from-emerald-500/25 via-sky-500/10 to-transparent" />
         <div
           className="absolute inset-0 opacity-[0.08]"

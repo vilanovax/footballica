@@ -84,7 +84,7 @@ export function AnswerButton({
       }
       transition={{ duration: isPickedWrong ? 0.4 : 0.35 }}
       className={[
-        "flex min-h-14 w-full items-center gap-3 rounded-2xl px-3.5 py-3.5 text-start font-display text-base font-black transition-colors duration-200",
+        "flex min-h-14 w-full items-center gap-3 rounded-2xl px-3.5 py-3.5 text-start font-display text-base font-black transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring",
         stateClass,
       ].join(" ")}
     >

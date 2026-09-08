@@ -227,7 +227,7 @@ export function DuelResult({ duel, missions: initialMissions }: DuelResultProps)
             transition={{ delay: 0.28 }}
             className="mt-3"
           >
-            <p className="mb-2 px-1 font-display text-[11px] font-bold uppercase tracking-widest text-white/40">
+            <p className="mb-2 px-1 font-display text-[11px] font-black text-white/55">
               {t("duel.scorecard.missionsNudge")}
             </p>
             <MissionProgressBanner missions={missionBoard} />

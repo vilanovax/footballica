@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 type RankArtKind = "crown" | "gold" | "silver" | "bronze" | "trophy";
 
 const SRC: Record<RankArtKind, string> = {
@@ -8,10 +10,10 @@ const SRC: Record<RankArtKind, string> = {
   trophy: "/icons/trophy.png",
 };
 
-const SIZE: Record<"sm" | "md" | "lg", string> = {
-  sm: "h-5 w-5",
-  md: "h-7 w-7",
-  lg: "h-9 w-9",
+const SIZE: Record<"sm" | "md" | "lg", { className: string; px: number }> = {
+  sm: { className: "h-5 w-5", px: 20 },
+  md: { className: "h-7 w-7", px: 28 },
+  lg: { className: "h-9 w-9", px: 36 },
 };
 
 /** Crown / podium medals for weekly league UI. */
@@ -24,15 +26,17 @@ export function RankArt({
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
+  const dim = SIZE[size];
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={SRC[kind]}
       alt=""
+      width={dim.px}
+      height={dim.px}
       aria-hidden
       draggable={false}
       className={[
-        SIZE[size],
+        dim.className,
         "shrink-0 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]",
         className ?? "",
       ].join(" ")}

@@ -26,6 +26,10 @@ import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { AnswerButton } from "@/components/quiz/AnswerButton";
 import { ExplanationFact } from "@/components/quiz/ExplanationFact";
 import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { ResourceIcon } from "@/components/common/ResourceIcon";
 
 // Post-match / rare chrome — mirror PenaltyMatch kickoff split.
 const SurvivalResult = dynamic(() =>
@@ -302,32 +306,45 @@ export function SurvivalMatch({
   }
 
   return (
-    <section className="relative flex flex-1 flex-col">
+    <section className="relative -mx-4 flex flex-1 flex-col bg-arena px-4 text-arena-fg">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-linear-to-b from-arena-deep via-arena to-arena-mid" />
+        <div className="game-pinstripe absolute inset-0 opacity-60" />
+        <div className="absolute -end-16 top-0 h-48 w-48 rounded-full bg-rose-400/12 blur-3xl" />
+        <div className="absolute -start-20 top-40 h-40 w-40 rounded-full bg-amber-400/12 blur-3xl" />
+      </div>
+
       {process.env.NODE_ENV === "development" ? <FormatDevToggle /> : null}
       <div
         className={[
-          "flex flex-1 flex-col gap-5",
+          "relative z-10 flex flex-1 flex-col gap-4",
           shake ? "animate-screen-shake" : "",
         ].join(" ")}
         onAnimationEnd={() => setShake(false)}
       >
-        <header className="flex flex-col gap-3 pt-2">
-          <div className="flex items-center gap-2">
+        <GamePanel tone="rose" className="px-3 py-2.5">
+          <div className="relative flex items-center gap-2">
             <MatchLeaveControl
               setPaused={setPaused}
               onConfirmLeave={handleLeaveMatch}
             />
-            <p className="min-w-0 flex-1 font-display text-sm font-bold uppercase tracking-widest text-secondary">
-              {t("survival.eyebrow")}
-            </p>
-            <p className="shrink-0 font-display text-sm font-semibold text-muted-foreground">
-              {category.icon || "📚"} {catLabel}
-            </p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-display text-sm font-black text-rose-100">
+                {t("survival.eyebrow")}
+              </p>
+              <p className="truncate font-display text-[11px] font-bold text-white/70">
+                {catLabel}
+              </p>
+            </div>
+            <GameIconWell size="md" src="/icons/heart.png" />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="relative mt-2.5 flex flex-wrap items-center gap-2">
             <span
-              className="inline-flex items-center gap-0.5 rounded-full bg-destructive/10 px-3 py-1 font-display text-base"
+              className="inline-flex items-center gap-0.5 rounded-full bg-black/35 px-2.5 py-1 shadow-[inset_0_0_0_1px_rgba(251,113,133,0.35)]"
               aria-label={t("survival.lives", {
                 n: toLocaleDigits(lives, locale),
               })}
@@ -354,26 +371,29 @@ export function SurvivalMatch({
                 </motion.span>
               ))}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 font-display text-sm font-bold text-primary">
-              ⚽️ {toLocaleDigits(score, locale)}
-            </span>
-            <motion.span
-              key={streak}
-              initial={streak >= 2 ? { scale: 0.6 } : false}
-              animate={{ scale: 1 }}
-              className={[
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-display text-sm font-bold",
-                streak >= 2
-                  ? "bg-accent/20 text-accent-deep"
-                  : "bg-muted text-muted-foreground",
-              ].join(" ")}
+            <GameChip tone="emerald" className="gap-1 px-2.5 py-1 text-sm">
+              <ResourceIcon kind="xp" size="sm" className="h-3.5 w-3.5" />
+              {toLocaleDigits(score, locale)}
+            </GameChip>
+            <GameChip
+              tone={streak >= 2 ? "amber" : "default"}
+              className="gap-1 px-2.5 py-1 text-sm"
             >
-              🔥 {toLocaleDigits(streak, locale)}
-            </motion.span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/streak.png"
+                alt=""
+                aria-hidden
+                className="h-3.5 w-3.5 object-contain"
+              />
+              {toLocaleDigits(streak, locale)}
+            </GameChip>
           </div>
 
-          <QuickTimer ref={timerRef} paused={locked || paused} />
-        </header>
+          <div className="relative mt-2.5">
+            <QuickTimer ref={timerRef} paused={locked || paused} />
+          </div>
+        </GamePanel>
 
         <QuestionCard
           key={question.id}

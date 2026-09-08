@@ -138,7 +138,7 @@ export function Onboarding() {
   return (
     <section className="flex flex-1 flex-col gap-5 pt-3">
       <header className="text-center">
-        <p className="font-display text-sm font-semibold uppercase tracking-widest text-amber-300">
+        <p className="font-display text-sm font-black text-amber-300">
           {eyebrow}
         </p>
         <h1 className="mt-1 font-display text-2xl font-bold text-white">
@@ -412,7 +412,7 @@ export function Onboarding() {
                 placeholder={t("onboarding.placeholder")}
                 maxLength={CLUB_NAME_MAX_LEN}
                 autoFocus
-                className="min-h-touch w-full rounded-2xl border-2 border-amber-400/50 bg-black/35 px-4 py-3 text-center font-display text-lg font-bold text-white shadow-[0_0_24px_rgba(251,191,36,0.15)] outline-none placeholder:text-white/35 focus:border-amber-300"
+                className="min-h-touch w-full rounded-2xl bg-black/35 px-4 py-3 text-center font-display text-lg font-bold text-white shadow-[0_0_0_1px_rgba(251,191,36,0.45),0_0_24px_rgba(251,191,36,0.15)] outline-none placeholder:text-white/35 focus:shadow-[0_0_0_2px_rgba(252,211,77,0.7),0_0_24px_rgba(251,191,36,0.2)]"
               />
               {error && (
                 <p className="text-center font-display text-xs font-bold text-rose-300">
