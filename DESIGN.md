@@ -9,10 +9,10 @@ Admin CMS (`.admin`) stays on shadcn Slate and is out of scope.
 
 | Surface | When | Tokens |
 |--------|------|--------|
-| **Player pitch** | All player chrome (`html.player-pitch`, `.hub-ground`) — Club, Play, ranks, profile, shop, settings, login | `--arena-*` bed; `--foreground` / `--nav` remapped to pitch |
+| **Player pitch** | All player chrome (`html.player-pitch`, `.hub-ground`) — Club, Play, ranks, profile, shop, settings, login | `--pitch-*` bed (lifted forest / midnight); `--foreground` / `--nav` remapped |
 | **Arena chrome** | Bottom sheets, match arenas, result modals, immersive game UI | `--arena-*` — always pitch-dark |
 
-Arena sheets do **not** flip with Day/Night. Player pitch **does**: Day = forest `--arena-bg`, Night (`data-theme="dark"`) = midnight navy. Accents still theme.
+Arena sheets do **not** flip with Day/Night. Player pitch **does**: Day = lifted forest `--pitch-bg`, Night (`data-theme="dark"`) = lifted midnight. Accents still theme. Sheets stay `--arena-bg`.
 
 ---
 

@@ -23,7 +23,7 @@ const tabs = [
   {
     href: "/play",
     labelKey: "nav.play",
-    iconSrc: "/icons/memory-ball.png",
+    iconSrc: "/icons/nav-ball.png",
     featured: true,
   },
   {
@@ -219,10 +219,10 @@ export function BottomNav() {
                 >
                   <span
                     className={[
-                      "relative flex h-14 w-14 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-transform",
-                      "shadow-[0_4px_0_0_hsl(var(--secondary-deep)),0_8px_16px_hsl(var(--secondary)/0.45)]",
-                      "active:translate-y-1 active:shadow-[0_2px_0_0_hsl(var(--secondary-deep)),0_4px_10px_hsl(var(--secondary)/0.4)]",
-                      active ? "ring-2 ring-accent/70" : "",
+                      "relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full",
+                      "shadow-[0_4px_0_0_rgba(0,0,0,0.4),0_0_0_2px_hsl(var(--arena-ring-amber)/0.75),0_10px_20px_hsl(var(--accent)/0.25)]",
+                      "transition-transform active:translate-y-1 active:shadow-[0_2px_0_0_rgba(0,0,0,0.38),0_0_0_2px_hsl(var(--arena-ring-amber)/0.75)]",
+                      active ? "ring-2 ring-accent/80" : "",
                     ].join(" ")}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -231,15 +231,15 @@ export function BottomNav() {
                       alt=""
                       aria-hidden
                       draggable={false}
-                      className="h-8 w-8 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
+                      className="h-full w-full scale-105 object-cover"
                     />
-                    {duelInbox > 0 && (
-                      <span className="absolute -end-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[11px] font-bold text-accent-foreground ring-2 ring-nav">
-                        {toLocaleDigits(Math.min(duelInbox, 9), locale)}
-                        {duelInbox > 9 ? "+" : ""}
-                      </span>
-                    )}
                   </span>
+                  {duelInbox > 0 && (
+                    <span className="absolute end-1 top-0 z-10 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[11px] font-bold text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
+                      {toLocaleDigits(Math.min(duelInbox, 9), locale)}
+                      {duelInbox > 9 ? "+" : ""}
+                    </span>
+                  )}
                   <span className="font-display text-xs font-semibold text-accent">
                     {label}
                   </span>

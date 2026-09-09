@@ -81,6 +81,11 @@
   --arena-success: 152 76% 40%;
   --arena-success-deep: 160 84% 16%;
   --touch-min: 2.75rem; /* 44px */
+
+  /* Player pitch bed (hub chrome). Sheets stay --arena-bg. */
+  --pitch-bg: 152 36% 19%;
+  --pitch-deep: 148 44% 26%;
+  --pitch-mid: 160 24% 24%;
 }
 
 [data-theme="dark"] {
@@ -163,73 +168,95 @@ body {
     color 200ms ease;
 }
 
-/* Player chrome pitch — Arena ground so panels sit in a world, not on mint. */
+/* Player chrome pitch — lifted forest bed. Sheets keep --arena-bg (5%). */
 .hub-ground {
-  background-color: hsl(var(--arena-bg));
+  background-color: hsl(var(--pitch-bg));
   background-image:
     radial-gradient(
       ellipse 90% 55% at 50% -8%,
-      hsl(var(--arena-deep) / 0.95) 0%,
+      hsl(var(--pitch-deep) / 0.95) 0%,
       transparent 58%
     ),
     radial-gradient(
       ellipse 80% 70% at 50% 100%,
-      hsl(var(--arena-mid) / 0.55) 0%,
+      hsl(var(--pitch-mid) / 0.55) 0%,
       transparent 62%
     );
 }
 
 html.player-pitch {
-  --background: var(--arena-bg);
+  /* Day: grass floodlight, not the void. */
+  --pitch-bg: 152 36% 19%;
+  --pitch-deep: 148 44% 26%;
+  --pitch-mid: 160 24% 24%;
+  --background: var(--pitch-bg);
   --foreground: var(--arena-fg);
-  --muted: 150 18% 16%;
+  --muted: 150 18% 20%;
   --muted-foreground: var(--arena-muted);
-  --nav: 217 33% 12%;
-  --nav-foreground: 150 20% 72%;
+  --nav: 152 28% 16%;
+  --nav-foreground: 150 20% 78%;
   --nav-active: 158 64% 52%;
-  --border: 158 28% 18%;
-  --hub-from: var(--arena-deep);
-  --hub-via: var(--arena-bg);
-  --hub-to: var(--arena-mid);
+  --border: 158 28% 24%;
+  --hub-from: var(--pitch-deep);
+  --hub-via: var(--pitch-bg);
+  --hub-to: var(--pitch-mid);
 }
 
 html.player-pitch,
 html.player-pitch body {
-  background-color: hsl(var(--arena-bg)) !important;
+  background-color: hsl(var(--pitch-bg)) !important;
   background-image: none !important;
 }
 
-/* Player chrome: sit in the pitch — ring only, no hard 3D lift (sheets keep punch). */
+/* Player chrome: ring + light Y-offset so cards sit on the bed. */
 html.player-pitch .game-panel {
-  box-shadow: 0 0 0 1px hsl(var(--arena-ring) / 0.22);
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring) / 0.28),
+    0 3px 0 0 rgba(0, 0, 0, 0.22);
 }
 html.player-pitch .game-panel-amber {
-  box-shadow: 0 0 0 1px hsl(var(--arena-ring-amber) / 0.28);
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-amber) / 0.34),
+    0 3px 0 0 rgba(0, 0, 0, 0.22);
 }
 html.player-pitch .game-panel-rose {
-  box-shadow: 0 0 0 1px hsl(var(--arena-ring-rose) / 0.26);
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-rose) / 0.32),
+    0 3px 0 0 rgba(0, 0, 0, 0.22);
 }
 html.player-pitch .game-panel-sky {
-  box-shadow: 0 0 0 1px hsl(var(--arena-ring-sky) / 0.26);
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-sky) / 0.32),
+    0 3px 0 0 rgba(0, 0, 0, 0.22);
 }
 html.player-pitch .game-tile,
 html.player-pitch .game-tile-emerald,
 html.player-pitch .game-tile-amber,
 html.player-pitch .game-tile-sky,
 html.player-pitch .game-tile-rose {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 2px 0 0 rgba(0, 0, 0, 0.18);
 }
 html.player-pitch .game-tile-emerald {
-  box-shadow: 0 0 0 1px hsl(var(--arena-ring) / 0.28);
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring) / 0.32),
+    0 2px 0 0 rgba(0, 0, 0, 0.18);
 }
 html.player-pitch .game-tile-amber {
-  box-shadow: 0 0 0 1px hsl(var(--arena-ring-amber) / 0.32);
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-amber) / 0.36),
+    0 2px 0 0 rgba(0, 0, 0, 0.18);
 }
 html.player-pitch .game-tile-sky {
-  box-shadow: 0 0 0 1px hsl(var(--arena-ring-sky) / 0.3);
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-sky) / 0.34),
+    0 2px 0 0 rgba(0, 0, 0, 0.18);
 }
 html.player-pitch .game-tile-rose {
-  box-shadow: 0 0 0 1px hsl(var(--arena-ring-rose) / 0.3);
+  box-shadow:
+    0 0 0 1px hsl(var(--arena-ring-rose) / 0.34),
+    0 2px 0 0 rgba(0, 0, 0, 0.18);
 }
 
 html.player-pitch .game-sheet .game-panel {
@@ -278,37 +305,40 @@ html.player-pitch .game-sheet .game-tile-rose {
     0 3px 0 0 rgba(0, 0, 0, 0.28);
 }
 
-/* Night Match: player pitch goes midnight; arena sheets still use :root --arena-*. */
+/* Night Match: midnight floodlight, not blackout. Sheets stay --arena-bg. */
 html.player-pitch[data-theme="dark"] {
-  --background: 215 55% 8%;
+  --pitch-bg: 215 34% 21%;
+  --pitch-deep: 155 38% 28%;
+  --pitch-mid: 220 26% 24%;
+  --background: var(--pitch-bg);
   --foreground: 210 40% 96%;
-  --muted: 215 35% 16%;
-  --muted-foreground: 210 20% 70%;
-  --nav: 215 45% 12%;
-  --nav-foreground: 210 20% 70%;
+  --muted: 215 28% 22%;
+  --muted-foreground: 210 20% 74%;
+  --nav: 215 32% 18%;
+  --nav-foreground: 210 20% 74%;
   --nav-active: 155 100% 48%;
-  --border: 215 30% 22%;
-  --hub-from: 155 60% 16%;
-  --hub-via: 215 55% 8%;
-  --hub-to: 220 60% 6%;
+  --border: 215 24% 28%;
+  --hub-from: var(--pitch-deep);
+  --hub-via: var(--pitch-bg);
+  --hub-to: var(--pitch-mid);
 }
 
 html.player-pitch[data-theme="dark"],
 html.player-pitch[data-theme="dark"] body {
-  background-color: hsl(215 55% 8%) !important;
+  background-color: hsl(var(--pitch-bg)) !important;
 }
 
 html.player-pitch[data-theme="dark"] .hub-ground {
-  background-color: hsl(215 55% 8%);
+  background-color: hsl(var(--pitch-bg));
   background-image:
     radial-gradient(
       ellipse 90% 55% at 50% -8%,
-      hsl(155 60% 16% / 0.9) 0%,
+      hsl(var(--pitch-deep) / 0.9) 0%,
       transparent 58%
     ),
     radial-gradient(
       ellipse 80% 70% at 50% 100%,
-      hsl(220 50% 10% / 0.7) 0%,
+      hsl(var(--pitch-mid) / 0.7) 0%,
       transparent 62%
     );
 }
@@ -321,8 +351,8 @@ html.player-pitch[data-theme="dark"] .hub-ground {
 
 .hub-deck {
   border-radius: var(--radius-bubble-xl);
-  background: hsl(var(--arena-mid) / 0.42);
-  box-shadow: 0 0 0 1px hsl(var(--arena-ring) / 0.16);
+  background: hsl(var(--pitch-mid, var(--arena-mid)) / 0.4);
+  box-shadow: 0 0 0 1px hsl(var(--arena-ring) / 0.2);
   padding: 0.5rem;
 }
 
