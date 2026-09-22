@@ -145,7 +145,7 @@ export function MatchCard({
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute -end-10 -top-8 h-28 w-28 rounded-full blur-3xl",
+          "pointer-events-none absolute -inset-e-10 -top-8 h-28 w-28 rounded-full blur-3xl",
           style.wash,
         )}
       />
@@ -160,7 +160,7 @@ export function MatchCard({
             iconClassName="h-7 w-7"
           />
           {urgent ? (
-            <span className="absolute -end-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
+            <span className="absolute -inset-e-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
               !
             </span>
           ) : null}
@@ -290,7 +290,7 @@ export function MatchCard({
             playSound("click");
             haptic(HAPTIC.tap);
           }}
-          className="block rounded-[var(--radius-bubble-xl)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+          className="block rounded-(--radius-bubble-xl) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
         >
           {panel}
         </Link>

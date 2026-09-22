@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
 import {
   settleSurvival,
   type SettleSurvivalResult,
@@ -21,6 +20,8 @@ type SurvivalResultProps = {
   endReason: SurvivalEndReason;
   submissions: KickSubmission[];
   challengeId?: string | null;
+  /** Zustand session — dedupes settle across remount after refresh. */
+  sessionId?: string | null;
   onPlayAgain: () => void;
   onExit: () => void;
 };
@@ -30,37 +31,84 @@ type SaveState =
   | { status: "saved"; data: Extract<SettleSurvivalResult, { ok: true }> }
   | { status: "error"; message: string };
 
+const settleCache = new Map<string, SaveState>();
+const settleInflight = new Map<string, Promise<SaveState>>();
+
+function survivalSettleKey(
+  sessionId: string | null | undefined,
+  categoryId: string,
+  endReason: SurvivalEndReason,
+  challengeId: string | null,
+  submissions: KickSubmission[],
+): string {
+  if (sessionId) return `survival:${sessionId}`;
+  return [
+    categoryId,
+    endReason,
+    challengeId ?? "",
+    submissions
+      .map((s) => `${s.questionId}:${s.selectedIndex}:${s.msRemaining}`)
+      .join(";"),
+  ].join("|");
+}
+
 export function SurvivalResult({
   categoryId,
   endReason,
   submissions,
   challengeId = null,
+  sessionId = null,
   onPlayAgain,
   onExit,
 }: SurvivalResultProps) {
   const { t, locale } = useTranslation();
-  const router = useRouter();
-  const [save, setSave] = useState<SaveState>({ status: "saving" });
-  const submittedRef = useRef(false);
+  const cacheKey = survivalSettleKey(
+    sessionId,
+    categoryId,
+    endReason,
+    challengeId,
+    submissions,
+  );
+  const [save, setSave] = useState<SaveState>(
+    () => settleCache.get(cacheKey) ?? { status: "saving" },
+  );
 
   useEffect(() => {
-    if (submittedRef.current) return;
-    submittedRef.current = true;
-    void (async () => {
-      const result = await settleSurvival({
-        categoryId,
-        submissions,
-        endReason,
-        challengeId,
-      });
-      if (result.ok) {
-        setSave({ status: "saved", data: result });
-        router.refresh();
-      } else {
-        setSave({ status: "error", message: result.error });
-      }
-    })();
-  }, [categoryId, endReason, submissions, challengeId, router]);
+    const cached = settleCache.get(cacheKey);
+    if (cached && cached.status !== "saving") {
+      setSave(cached);
+      return;
+    }
+
+    let cancelled = false;
+    let promise = settleInflight.get(cacheKey);
+    if (!promise) {
+      promise = (async (): Promise<SaveState> => {
+        const result = await settleSurvival({
+          categoryId,
+          submissions,
+          endReason,
+          challengeId,
+        });
+        const next: SaveState = result.ok
+          ? { status: "saved", data: result }
+          : { status: "error", message: result.error };
+        settleCache.set(cacheKey, next);
+        settleInflight.delete(cacheKey);
+        return next;
+      })();
+      settleInflight.set(cacheKey, promise);
+      settleCache.set(cacheKey, { status: "saving" });
+    }
+
+    void promise.then((next) => {
+      if (!cancelled) setSave(next);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheKey, categoryId, endReason, submissions, challengeId]);
 
   if (save.status === "saving") {
     return (

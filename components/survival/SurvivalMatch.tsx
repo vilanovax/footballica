@@ -72,6 +72,7 @@ export function SurvivalMatch({
   const log = useSurvivalStore((s) => s.log);
   const endReason = useSurvivalStore((s) => s.endReason);
   const categoryId = useSurvivalStore((s) => s.categoryId);
+  const sessionId = useSurvivalStore((s) => s.sessionId);
   const paused = useSurvivalStore((s) => s.paused);
   const prefetching = useSurvivalStore((s) => s.prefetching);
 
@@ -96,9 +97,9 @@ export function SurvivalMatch({
   }, [reset, router]);
 
   useEffect(() => {
+    if (useSurvivalStore.getState().phase !== "idle") return;
     start(category.id, initialQuestions);
     playSound("whistle");
-    return () => reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -208,6 +209,7 @@ export function SurvivalMatch({
   if (phase === "finished" && endReason && categoryId) {
     return (
       <SurvivalResult
+        sessionId={sessionId}
         challengeId={challengeId}
         categoryId={categoryId}
         endReason={endReason}
@@ -225,7 +227,10 @@ export function SurvivalMatch({
           if (challengeId) qs.set("challenge", challengeId);
           router.replace(`/play/survival?${qs.toString()}`);
         }}
-        onExit={() => router.push("/play/survival")}
+        onExit={() => {
+          reset();
+          router.push("/play/survival");
+        }}
       />
     );
   }

@@ -140,7 +140,7 @@ export function MissionProgressBanner({
           className={[
             "mt-3 flex min-h-11 w-full items-center justify-center gap-2 font-display text-sm font-extrabold transition-transform active:scale-[0.98]",
             arena
-              ? "game-cta game-cta-accent"
+              ? "rounded-xl bg-black/30 px-3 py-2.5 text-amber-100 ring-1 ring-amber-300/25"
               : "rounded-2xl bg-accent/90 px-3 py-2.5 text-accent-foreground shadow-fantasy-sm",
           ].join(" ")}
         >
@@ -150,12 +150,23 @@ export function MissionProgressBanner({
             alt=""
             aria-hidden
             draggable={false}
-            className="h-7 w-7 object-contain"
+            className="h-6 w-6 object-contain"
           />
-          {t("missions.chestReadyBadge")}
-          <span className="font-bold opacity-90">
-            → {t("missions.openDrawer")}
-          </span>
+          {arena ? (
+            <span className="text-center leading-snug">
+              {t("result.missionsReadyOnClub")}
+              <span className="mt-0.5 block text-[11px] font-bold text-amber-200/80">
+                {t("result.missionsOpenClub")}
+              </span>
+            </span>
+          ) : (
+            <>
+              {t("missions.chestReadyBadge")}
+              <span className="font-bold opacity-90">
+                → {t("missions.openDrawer")}
+              </span>
+            </>
+          )}
         </Link>
       )}
     </>

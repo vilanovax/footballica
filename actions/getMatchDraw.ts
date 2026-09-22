@@ -22,6 +22,8 @@ export async function getMatchDraw(options: {
   count: number;
   bench?: number;
   difficulties?: QuestionDifficulty[];
+  /** Same category scope as the kickoff draw (null = all banks). */
+  categoryId?: string | null;
 }): Promise<MatchDraw> {
   const count = Math.max(1, options.count);
   const benchSize = Math.max(0, options.bench ?? 0);
@@ -29,6 +31,7 @@ export async function getMatchDraw(options: {
   const drawn = await getMatchQuestions({
     count: count + benchSize,
     difficulties: options.difficulties,
+    categoryId: options.categoryId,
   });
 
   const club = await getClubSnapshot();

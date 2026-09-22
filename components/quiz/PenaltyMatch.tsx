@@ -60,6 +60,11 @@ type PenaltyMatchProps = {
   stadiumLevel: number;
   /** Fans granted for each goal. Tutorial uses a flat payout instead. */
   fansPerGoal: number;
+  /**
+   * Category bank for this match (null = random across all).
+   * Play Again redraws from the same scope.
+   */
+  categoryId?: string | null;
 };
 
 export function PenaltyMatch({
@@ -71,6 +76,7 @@ export function PenaltyMatch({
   helpers,
   stadiumLevel,
   fansPerGoal,
+  categoryId = null,
 }: PenaltyMatchProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -84,6 +90,7 @@ export function PenaltyMatch({
   const goals = usePenaltyStore((s) => s.goals);
   const feedback = usePenaltyStore((s) => s.feedback);
   const rewards = usePenaltyStore((s) => s.rewards);
+  const sessionId = usePenaltyStore((s) => s.sessionId);
   const log = usePenaltyStore((s) => s.log);
   const paused = usePenaltyStore((s) => s.paused);
   const eliminated = usePenaltyStore((s) => s.eliminated);
@@ -110,19 +117,17 @@ export function PenaltyMatch({
     router.push("/play");
   }, [reset, router]);
 
-  // Seed the match EXACTLY ONCE on mount. A server-action refresh (Next.js
-  // auto-refreshes the route after resolveMatch runs) re-renders this page and
-  // hands us a fresh `initialQuestions` array — depending on it here would
-  // silently restart a just-finished match back at kick 1. Play Again re-seeds
-  // explicitly via handlePlayAgain instead.
+  // Seed only while idle. After resolveMatch, Next refreshes this force-dynamic
+  // route and `loading.tsx` remounts the tree — a blind start()+reset() cleanup
+  // was restarting the quiz so the player played twice. Leave/exit call reset().
   useEffect(() => {
+    if (usePenaltyStore.getState().phase !== "idle") return;
     start(initialQuestions, {
       bench,
       startingCoins,
       helpers: tutorial ? null : helpers,
     });
     playSound("whistle");
-    return () => reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -133,7 +138,7 @@ export function PenaltyMatch({
     const draw = await getMatchDraw(
       tutorial
         ? { count: matchSize, bench: 0, difficulties: ["easy"] }
-        : { count: matchSize, bench: 3 },
+        : { count: matchSize, bench: 3, categoryId },
     );
     start(draw.questions.length > 0 ? draw.questions : initialQuestions, {
       bench: draw.bench,
@@ -141,7 +146,7 @@ export function PenaltyMatch({
       helpers: tutorial ? null : helpers,
     });
     playSound("whistle");
-  }, [tutorial, matchSize, start, initialQuestions, helpers]);
+  }, [tutorial, matchSize, start, initialQuestions, helpers, categoryId]);
 
   // Optimistic helper spend: apply the effect instantly (settled server-side in
   // resolveMatch). The dock only fires onUse when the helper is actually usable.
@@ -207,6 +212,7 @@ export function PenaltyMatch({
   if (phase === "finished" && rewards) {
     return (
       <MatchResult
+        sessionId={sessionId}
         totalKicks={questions.length}
         tutorial={tutorial}
         helpersUsed={helpersLog}
@@ -216,7 +222,10 @@ export function PenaltyMatch({
           msRemaining: k.msRemaining,
         }))}
         onPlayAgain={handlePlayAgain}
-        onExit={() => router.push("/club")}
+        onExit={() => {
+          reset();
+          router.push("/club");
+        }}
       />
     );
   }

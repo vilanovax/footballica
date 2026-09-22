@@ -34,6 +34,11 @@ type StartOptions = {
 
 type PenaltyState = {
   phase: MatchPhase;
+  /**
+   * Unique id for the current kickoff. Used to dedupe resolveMatch when the
+   * match tree remounts after a Server Action refresh (loading.tsx).
+   */
+  sessionId: string | null;
   questions: QuizQuestion[];
   currentIndex: number;
   timeLeftMs: number;
@@ -72,8 +77,13 @@ type PenaltyState = {
   reset: () => void;
 };
 
+function newSessionId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 const initialState = {
   phase: "idle" as MatchPhase,
+  sessionId: null as string | null,
   questions: [] as QuizQuestion[],
   currentIndex: 0,
   timeLeftMs: KICK_DURATION_MS,
@@ -119,6 +129,7 @@ export const usePenaltyStore = create<PenaltyState>((set, get) => ({
     setPenaltyLiveTimeLeftMs(duration);
     set({
       ...initialState,
+      sessionId: newSessionId(),
       questions,
       phase: "playing",
       durationMs: duration,

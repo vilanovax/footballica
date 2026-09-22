@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -12,6 +12,7 @@ import type { KickSubmission } from "@/lib/quiz/scoring";
 import type { HelperKey } from "@/lib/game/helpers";
 import { calculateLevel } from "@/lib/game/economy";
 import { nextMilestone, winsAway } from "@/lib/club/milestones";
+import { usePenaltyStore } from "@/stores/penaltyStore";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { PostMatchSummary } from "@/components/match/PostMatchSummary";
@@ -21,6 +22,11 @@ import { GameIconWell } from "@/components/ui/game/GameIconWell";
 type MatchResultProps = {
   totalKicks: number;
   submissions: KickSubmission[];
+  /**
+   * Zustand session for this kickoff — dedupes resolveMatch when the result
+   * screen remounts after the Server Action refresh.
+   */
+  sessionId?: string | null;
   /** FTUE tutorial match — fixed payout, no "Play Again" (loop back to Hub). */
   tutorial?: boolean;
   /** Whether any help (50/50, freeze, superpower) was used — gates "no help" badges. */
@@ -38,9 +44,33 @@ type SaveState =
   | { status: "saved"; data: Extract<ResolveMatchResult, { ok: true }> }
   | { status: "error"; message: string };
 
+/** Survives remounts from resolveMatch → router refresh → loading.tsx. */
+const settleCache = new Map<string, SaveState>();
+const settleInflight = new Map<string, Promise<SaveState>>();
+
+function settleCacheKey(
+  sessionId: string | null | undefined,
+  mode: MatchModeOption,
+  tutorial: boolean,
+  helpersUsed: HelperKey[],
+  submissions: KickSubmission[],
+): string {
+  if (sessionId) return `session:${sessionId}`;
+  // Fallback for callers that omit sessionId (should be rare).
+  return [
+    mode,
+    tutorial ? "t" : "m",
+    helpersUsed.join(","),
+    submissions
+      .map((s) => `${s.questionId}:${s.selectedIndex}:${s.msRemaining}`)
+      .join(";"),
+  ].join("|");
+}
+
 export function MatchResult({
   totalKicks,
   submissions,
+  sessionId = null,
   tutorial = false,
   usedHelp = false,
   helpersUsed = [],
@@ -50,10 +80,62 @@ export function MatchResult({
 }: MatchResultProps) {
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const [save, setSave] = useState<SaveState>({ status: "saving" });
-  const submittedRef = useRef(false);
+  const cacheKey = settleCacheKey(
+    sessionId,
+    mode,
+    tutorial,
+    helpersUsed,
+    submissions,
+  );
+  const [save, setSave] = useState<SaveState>(
+    () => settleCache.get(cacheKey) ?? { status: "saving" },
+  );
 
-  async function submit() {
+  useEffect(() => {
+    const cached = settleCache.get(cacheKey);
+    if (cached && cached.status !== "saving") {
+      setSave(cached);
+      return;
+    }
+
+    let cancelled = false;
+    let promise = settleInflight.get(cacheKey);
+    if (!promise) {
+      promise = (async (): Promise<SaveState> => {
+        const result = await resolveMatch(submissions, {
+          tutorial,
+          usedHelp: usedHelp || helpersUsed.length > 0,
+          helpersUsed,
+          mode,
+        });
+        const next: SaveState = result.ok
+          ? { status: "saved", data: result }
+          : { status: "error", message: result.error };
+        settleCache.set(cacheKey, next);
+        settleInflight.delete(cacheKey);
+        return next;
+      })();
+      settleInflight.set(cacheKey, promise);
+      settleCache.set(cacheKey, { status: "saving" });
+    }
+
+    void promise.then((next) => {
+      if (!cancelled) setSave(next);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheKey, submissions, tutorial, usedHelp, helpersUsed, mode]);
+
+  function leaveToUpgrade() {
+    usePenaltyStore.getState().reset();
+    router.push("/club?manage=1");
+  }
+
+  async function retrySubmit() {
+    settleCache.delete(cacheKey);
+    settleInflight.delete(cacheKey);
     setSave({ status: "saving" });
     const result = await resolveMatch(submissions, {
       tutorial,
@@ -61,19 +143,12 @@ export function MatchResult({
       helpersUsed,
       mode,
     });
-    if (result.ok) {
-      setSave({ status: "saved", data: result });
-    } else {
-      setSave({ status: "error", message: result.error });
-    }
+    const next: SaveState = result.ok
+      ? { status: "saved", data: result }
+      : { status: "error", message: result.error };
+    settleCache.set(cacheKey, next);
+    setSave(next);
   }
-
-  useEffect(() => {
-    if (submittedRef.current) return;
-    submittedRef.current = true;
-    void submit();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   if (save.status === "saving") {
     return (
@@ -114,7 +189,7 @@ export function MatchResult({
           <GameCta
             variant="primary"
             block
-            onClick={() => void submit()}
+            onClick={() => void retrySubmit()}
             className="font-display text-base font-black"
           >
             {t("common.retry")}
@@ -279,6 +354,12 @@ export function MatchResult({
       : t("result.streakStarted")
     : null;
 
+  const upgradeReady = Boolean(milestone?.affordable && !tutorial);
+  const missionsReady =
+    missions.chestReady ||
+    missions.updates.some((u) => u.justCompleted) ||
+    missions.missions.some((m) => m.isCompleted && !m.isClaimed);
+
   return (
     <PostMatchSummary
       outcome={{
@@ -317,45 +398,55 @@ export function MatchResult({
         badges: unlockedBadges,
         missions,
         streakNote,
+        // Affordable upgrade is the footer CTA — don't repeat it as a card.
         milestone:
-          milestone && milestoneBody
+          milestone && milestoneBody && !upgradeReady
             ? {
                 icon: milestone.icon,
                 eyebrow: t("result.milestoneTitle"),
                 body: milestoneBody,
-                fill: milestone.affordable
-                  ? undefined
-                  : Math.min(1, balances.coins / milestone.cost),
+                fill: Math.min(1, balances.coins / milestone.cost),
               }
             : null,
       }}
       ctas={{
         notice: tutorial
           ? t("result.spendCoins")
-          : outOfEnergy
+          : outOfEnergy && !upgradeReady
             ? t("result.outOfEnergy")
-            : null,
-        primary: hidePlayAgain
-          ? null
-          : {
-              label: t("result.playAgain"),
-              onClick: onPlayAgain,
+            : missionsReady && !upgradeReady
+              ? t("result.missionsReadyOnClub")
+              : null,
+        primary: upgradeReady
+          ? {
+              label: t("result.goUpgrade"),
+              onClick: leaveToUpgrade,
               variant: "primary",
-            },
-        secondary: {
-          label:
-            milestone?.affordable && !tutorial
-              ? t("result.goUpgrade")
-              : t("common.backToClub"),
-          onClick: () => {
-            if (milestone?.affordable && !tutorial) {
-              router.push("/club?manage=1");
-              return;
             }
-            onExit();
-          },
-          variant: hidePlayAgain ? "primary" : "accent",
-        },
+          : hidePlayAgain
+            ? null
+            : {
+                label: t("result.playAgain"),
+                onClick: onPlayAgain,
+                variant: "primary",
+              },
+        secondary: upgradeReady
+          ? hidePlayAgain
+            ? {
+                label: t("common.backToClub"),
+                onClick: onExit,
+                variant: "accent",
+              }
+            : {
+                label: t("result.playAgain"),
+                onClick: onPlayAgain,
+                variant: "accent",
+              }
+          : {
+              label: t("common.backToClub"),
+              onClick: onExit,
+              variant: hidePlayAgain ? "primary" : "accent",
+            },
       }}
     />
   );

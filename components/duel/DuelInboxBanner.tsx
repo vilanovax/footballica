@@ -72,7 +72,7 @@ export function DuelInboxBanner({
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute -end-10 top-0 h-28 w-28 rounded-full bg-amber-300/30 blur-2xl"
+          className="pointer-events-none absolute -inset-e-10 top-0 h-28 w-28 rounded-full bg-amber-300/30 blur-2xl"
         />
 
         <div className="relative flex items-center gap-3 px-3 pt-3">
@@ -84,7 +84,7 @@ export function DuelInboxBanner({
               className="h-14 w-14"
               iconClassName="h-7 w-7"
             />
-            <span className="absolute -end-1.5 -top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-accent px-1 font-display text-[11px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)] ring-2 ring-arena">
+            <span className="absolute -inset-e-1.5 -top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-accent px-1 font-display text-[11px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)] ring-2 ring-arena">
               {toLocaleDigits(Math.min(count, 9), locale)}
               {count > 9 ? "+" : ""}
             </span>

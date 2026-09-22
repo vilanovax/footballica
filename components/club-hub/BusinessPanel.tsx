@@ -427,7 +427,7 @@ export function BusinessPanel({ club, onClubUpdate }: BusinessPanelProps) {
         <motion.div
           aria-hidden
           className={[
-            "pointer-events-none absolute -end-10 -top-10 h-36 w-36 rounded-full blur-3xl",
+            "pointer-events-none absolute -inset-e-10 -top-10 h-36 w-36 rounded-full blur-3xl",
             vaultFull ? "bg-amber-300/40" : "bg-emerald-300/30",
           ].join(" ")}
           animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.12, 1] }}
@@ -592,7 +592,7 @@ export function BusinessPanel({ club, onClubUpdate }: BusinessPanelProps) {
                   {!vaultFull && biz.vaultFillRatio > 0.08 && (
                     <motion.span
                       aria-hidden
-                      className="absolute inset-y-0 end-0 w-6 bg-linear-to-l from-white/55 to-transparent"
+                      className="absolute inset-y-0 inset-e-0 w-6 bg-linear-to-l from-white/55 to-transparent"
                       animate={{ opacity: [0.25, 0.9, 0.25] }}
                       transition={{
                         duration: 1.5,

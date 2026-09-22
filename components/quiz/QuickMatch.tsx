@@ -85,6 +85,7 @@ export function QuickMatch({
   const goals = usePenaltyStore((s) => s.goals);
   const feedback = usePenaltyStore((s) => s.feedback);
   const rewards = usePenaltyStore((s) => s.rewards);
+  const sessionId = usePenaltyStore((s) => s.sessionId);
   const log = usePenaltyStore((s) => s.log);
   const paused = usePenaltyStore((s) => s.paused);
   const eliminated = usePenaltyStore((s) => s.eliminated);
@@ -111,12 +112,10 @@ export function QuickMatch({
     router.push("/play");
   }, [reset, router]);
 
-  // Seed the match EXACTLY ONCE on mount. A server-action refresh (Next.js
-  // auto-refreshes the route after resolveMatch runs) re-renders this page and
-  // hands us a fresh `initialQuestions` array — depending on it here would
-  // silently restart a just-finished match back at question 1. Play Again
-  // re-seeds explicitly via handlePlayAgain instead.
+  // Seed only while idle — same remount trap as Penalty (resolveMatch refresh +
+  // loading.tsx). Play Again re-seeds via handlePlayAgain; leave/exit reset().
   useEffect(() => {
+    if (usePenaltyStore.getState().phase !== "idle") return;
     start(initialQuestions, {
       durationMs: QUICK_DURATION_MS,
       bench,
@@ -124,7 +123,6 @@ export function QuickMatch({
       helpers,
     });
     playSound("whistle");
-    return () => reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -201,6 +199,7 @@ export function QuickMatch({
   if (phase === "finished" && rewards) {
     return (
       <MatchResult
+        sessionId={sessionId}
         totalKicks={questions.length}
         mode="quick"
         helpersUsed={helpersLog}
@@ -210,7 +209,10 @@ export function QuickMatch({
           msRemaining: k.msRemaining,
         }))}
         onPlayAgain={handlePlayAgain}
-        onExit={() => router.push("/club")}
+        onExit={() => {
+          reset();
+          router.push("/club");
+        }}
       />
     );
   }

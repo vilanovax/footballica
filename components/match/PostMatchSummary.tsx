@@ -66,9 +66,32 @@ export function PostMatchSummary({
     xp: b.xp ?? 0,
   }));
 
-  const hasRewardTotals =
-    rewards.coins > 0 || rewards.xp > 0 || rewards.fans > 0;
   const bonusLines = (rewards.bonusLines ?? []).filter((l) => l.amount > 0);
+  const lootRows = (
+    [
+      {
+        key: "coins" as const,
+        kind: "coin" as const,
+        label: t("result.coins"),
+        amount: rewards.coins,
+        tone: "text-amber-300",
+      },
+      {
+        key: "xp" as const,
+        kind: "xp" as const,
+        label: t("result.xp"),
+        amount: rewards.xp,
+        tone: "text-emerald-300",
+      },
+      {
+        key: "fans" as const,
+        kind: "fans" as const,
+        label: t("result.fans"),
+        amount: rewards.fans,
+        tone: "text-sky-300",
+      },
+    ] as const
+  ).filter((r) => r.amount > 0);
   const trophies = achievements?.trophies ?? [];
   const level = achievements?.level;
   const missions = achievements?.missions;
@@ -264,33 +287,8 @@ export function PostMatchSummary({
               </p>
 
               <div className="mt-3.5 flex items-end justify-around gap-1">
-                {(
-                  [
-                    {
-                      key: "coins" as const,
-                      kind: "coin" as const,
-                      label: t("result.coins"),
-                      amount: rewards.coins,
-                      tone: "text-amber-300",
-                    },
-                    {
-                      key: "xp" as const,
-                      kind: "xp" as const,
-                      label: "",
-                      amount: rewards.xp,
-                      tone: "text-emerald-300",
-                    },
-                    {
-                      key: "fans" as const,
-                      kind: "fans" as const,
-                      label: t("result.fans"),
-                      amount: rewards.fans,
-                      tone: "text-sky-300",
-                    },
-                  ] as const
-                ).map((r, i) => {
-                  const earned = r.amount > 0;
-                  return (
+                {lootRows.length > 0 ? (
+                  lootRows.map((r, i) => (
                     <motion.div
                       key={r.key}
                       initial={
@@ -307,40 +305,32 @@ export function PostMatchSummary({
                       }}
                       className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
                     >
-                      <div
-                        className={
-                          earned
-                            ? "drop-shadow-[0_0_14px_rgba(251,191,36,0.35)]"
-                            : "opacity-40 grayscale"
-                        }
-                      >
+                      <div className="drop-shadow-[0_0_14px_rgba(251,191,36,0.35)]">
                         <ResourceIcon kind={r.kind} size="xl" />
                       </div>
                       <p
                         className={[
                           "font-display text-2xl font-black tabular-nums leading-none",
-                          earned ? r.tone : "text-white/40",
+                          r.tone,
                         ].join(" ")}
                       >
-                        {earned || hasRewardTotals ? (
-                          <CountUp
-                            value={r.amount}
-                            locale={locale}
-                            prefix={t("result.earnedPrefix")}
-                            delay={0.18 + i * 0.05}
-                          />
-                        ) : (
-                          `${t("result.earnedPrefix")}${toLocaleDigits(0, locale)}`
-                        )}
+                        <CountUp
+                          value={r.amount}
+                          locale={locale}
+                          prefix={t("result.earnedPrefix")}
+                          delay={0.18 + i * 0.05}
+                        />
                       </p>
-                      {r.label ? (
-                        <p className="font-display text-[11px] font-extrabold text-white/50">
-                          {r.label}
-                        </p>
-                      ) : null}
+                      <p className="font-display text-[11px] font-extrabold text-white/50">
+                        {r.label}
+                      </p>
                     </motion.div>
-                  );
-                })}
+                  ))
+                ) : (
+                  <p className="w-full py-2 text-center font-display text-sm font-bold text-white/55">
+                    {t("result.rewardsEmpty")}
+                  </p>
+                )}
               </div>
 
               {bonusLines.length > 0 && (
@@ -377,24 +367,22 @@ export function PostMatchSummary({
               )}
 
               {rewards.balances && (
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-xl bg-black/35 px-3 py-2.5 font-display text-xs font-extrabold tabular-nums text-white/90 ring-1 ring-white/10">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/45">
-                    {t("result.balanceAfter")}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <ResourceIcon kind="coin" size="sm" />
+                <p className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 border-t border-white/10 pt-2.5 font-display text-[11px] font-bold tabular-nums text-white/45">
+                  <span>{t("result.balanceAfter")}</span>
+                  <span className="inline-flex items-center gap-0.5 text-white/65">
+                    <ResourceIcon kind="coin" size="sm" className="h-3.5 w-3.5" />
                     {toLocaleDigits(rewards.balances.coins, locale)}
                   </span>
-                  <span className="inline-flex items-center gap-1">
-                    <ResourceIcon kind="fans" size="sm" />
+                  <span className="inline-flex items-center gap-0.5 text-white/65">
+                    <ResourceIcon kind="fans" size="sm" className="h-3.5 w-3.5" />
                     {toLocaleDigits(rewards.balances.fans, locale)}
                   </span>
-                  <span className="inline-flex items-center gap-1">
-                    <ResourceIcon kind="energy" size="sm" />
+                  <span className="inline-flex items-center gap-0.5 text-white/65">
+                    <ResourceIcon kind="energy" size="sm" className="h-3.5 w-3.5" />
                     {toLocaleDigits(rewards.balances.stamina, locale)}/
                     {toLocaleDigits(rewards.balances.maxStamina, locale)}
                   </span>
-                </div>
+                </p>
               )}
             </GamePanel>
           </motion.div>
@@ -489,9 +477,11 @@ export function PostMatchSummary({
                       })}
                     </span>
                     <span className="inline-flex items-center gap-1 font-display text-xs font-semibold tabular-nums text-white/55">
-                      {t("result.xpToGo", {
-                        cur: toLocaleDigits(level.currentLevelXp, locale),
-                        next: toLocaleDigits(level.nextLevelXp, locale),
+                      {t("result.xpToNext", {
+                        n: toLocaleDigits(
+                          Math.max(0, level.nextLevelXp - level.currentLevelXp),
+                          locale,
+                        ),
                       })}
                       <ResourceIcon kind="xp" size="sm" />
                     </span>
@@ -513,17 +503,19 @@ export function PostMatchSummary({
                     />
                   </div>
                   {level.levelUp && (
-                    <motion.div
+                    <motion.p
                       initial={
                         reduceMotion ? false : { opacity: 0, y: 6 }
                       }
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 }}
-                      className="mt-2.5 flex flex-wrap items-center justify-center gap-x-2 rounded-xl bg-amber-400/20 px-3 py-2 font-display text-sm font-bold text-amber-100 ring-1 ring-amber-300/30"
+                      className="mt-2.5 text-center font-display text-sm font-bold text-amber-200"
                     >
-                      <span>{t("result.levelUp")}</span>
-                      <span className="text-white/45">·</span>
-                      <span>
+                      {t("result.levelUp")}
+                      <span className="mx-1.5 text-white/35" aria-hidden>
+                        ·
+                      </span>
+                      <span className="text-white/80">
                         {t("result.levelUpPerk", {
                           coins: toLocaleDigits(
                             level.levelUp.coinReward,
@@ -531,7 +523,7 @@ export function PostMatchSummary({
                           ),
                         })}
                       </span>
-                    </motion.div>
+                    </motion.p>
                   )}
                 </GamePanel>
               )}

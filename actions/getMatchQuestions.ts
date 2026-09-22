@@ -13,6 +13,7 @@ import { resolveThemeBias } from "@/lib/game/liveOpsTheme";
 import { getGameConfig } from "@/lib/game/gameConfig";
 import { dbQuestionToQuiz } from "@/lib/quiz/questionMapper";
 import type { QuizQuestion, QuestionDifficulty } from "@/lib/quiz/types";
+import { publishedInCategoryWhere } from "@/lib/quiz/inCategory";
 
 // Default kicks per penalty shootout (PRD §8). Kept internal — "use server"
 // modules may only export async functions.
@@ -78,23 +79,39 @@ function tryPick(
  *
  * Live-Ops bias: reserve ~1 non-TEXT format slot per {@link FORMAT_BIAS_EVERY_N}
  * questions when the bank has formats (ADR 001). Answer-dedupe still applies.
+ *
+ * When `categoryId` is set, draw only from that bank (primary + M2N membership).
+ * Omit / null → random across all published questions.
  */
 export async function getMatchQuestions(options?: {
   /** How many questions to draw (default 5). */
   count?: number;
   /** Restrict to certain difficulties (e.g. tutorial → ["easy"]). */
   difficulties?: QuestionDifficulty[];
+  /** Solo Penalty category bank — omit for all-categories random. */
+  categoryId?: string | null;
 }): Promise<QuizQuestion[]> {
   const count = Math.max(1, options?.count ?? DEFAULT_MATCH_SIZE);
   const difficulties = options?.difficulties;
+  const categoryId =
+    typeof options?.categoryId === "string" && options.categoryId.trim()
+      ? options.categoryId.trim()
+      : null;
+
+  const difficultyFilter = difficulties?.length
+    ? { difficulty: { in: difficulties.map((d) => DIFFICULTY_TO_DB[d]) } }
+    : {};
 
   const rows = await prisma.question.findMany({
-    where: {
-      status: "PUBLISHED",
-      ...(difficulties?.length
-        ? { difficulty: { in: difficulties.map((d) => DIFFICULTY_TO_DB[d]) } }
-        : {}),
-    },
+    where: categoryId
+      ? {
+          ...publishedInCategoryWhere(categoryId),
+          ...difficultyFilter,
+        }
+      : {
+          status: "PUBLISHED",
+          ...difficultyFilter,
+        },
   });
 
   const config = await getGameConfig();

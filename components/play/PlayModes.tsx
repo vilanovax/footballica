@@ -67,7 +67,7 @@ export function PlayModes({
       <GamePanel tone="emerald" className="p-3.5">
         <div
           aria-hidden
-          className="pointer-events-none absolute -end-8 top-0 h-24 w-24 rounded-full bg-emerald-400/20 blur-3xl"
+          className="pointer-events-none absolute -inset-e-8 top-0 h-24 w-24 rounded-full bg-emerald-400/20 blur-3xl"
         />
         <div className="relative flex items-center justify-between gap-3">
           <div className="min-w-0">

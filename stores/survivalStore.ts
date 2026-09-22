@@ -21,6 +21,11 @@ type FeedbackState = {
 
 type SurvivalState = {
   phase: SurvivalPhase;
+  /**
+   * Unique id for the current run — dedupes settleSurvival across remounts
+   * from router.refresh() after settle.
+   */
+  sessionId: string | null;
   categoryId: string | null;
   /** Remaining questions in the local queue (current is queue[0]). */
   queue: QuizQuestion[];
@@ -51,6 +56,7 @@ type SurvivalState = {
 
 const initialState = {
   phase: "idle" as SurvivalPhase,
+  sessionId: null as string | null,
   categoryId: null as string | null,
   queue: [] as QuizQuestion[],
   seenQuestionIds: [] as string[],
@@ -73,6 +79,7 @@ export const useSurvivalStore = create<SurvivalState>((set, get) => ({
     setSurvivalLiveTimeLeftMs(SURVIVAL_DURATION_MS);
     set({
       ...initialState,
+      sessionId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`,
       phase: "playing",
       categoryId,
       queue: initialBatch,

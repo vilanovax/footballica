@@ -325,7 +325,7 @@ function GotdShell({
         <Link
           href={href}
           onClick={() => playSound("click")}
-          className="block rounded-[var(--radius-bubble-xl)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+          className="block rounded-(--radius-bubble-xl) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
         >
           <GamePanel tone="emerald" className="px-3 py-2.5">
             <div className="relative flex items-center gap-3">
@@ -367,7 +367,7 @@ function GotdShell({
       <GamePanel tone="amber" className="p-3.5">
         <div
           aria-hidden
-          className="pointer-events-none absolute -end-8 -top-10 h-36 w-36 rounded-full bg-amber-300/25 blur-3xl"
+          className="pointer-events-none absolute -inset-e-8 -top-10 h-36 w-36 rounded-full bg-amber-300/25 blur-3xl"
         />
 
         <div className="relative flex items-start gap-3">
