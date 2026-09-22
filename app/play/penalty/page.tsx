@@ -73,6 +73,8 @@ export default async function PenaltyPage({
       matchSize={matchSize}
       startingCoins={club.coins}
       helpers={config.helpers}
+      stadiumLevel={club.stadiumLevel}
+      fansPerGoal={config.rewards.fansPerGoal}
     />
   );
 }

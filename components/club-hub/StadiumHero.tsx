@@ -1,20 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { BottomSheet } from "@/components/ui/BottomSheet";
 import { GameChip } from "@/components/ui/game/GameChip";
-import { GameIconWell } from "@/components/ui/game/GameIconWell";
-import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
-import { GameTile } from "@/components/ui/game/GameTile";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { fansSoftCap } from "@/lib/club/upgradeEffects";
+import { stadiumScene } from "@/lib/club/stadiumScene";
 import { staminaRegenIntervalMinutes } from "@/lib/club/stamina";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
-import { cn } from "@/lib/utils";
 
 const Confetti = dynamic(() =>
   import("./Confetti").then((m) => m.Confetti),
@@ -25,34 +21,12 @@ type StadiumHeroProps = {
   fans: number;
   trainingGroundLevel: number;
   medicalLevel: number;
-  maxStamina: number;
   celebrateKey: number;
   celebrating: boolean;
+  /** Closest coin upgrade is affordable — chip on the stadium, not a shop on the page. */
+  upgradeReady: boolean;
+  onOpenManage: () => void;
 };
-
-/** Visual tiers — Arena panel tone + stadium art treatment. */
-const TIER_SCENE = [
-  {
-    tone: "emerald" as GamePanelTone,
-    glow: "bg-stone-400/20",
-    art: "grayscale brightness-75 contrast-110",
-  },
-  {
-    tone: "amber" as GamePanelTone,
-    glow: "bg-amber-400/25",
-    art: "sepia-[.35] brightness-90 contrast-105",
-  },
-  {
-    tone: "emerald" as GamePanelTone,
-    glow: "bg-emerald-400/30",
-    art: "brightness-100 saturate-110",
-  },
-  {
-    tone: "sky" as GamePanelTone,
-    glow: "bg-sky-300/35",
-    art: "brightness-110 saturate-125 drop-shadow-[0_0_18px_rgba(125,211,252,0.45)]",
-  },
-] as const;
 
 /** Crowd seats lit by fan fill (0…18 dots). */
 function crowdCountFor(fans: number, cap: number): number {
@@ -65,41 +39,38 @@ export function StadiumHero({
   fans,
   trainingGroundLevel,
   medicalLevel,
-  maxStamina,
   celebrateKey,
   celebrating,
+  upgradeReady,
+  onOpenManage,
 }: StadiumHeroProps) {
   const { t, locale } = useTranslation();
   const reduceMotion = useReducedMotion();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const tierIndex = Math.min(
-    Math.max(0, stadiumLevel),
-    TIER_SCENE.length - 1,
-  );
-  const scene = TIER_SCENE[tierIndex]!;
+  const scene = stadiumScene(stadiumLevel);
+  const tierIndex = scene.index;
   const cap = fansSoftCap(stadiumLevel);
   const crowdN = crowdCountFor(fans, cap);
   const fillPct = Math.min(100, Math.round((fans / Math.max(1, cap)) * 100));
   const regenMinutes = staminaRegenIntervalMinutes(medicalLevel);
   const floodlit = stadiumLevel >= 3;
 
-  function openSheet() {
+  function openManage() {
     haptic(HAPTIC.tap);
     playSound("click");
-    setSheetOpen(true);
+    onOpenManage();
   }
 
   return (
     <>
       <button
         type="button"
-        onClick={openSheet}
+        onClick={openManage}
         aria-label={t("stadium.openDetails")}
         className="w-full text-start transition-transform active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
       >
         <GamePanel
           tone={scene.tone}
-          className="aspect-16/11 w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+          className="aspect-2/1 w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
         >
         <div
           aria-hidden
@@ -150,7 +121,7 @@ export function StadiumHero({
               alt=""
               draggable={false}
               className={[
-                "h-[7.25rem] w-auto max-w-[72%] object-contain sm:h-32",
+                "h-20 w-auto max-w-[58%] object-contain sm:h-24",
                 scene.art,
               ].join(" ")}
             />
@@ -159,7 +130,7 @@ export function StadiumHero({
 
         {/* Crowd seats — CSS dots in stands, density from fans */}
         <div
-          className="absolute inset-x-[18%] top-[38%] z-[1] flex flex-wrap justify-center gap-1 px-1"
+          className="absolute inset-x-[22%] top-[34%] z-[1] flex flex-wrap justify-center gap-1 px-1"
           aria-hidden
         >
           {Array.from({ length: crowdN }).map((_, i) => (
@@ -181,17 +152,7 @@ export function StadiumHero({
         </div>
 
         {/* Pitch strip */}
-        <div
-          className={[
-            "absolute inset-x-0 bottom-0 h-[42%]",
-            stadiumLevel >= 2
-              ? "bg-linear-to-b from-arena-success to-arena"
-              : stadiumLevel >= 1
-                ? "bg-linear-to-b from-arena-amber/70 to-arena-mid"
-                : "bg-linear-to-b from-stone-500/80 to-arena",
-          ].join(" ")}
-          aria-hidden
-        >
+        <div className={["absolute inset-x-0 bottom-0 h-[42%]", scene.pitch].join(" ")} aria-hidden>
           <div className="absolute inset-0 flex flex-col justify-evenly opacity-40">
             {Array.from({ length: 5 }).map((_, i) => (
               <div
@@ -226,7 +187,7 @@ export function StadiumHero({
         />
 
         {/* Bottom HUD — fans are the stadium's one number */}
-        <div className="absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/90 via-black/55 to-transparent px-3 pb-2.5 pt-10">
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/90 via-black/70 to-transparent px-3 pb-2 pt-6">
           <div className="mb-1.5 h-1.5 overflow-hidden rounded-full bg-black/50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)]">
             <motion.div
               className={[
@@ -258,9 +219,16 @@ export function StadiumHero({
               {toLocaleDigits(fillPct, locale)}%
             </GameChip>
           </div>
-          <p className="mt-1 font-display text-[10px] font-bold text-white/65">
-            {t("stadium.tapDetails")}
-          </p>
+          <div className="mt-1.5 flex items-center justify-between gap-2">
+            <p className="font-display text-[11px] font-black text-lime-200">
+              {t("stadium.tapDetails")}
+            </p>
+            {upgradeReady ? (
+              <p className="font-display text-[11px] font-bold text-white/70">
+                {t("club.upgradeReadyStatus")}
+              </p>
+            ) : null}
+          </div>
         </div>
 
         {celebrating ? (
@@ -274,96 +242,6 @@ export function StadiumHero({
         </AnimatePresence>
         </GamePanel>
       </button>
-
-      <BottomSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        title={t("stadium.sheetTitle")}
-        subtitle={`${t("stadium.lvl")} ${toLocaleDigits(stadiumLevel, locale)} · ${t(`stadium.tiers.${tierIndex}`)}`}
-        closeLabel={t("common.close")}
-        tone="dark"
-      >
-        <GamePanel className="-mx-1" tone="emerald">
-          <div className="relative flex items-center gap-3 px-3 py-3.5">
-            <GameIconWell
-              size="lg"
-              amber
-              src="/icons/stadium.png"
-              className="h-16 w-16"
-              iconClassName={cn("h-12 w-12", scene.art)}
-            />
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 4 }, (_, i) => (
-                  <span
-                    key={i}
-                    className={[
-                      "h-2 w-2 rounded-full",
-                      i < stadiumLevel
-                        ? "bg-accent shadow-[0_0_6px_hsl(var(--accent))]"
-                        : "bg-white/15",
-                    ].join(" ")}
-                    aria-hidden
-                  />
-                ))}
-              </div>
-              <p className="mt-1.5 font-display text-sm font-black text-white">
-                {toLocaleDigits(fans, locale)}
-                <span className="text-white/50">
-                  /{toLocaleDigits(cap, locale)}
-                </span>
-              </p>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)]">
-                <motion.div
-                  className={[
-                    "h-full rounded-full",
-                    fillPct >= 90
-                      ? "bg-linear-to-r from-amber-400 to-orange-400"
-                      : "bg-linear-to-r from-emerald-400 to-lime-300",
-                  ].join(" ")}
-                  initial={false}
-                  animate={{ width: `${fillPct}%` }}
-                />
-              </div>
-              <p className="mt-1 font-display text-[10px] font-bold text-white/55">
-                {t("stadium.crowdFill")} ·{" "}
-                <span dir="ltr" className="tabular-nums text-amber-200">
-                  {toLocaleDigits(fillPct, locale)}%
-                </span>
-              </p>
-            </div>
-          </div>
-        </GamePanel>
-
-        <ul className="mt-3 flex flex-col gap-2">
-          <FacilityRow
-            iconSrc="/icons/stadium.png"
-            label={t("stadium.statStadium")}
-            value={`${t("stadium.lvl")} ${toLocaleDigits(stadiumLevel, locale)}`}
-            hot={stadiumLevel >= 3}
-          />
-          <FacilityRow
-            iconSrc="/icons/training.png"
-            label={t("stadium.statTraining")}
-            value={`${t("stadium.lvl")} ${toLocaleDigits(trainingGroundLevel, locale)}`}
-            subIconSrc="/icons/energy.png"
-            sub={toLocaleDigits(maxStamina, locale)}
-          />
-          <FacilityRow
-            iconSrc="/icons/medical.png"
-            label={t("stadium.statMedical")}
-            value={`${t("stadium.lvl")} ${toLocaleDigits(medicalLevel, locale)}`}
-            sub={t("stadium.regenEvery", {
-              n: toLocaleDigits(regenMinutes, locale),
-            })}
-          />
-        </ul>
-
-        <p className="mt-3 text-balance text-center font-display text-[11px] font-bold leading-snug text-white/55">
-          {t("stadium.tapUpgradesHint")}
-        </p>
-      </BottomSheet>
     </>
   );
 }
@@ -385,7 +263,7 @@ function FacilityBadge({
   return (
     <motion.div
       className={[
-        "absolute bottom-[44%] z-10",
+        "absolute bottom-[52%] z-10",
         side === "start" ? "start-2" : "end-2",
         grown ? "" : "opacity-70",
       ].join(" ")}
@@ -409,60 +287,5 @@ function FacilityBadge({
         </span>
       </GameChip>
     </motion.div>
-  );
-}
-
-function FacilityRow({
-  iconSrc,
-  label,
-  value,
-  sub,
-  subIconSrc,
-  hot,
-}: {
-  iconSrc: string;
-  label: string;
-  value: string;
-  sub?: string;
-  subIconSrc?: string;
-  hot?: boolean;
-}) {
-  return (
-    <li>
-      <GameTile
-        tone={hot ? "amber" : "default"}
-        className="flex items-center gap-3 px-3 py-2.5"
-      >
-        <GameIconWell size="sm" src={iconSrc} className="h-10 w-10" />
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-[11px] font-bold text-white/55">
-            {label}
-          </p>
-          <p
-            className={cn(
-              "font-display text-base font-black",
-              hot ? "text-amber-200" : "text-white",
-            )}
-          >
-            {value}
-            {sub ? (
-              <span className="ms-1.5 inline-flex items-center gap-0.5 text-[11px] font-bold text-white/55">
-                ·{" "}
-                {subIconSrc ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={subIconSrc}
-                    alt=""
-                    aria-hidden
-                    className="inline h-3.5 w-3.5 object-contain"
-                  />
-                ) : null}
-                {sub}
-              </span>
-            ) : null}
-          </p>
-        </div>
-      </GameTile>
-    </li>
   );
 }

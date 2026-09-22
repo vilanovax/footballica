@@ -16,7 +16,7 @@ type DuelInboxBannerProps = {
   variant?: "play" | "club";
 };
 
-function formatDeadlineLeft(
+export function formatDuelInboxDeadline(
   iso: string | null,
   locale: "en" | "fa",
   t: (k: string, vars?: Record<string, string>) => string,
@@ -55,7 +55,7 @@ export function DuelInboxBanner({
   const top = items[0];
   const href = top ? `/play/duel/${top.id}` : "/play/duel";
   const deadline = top
-    ? formatDeadlineLeft(top.turnDeadlineAt, locale, t)
+    ? formatDuelInboxDeadline(top.turnDeadlineAt, locale, t)
     : null;
   const more = count - 1;
   const isClub = variant === "club";

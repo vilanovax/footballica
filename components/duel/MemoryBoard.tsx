@@ -303,6 +303,7 @@ export function MemoryBoard({
                   strokeLinecap="round"
                   className={theme.ring}
                   strokeDasharray={ringC}
+                  initial={{ strokeDashoffset: ringOffset }}
                   animate={{ strokeDashoffset: ringOffset }}
                   transition={{ type: "spring", stiffness: 140, damping: 22 }}
                 />

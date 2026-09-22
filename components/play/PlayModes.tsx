@@ -7,7 +7,7 @@ import type { PlayModeEconomy } from "@/lib/play/modeEconomy";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { RecentDuelHistory } from "@/components/duel/RecentDuelHistory";
-import { DuelInboxBanner } from "@/components/duel/DuelInboxBanner";
+import { DuelInboxBanner, formatDuelInboxDeadline } from "@/components/duel/DuelInboxBanner";
 import { MatchCard } from "@/components/play/MatchCard";
 import { ResourceIcon } from "@/components/common/ResourceIcon";
 import { GameChip } from "@/components/ui/game/GameChip";
@@ -49,6 +49,9 @@ export function PlayModes({
   const hasDuelTurn = inboxCount > 0;
   const topDuel = inboxItems[0];
   const duelHref = topDuel ? `/play/duel/${topDuel.id}` : "/play/duel";
+  const duelDeadline = topDuel
+    ? formatDuelInboxDeadline(topDuel.turnDeadlineAt, locale, t)
+    : null;
 
   return (
     <section className="flex flex-1 flex-col gap-4 pb-4">
@@ -110,6 +113,7 @@ export function PlayModes({
           })}
           ctaLabel={t("play.ctaStart")}
           economy={modes.penalty}
+          stamina={stamina}
         />
         <MatchCard
           modeId="quick"
@@ -119,6 +123,7 @@ export function PlayModes({
           blurb={t("play.quickDesc")}
           ctaLabel={t("play.ctaStart")}
           economy={modes.quick}
+          stamina={stamina}
         />
         <MatchCard
           modeId="survival"
@@ -130,6 +135,7 @@ export function PlayModes({
           economy={modes.survival}
           survivalBest={survivalBest}
           liveChallengeCount={liveChallengeCount}
+          stamina={stamina}
         />
       </div>
 
@@ -156,11 +162,11 @@ export function PlayModes({
                 })
               : t("play.duelDesc")
           }
-          ctaLabel={
-            hasDuelTurn ? t("play.ctaContinueDuel") : t("play.ctaDuel")
-          }
-          urgentBadge={hasDuelTurn ? t("play.duelYourTurnBadge") : null}
+          ctaLabel={t("play.ctaDuel")}
           economy={modes.duel}
+          stamina={stamina}
+          presentation={hasDuelTurn ? "status" : "play"}
+          deadline={hasDuelTurn ? duelDeadline : null}
         />
       </div>
 

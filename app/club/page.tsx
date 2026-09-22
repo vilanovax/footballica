@@ -8,6 +8,8 @@ import { getMyMissions } from "@/actions/missions";
 import { listRecordChallenges } from "@/actions/challenge/recordChallenge";
 import { buildCampaignSeasonView } from "@/lib/game/campaignSeason";
 import { getGameConfig } from "@/lib/game/gameConfig";
+import { getPlayModeEconomy } from "@/lib/play/modeEconomy";
+import { getLastMatchLine } from "@/lib/club/lastMatch";
 
 // Reads live club balances from the DB — never prerender.
 export const dynamic = "force-dynamic";
@@ -16,26 +18,36 @@ export const dynamic = "force-dynamic";
  * Auth + onboarding gate only. Hub payload streams under Suspense so AppShell
  * can paint the route fallback while snapshot / inbox / missions resolve.
  */
-export default async function ClubPage() {
+export default async function ClubPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ manage?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!user.club) redirect("/onboarding");
 
+  const sp = await searchParams;
+  const openManage = sp.manage === "1";
+
   return (
     <Suspense fallback={<RouteLoading label="Club Hub" />}>
-      <ClubHubLoader />
+      <ClubHubLoader openManage={openManage} />
     </Suspense>
   );
 }
 
-async function ClubHubLoader() {
-  const [club, inbox, missions, config, challenges] = await Promise.all([
-    getClubSnapshot(),
-    getDuelInbox(),
-    getMyMissions(),
-    getGameConfig(),
-    listRecordChallenges(),
-  ]);
+async function ClubHubLoader({ openManage }: { openManage: boolean }) {
+  const user = await getCurrentUser();
+  const [club, inbox, missions, config, challenges, lastMatch] =
+    await Promise.all([
+      getClubSnapshot(),
+      getDuelInbox(),
+      getMyMissions(),
+      getGameConfig(),
+      listRecordChallenges(),
+      user?.club ? getLastMatchLine(user.club.id) : Promise.resolve(null),
+    ]);
   if (!club) redirect("/onboarding");
 
   const duelInboxCount = inbox.ok ? inbox.count : 0;
@@ -59,16 +71,25 @@ async function ClubHubLoader() {
       : [],
   });
 
+  const penalty = getPlayModeEconomy(config).penalty;
+
   return (
     <ClubHub
       initialClub={club}
       staminaRefillCost={config.costs.staminaRefill}
       coinsPerWin={config.rewards.coinsPerWin}
+      matchPreview={{
+        questionCount: penalty.questionCount ?? 5,
+        approxCoins: penalty.approxCoins,
+        staminaCost: penalty.staminaCost,
+      }}
       duelInboxCount={duelInboxCount}
       duelInboxItems={duelInboxItems}
       missionBoard={missionBoard}
       dailyBoard={dailyBoard}
       campaignSeason={campaignSeason}
+      lastMatch={lastMatch}
+      openManage={openManage}
     />
   );
 }

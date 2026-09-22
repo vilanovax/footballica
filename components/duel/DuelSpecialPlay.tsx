@@ -768,6 +768,7 @@ function SpecialArena({
               strokeLinecap="round"
               className={theme.ring}
               strokeDasharray={ringC}
+              initial={{ strokeDashoffset: ringOffset }}
               animate={{ strokeDashoffset: ringOffset }}
               transition={{ type: "spring", stiffness: 120, damping: 20 }}
             />

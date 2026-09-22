@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   resolveMatch,
@@ -48,6 +49,7 @@ export function MatchResult({
   onExit,
 }: MatchResultProps) {
   const { t, locale } = useTranslation();
+  const router = useRouter();
   const [save, setSave] = useState<SaveState>({ status: "saving" });
   const submittedRef = useRef(false);
 
@@ -341,8 +343,17 @@ export function MatchResult({
               variant: "primary",
             },
         secondary: {
-          label: t("common.backToClub"),
-          onClick: onExit,
+          label:
+            milestone?.affordable && !tutorial
+              ? t("result.goUpgrade")
+              : t("common.backToClub"),
+          onClick: () => {
+            if (milestone?.affordable && !tutorial) {
+              router.push("/club?manage=1");
+              return;
+            }
+            onExit();
+          },
           variant: hidePlayAgain ? "primary" : "accent",
         },
       }}

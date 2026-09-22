@@ -19,6 +19,10 @@ export const useLanguageStore = create<LanguageState>()(
     }),
     {
       name: "footballica:lang",
+      version: 1,
+      migrate: () => ({
+        locale: DEFAULT_LOCALE,
+      }),
       onRehydrateStorage: () => (state) => {
         if (state?.locale) writeLocaleCookie(state.locale);
       },

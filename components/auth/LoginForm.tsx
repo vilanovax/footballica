@@ -19,7 +19,7 @@ export function LoginForm() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  // Avoid locale hydration mismatch (SSR default en vs persisted fa).
+  // Avoid locale hydration mismatch (SSR cookie vs persisted locale).
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
 

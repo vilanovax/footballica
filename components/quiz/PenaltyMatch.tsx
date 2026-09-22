@@ -24,6 +24,8 @@ import { Scoreboard } from "./Scoreboard";
 import { GoalBurst } from "./GoalBurst";
 import { MissedPopup } from "./MissedPopup";
 import { MatchLeaveControl } from "./MatchLeaveControl";
+import { MatchPitch } from "./MatchPitch";
+import { stadiumScene } from "@/lib/club/stadiumScene";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 
@@ -54,6 +56,10 @@ type PenaltyMatchProps = {
   startingCoins: number;
   /** Live in-match helper costs. */
   helpers: GameConfig["helpers"];
+  /** Club stadium tier — tints the pitch the kicks are played on. */
+  stadiumLevel: number;
+  /** Fans granted for each goal. Tutorial uses a flat payout instead. */
+  fansPerGoal: number;
 };
 
 export function PenaltyMatch({
@@ -63,6 +69,8 @@ export function PenaltyMatch({
   matchSize,
   startingCoins,
   helpers,
+  stadiumLevel,
+  fansPerGoal,
 }: PenaltyMatchProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -221,17 +229,11 @@ export function PenaltyMatch({
   const showGoal = locked && feedback?.result === "goal";
   const showMiss = locked && feedback?.result === "miss";
 
+  const scene = stadiumScene(stadiumLevel);
+
   return (
     <section className="relative -mx-4 flex flex-1 flex-col bg-arena px-4 text-arena-fg">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-linear-to-b from-arena-deep via-arena to-arena-mid" />
-        <div className="game-pinstripe absolute inset-0 opacity-60" />
-        <div className="absolute -end-16 top-0 h-48 w-48 rounded-full bg-amber-400/12 blur-3xl" />
-        <div className="absolute -start-20 top-40 h-40 w-40 rounded-full bg-emerald-400/15 blur-3xl" />
-      </div>
+      <MatchPitch stadiumLevel={stadiumLevel} />
 
       {process.env.NODE_ENV === "development" ? <FormatDevToggle /> : null}
       <div
@@ -241,7 +243,7 @@ export function PenaltyMatch({
         ].join(" ")}
         onAnimationEnd={() => setShake(false)}
       >
-        <GamePanel tone="emerald" className="px-3 py-2.5">
+        <GamePanel tone={scene.tone} className="px-3 py-2.5">
           <div className="relative flex items-center gap-2">
             <MatchLeaveControl
               setPaused={setPaused}
@@ -256,6 +258,11 @@ export function PenaltyMatch({
                   n: toLocaleDigits(currentIndex + 1, lang),
                   total: toLocaleDigits(questions.length, lang),
                 })}
+              </p>
+              <p className="truncate font-display text-[11px] font-bold text-amber-100/90">
+                {t("stadium.lvl")} {toLocaleDigits(scene.index, lang)}
+                {" · "}
+                {t(`stadium.tiers.${scene.index}`)}
               </p>
             </div>
             <GameIconWell size="md" amber src="/icons/target.png" />
@@ -337,7 +344,11 @@ export function PenaltyMatch({
         )}
       </div>
 
-      <AnimatePresence>{showGoal && <GoalBurst key="goal" />}</AnimatePresence>
+      <AnimatePresence>
+        {showGoal && (
+          <GoalBurst key="goal" fans={tutorial ? 0 : fansPerGoal} />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showMiss && <MissedPopup key="miss" onContinue={() => next()} />}

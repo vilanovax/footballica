@@ -42,7 +42,7 @@ const TONE: Record<
   MatchCardTone,
   {
     panel: GamePanelTone;
-    ctaVariant: "primary" | "accent" | "danger";
+    enterClass: string;
     iconSrc: string;
     wash: string;
     amberWell?: boolean;
@@ -50,25 +50,25 @@ const TONE: Record<
 > = {
   penalty: {
     panel: "emerald",
-    ctaVariant: "primary",
+    enterClass: "text-emerald-200",
     iconSrc: "/icons/target.png",
     wash: "bg-emerald-400/20",
   },
   quick: {
     panel: "emerald",
-    ctaVariant: "primary",
+    enterClass: "text-emerald-200",
     iconSrc: "/icons/energy.png",
     wash: "bg-lime-300/20",
   },
   survival: {
     panel: "rose",
-    ctaVariant: "danger",
+    enterClass: "text-rose-200",
     iconSrc: "/icons/heart.png",
     wash: "bg-rose-400/20",
   },
   duel: {
     panel: "amber",
-    ctaVariant: "accent",
+    enterClass: "text-amber-200",
     iconSrc: "/icons/trophy.png",
     wash: "bg-amber-300/20",
     amberWell: true,
@@ -89,6 +89,15 @@ type MatchCardProps = {
   /** Your-turn pulse for Draft Duel. */
   urgentBadge?: string | null;
   tone: MatchCardTone;
+  /** Live stamina. Below cost, the row states it and does not enter. */
+  stamina: number;
+  /**
+   * `play` — the card is the button.
+   * `status` — waiting duel already has its banner CTA.
+   */
+  presentation?: "play" | "status";
+  /** Shown on a waiting duel row. */
+  deadline?: string | null;
 };
 
 /**
@@ -105,11 +114,16 @@ export function MatchCard({
   liveChallengeCount = 0,
   urgentBadge = null,
   tone,
+  stamina,
+  presentation = "play",
+  deadline = null,
 }: MatchCardProps) {
   const { t, locale } = useTranslation();
   const [infoOpen, setInfoOpen] = useState(false);
   const style = TONE[tone];
   const urgent = Boolean(urgentBadge);
+  const isStatus = presentation === "status";
+  const canEnter = !isStatus && stamina >= economy.staminaCost;
 
   function openInfo(e: React.MouseEvent) {
     e.preventDefault();
@@ -119,138 +133,170 @@ export function MatchCard({
     setInfoOpen(true);
   }
 
-  return (
-    <>
-      <GamePanel
-        tone={style.panel}
+  const panel = (
+    <GamePanel
+      tone={isStatus ? "sky" : style.panel}
+      className={cn(
+        "p-3.5",
+        urgent &&
+          "ring-2 ring-arena-amber shadow-[0_0_22px_rgba(251,191,36,0.28)]",
+      )}
+    >
+      <div
+        aria-hidden
         className={cn(
-          "p-3.5",
-          urgent &&
-            "ring-2 ring-arena-amber shadow-[0_0_22px_rgba(251,191,36,0.28)]",
+          "pointer-events-none absolute -end-10 -top-8 h-28 w-28 rounded-full blur-3xl",
+          style.wash,
         )}
-      >
-        <div
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute -end-10 -top-8 h-28 w-28 rounded-full blur-3xl",
-            style.wash,
-          )}
-        />
+      />
 
-        <div className="relative flex items-start gap-3">
-          <span className="relative shrink-0" aria-hidden>
-            <GameIconWell
-              size="md"
-              amber={style.amberWell}
-              src={style.iconSrc}
-              className="h-12 w-12"
-              iconClassName="h-7 w-7"
-            />
-            {urgent ? (
-              <span className="absolute -end-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
-                !
+      <div className="relative flex items-start gap-3">
+        <span className="relative shrink-0" aria-hidden>
+          <GameIconWell
+            size="md"
+            amber={style.amberWell && !isStatus}
+            src={style.iconSrc}
+            className="h-12 w-12"
+            iconClassName="h-7 w-7"
+          />
+          {urgent ? (
+            <span className="absolute -end-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
+              !
+            </span>
+          ) : null}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-lg font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
+              {title}
+            </h3>
+            {urgentBadge ? (
+              <GameChip tone="amber" className="uppercase tracking-wide">
+                {urgentBadge}
+              </GameChip>
+            ) : null}
+          </div>
+          <p className="mt-0.5 font-display text-xs font-bold text-white/70">
+            {blurb}
+          </p>
+        </div>
+      </div>
+
+      <div className="relative mt-3 flex flex-wrap gap-1.5">
+        {isStatus ? (
+          deadline ? (
+            <GameChip tone="default" className="gap-1">
+              <GameIcon src="/icons/timer.png" className="h-3.5 w-3.5" />
+              {deadline}
+            </GameChip>
+          ) : null
+        ) : (
+          <>
+            <GameChip className={cn(!canEnter && "text-rose-200")}>
+              <ResourceIcon kind="energy" size="sm" className="me-0.5" />
+              {toLocaleDigits(economy.staminaCost, locale)}
+            </GameChip>
+            {modeId === "survival" ? (
+              <>
+                <GameChip>
+                  <span className="inline-flex items-center gap-1">
+                    <ResourceIcon kind="coin" size="sm" />
+                    {toLocaleDigits(economy.perCorrectCoins ?? 0, locale)}
+                    <span aria-hidden>/</span>
+                    <ResourceIcon kind="xp" size="sm" />
+                    {toLocaleDigits(economy.perCorrectXp ?? 0, locale)}
+                  </span>
+                </GameChip>
+                <GameChip>
+                  {t("play.chipRecord", {
+                    n: toLocaleDigits(survivalBest ?? 0, locale),
+                  })}
+                </GameChip>
+                {liveChallengeCount > 0 ? (
+                  <GameChip tone="amber">
+                    <GameIcon
+                      src="/icons/crown.png"
+                      className="me-0.5 h-3.5 w-3.5"
+                    />
+                    {t("play.chipLiveChallenges", {
+                      n: toLocaleDigits(liveChallengeCount, locale),
+                    })}
+                  </GameChip>
+                ) : null}
+              </>
+            ) : (
+              <GameChip>
+                <span className="inline-flex items-center gap-1">
+                  <ResourceIcon kind="coin" size="sm" />~
+                  {toLocaleDigits(economy.approxCoins, locale)}
+                  <span aria-hidden>+</span>
+                  <ResourceIcon kind="xp" size="sm" />
+                  {toLocaleDigits(economy.approxXp, locale)}
+                </span>
+              </GameChip>
+            )}
+            {modeId === "duel" && economy.duelWinWeeklyXp != null && (
+              <GameChip tone="amber">
+                <span className="inline-flex items-center gap-1">
+                  <ResourceIcon kind="xp" size="sm" />+
+                  {toLocaleDigits(economy.duelWinWeeklyXp, locale)}{" "}
+                  {t("play.info.weeklyXp")}
+                </span>
+              </GameChip>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="relative mt-3 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          aria-label={t("play.modeInfo")}
+          onClick={openInfo}
+          className="game-cta game-cta-ghost game-icon-btn relative z-20 h-11 w-11 shrink-0 p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+        >
+          <GameIcon src="/icons/help.png" className="h-8 w-8" />
+        </button>
+        {isStatus ? (
+          <span className="font-display text-sm font-black text-white/55">
+            {t("play.duelWaiting")}
+          </span>
+        ) : (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 font-display text-sm font-black",
+              canEnter ? style.enterClass : "text-rose-300",
+            )}
+          >
+            {canEnter ? ctaLabel : t("play.noEnergy")}
+            {canEnter ? (
+              <span aria-hidden className="rtl:-scale-x-100">
+                ›
               </span>
             ) : null}
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-display text-lg font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
-                {title}
-              </h3>
-              {urgentBadge ? (
-                <GameChip tone="amber" className="uppercase tracking-wide">
-                  {urgentBadge}
-                </GameChip>
-              ) : null}
-            </div>
-            <p className="mt-0.5 font-display text-xs font-bold text-white/70">
-              {blurb}
-            </p>
-          </div>
-        </div>
+        )}
+      </div>
+    </GamePanel>
+  );
 
-        <div className="relative mt-3 flex flex-wrap gap-1.5">
-          <GameChip>
-            <ResourceIcon kind="energy" size="sm" className="me-0.5" />
-            {toLocaleDigits(economy.staminaCost, locale)}
-          </GameChip>
-          {modeId === "survival" ? (
-            <>
-              <GameChip>
-                <span className="inline-flex items-center gap-1">
-                  <ResourceIcon kind="coin" size="sm" />
-                  {toLocaleDigits(economy.perCorrectCoins ?? 0, locale)}
-                  <span aria-hidden>/</span>
-                  <ResourceIcon kind="xp" size="sm" />
-                  {toLocaleDigits(economy.perCorrectXp ?? 0, locale)}
-                </span>
-              </GameChip>
-              <GameChip>
-                {t("play.chipRecord", {
-                  n: toLocaleDigits(survivalBest ?? 0, locale),
-                })}
-              </GameChip>
-              {liveChallengeCount > 0 ? (
-                <GameChip tone="amber">
-                  <GameIcon
-                    src="/icons/crown.png"
-                    className="me-0.5 h-3.5 w-3.5"
-                  />
-                  {t("play.chipLiveChallenges", {
-                    n: toLocaleDigits(liveChallengeCount, locale),
-                  })}
-                </GameChip>
-              ) : null}
-            </>
-          ) : (
-            <GameChip>
-              <span className="inline-flex items-center gap-1">
-                <ResourceIcon kind="coin" size="sm" />~
-                {toLocaleDigits(economy.approxCoins, locale)}
-                <span aria-hidden>+</span>
-                <ResourceIcon kind="xp" size="sm" />
-                {toLocaleDigits(economy.approxXp, locale)}
-              </span>
-            </GameChip>
-          )}
-          {modeId === "duel" && economy.duelWinWeeklyXp != null && (
-            <GameChip tone="amber">
-              <span className="inline-flex items-center gap-1">
-                <ResourceIcon kind="xp" size="sm" />+
-                {toLocaleDigits(economy.duelWinWeeklyXp, locale)}{" "}
-                {t("play.info.weeklyXp")}
-              </span>
-            </GameChip>
-          )}
-        </div>
-
-        <div className="relative mt-3 flex items-center gap-2">
-          <Link
-            href={href}
-            onClick={() => {
-              playSound("click");
-              haptic(HAPTIC.tap);
-            }}
-            className={cn(
-              "game-cta flex-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring",
-              style.ctaVariant === "primary" && "game-cta-primary",
-              style.ctaVariant === "accent" && "game-cta-accent",
-              style.ctaVariant === "danger" &&
-                "bg-rose-500 text-white shadow-[0_5px_0_0_rgb(136,19,55)] active:translate-y-[3px] active:shadow-[0_2px_0_0_rgb(136,19,55)]",
-            )}
-          >
-            {ctaLabel}
-          </Link>
-          <button
-            type="button"
-            aria-label={t("play.modeInfo")}
-            onClick={openInfo}
-            className="game-cta game-cta-ghost game-icon-btn h-12 w-12 shrink-0 p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
-          >
-            <GameIcon src="/icons/help.png" className="h-8 w-8" />
-          </button>
-        </div>
-      </GamePanel>
+  return (
+    <>
+      {canEnter ? (
+        <Link
+          href={href}
+          aria-label={`${title}. ${ctaLabel}`}
+          onClick={() => {
+            playSound("click");
+            haptic(HAPTIC.tap);
+          }}
+          className="block rounded-[var(--radius-bubble-xl)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+        >
+          {panel}
+        </Link>
+      ) : (
+        panel
+      )}
 
       <BottomSheet
         open={infoOpen}

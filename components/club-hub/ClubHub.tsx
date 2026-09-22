@@ -11,9 +11,6 @@ import {
   type NewsState,
 } from "@/actions/claimDailyNews";
 import {
-  UPGRADE_LIST,
-  getClubLevel,
-  getUpgradeCost,
   type ClubSnapshot,
   type UpgradeKey,
 } from "@/lib/club/upgrades";
@@ -30,23 +27,22 @@ import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { countMissionRewardsReady } from "@/lib/game/missionRewards";
+import { nextMilestone } from "@/lib/club/milestones";
 import { StatusBar } from "./StatusBar";
 import { StadiumHero } from "./StadiumHero";
-import { UpgradeCard } from "./UpgradeCard";
 import { FtueCoach } from "./FtueCoach";
 import { DuelInboxBanner } from "@/components/duel/DuelInboxBanner";
 import type { DuelInboxItem } from "@/actions/duel/getInboxCount";
 import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
 import type { CampaignSeasonView } from "@/lib/game/campaignSeason";
-import { NextGoalCard } from "@/components/club-hub/NextGoalCard";
+import type { LastMatchLine } from "@/lib/club/lastMatch";
 import { HubTodayRail } from "@/components/club-hub/HubTodayRail";
-import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { HubDailyMissions } from "@/components/club-hub/HubDailyMissions";
+import { MatchDoor } from "@/components/club-hub/MatchDoor";
+import { ClubManageSheet } from "@/components/club-hub/ClubManageSheet";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 
 // Heavy / deferred hub panels — keep first Club paint lean.
-const BusinessPanel = dynamic(() =>
-  import("@/components/club-hub/BusinessPanel").then((m) => m.BusinessPanel),
-);
 const MissionDrawer = dynamic(() =>
   import("@/components/profile/MissionDrawer").then((m) => m.MissionDrawer),
 );
@@ -63,6 +59,12 @@ type ClubHubProps = {
   staminaRefillCost: number;
   /** Typical coins from a win — drives Next Goal wins-away. */
   coinsPerWin: number;
+  /** Penalty door — same numbers as the Play screen. */
+  matchPreview: {
+    questionCount: number;
+    approxCoins: number;
+    staminaCost: number;
+  };
   /** Active Draft Duel turns waiting for the manager. */
   duelInboxCount?: number;
   duelInboxItems?: DuelInboxItem[];
@@ -70,17 +72,23 @@ type ClubHubProps = {
   dailyBoard?: EvaluateMissionsResult | null;
   /** ADR 002 Campaign metagame snapshot (missions + RecordChallenge chapters). */
   campaignSeason?: CampaignSeasonView | null;
+  lastMatch?: LastMatchLine | null;
+  /** Open the manage sheet on mount (post-match upgrade deep link). */
+  openManage?: boolean;
 };
 
 export function ClubHub({
   initialClub,
   staminaRefillCost,
   coinsPerWin,
+  matchPreview,
   duelInboxCount = 0,
   duelInboxItems = [],
   missionBoard = null,
   dailyBoard = null,
   campaignSeason = null,
+  lastMatch = null,
+  openManage = false,
 }: ClubHubProps) {
   const { t, locale } = useTranslation();
   const [club, setClub] = useState(initialClub);
@@ -90,6 +98,9 @@ export function ClubHub({
   const [error, setError] = useState<string | null>(null);
   // Transient "You're ready!" greeting shown once on the 1 → 2 transition.
   const [justGraduated, setJustGraduated] = useState(false);
+  const [manageOpen, setManageOpen] = useState(
+    initialClub.tutorialStep === 1 || openManage,
+  );
   const [, startTransition] = useTransition();
 
   const step = club.tutorialStep;
@@ -98,6 +109,14 @@ export function ClubHub({
   const colorKey = club.colorKey ?? DEFAULT_CLUB_COLOR_KEY;
   // Daily News only unlocks once the FTUE is fully complete (tutorialStep 2).
   const ftueComplete = step === 2;
+
+  // Clear ?manage=1 from the URL without remounting the hub.
+  useEffect(() => {
+    if (!openManage) return;
+    if (typeof window === "undefined") return;
+    if (!window.location.search.includes("manage=1")) return;
+    window.history.replaceState(null, "", "/club");
+  }, [openManage]);
 
   // Newspaper booster state
   const [news, setNews] = useState<{
@@ -124,19 +143,32 @@ export function ClubHub({
   };
 
   function focusUpgrade(key: UpgradeKey) {
+    setManageOpen(true);
     setGoalSpotlightKey(key);
     const jump = () => {
       document
         .getElementById(`club-upgrade-${key}`)
         ?.scrollIntoView({ behavior: "auto", block: "start" });
     };
-    jump();
     window.requestAnimationFrame(jump);
+    window.setTimeout(jump, 320);
     window.setTimeout(() => setGoalSpotlightKey(null), 2200);
   }
 
+  useEffect(() => {
+    if (step === 1) setManageOpen(true);
+  }, [step]);
+
   const canClaimNews = club.newsClaimable;
   const missionReadyCount = countMissionRewardsReady(dailyBoard, missionBoard);
+  const milestoneInput = {
+    coins: club.coins,
+    stadiumLevel: club.stadiumLevel,
+    medicalLevel: club.medicalLevel,
+    trainingGroundLevel: club.trainingGroundLevel,
+  };
+  const upgradeReady =
+    ftueComplete && Boolean(nextMilestone(milestoneInput)?.affordable);
 
   // Replay onboarding whistle once after createClub redirect (tutorialStep 0).
   useEffect(() => {
@@ -208,6 +240,7 @@ export function ClubHub({
 
       // FTUE graduation: the forced first upgrade just flipped step 1 → 2.
       if (step === 1 && result.club.tutorialStep === 2) {
+        setManageOpen(false);
         setJustGraduated(true);
         playSound("upgrade");
         haptic([30, 40, 60]);
@@ -321,84 +354,30 @@ export function ClubHub({
         </div>
       </GamePanel>
 
-      {/* First viewport essence: stadium world */}
-      <div className="relative">
-        <p className="mb-1 px-1 font-display text-xs font-black text-arena-muted">
-          {t("club.yourStadium")}
-        </p>
-        <StadiumHero
-          stadiumLevel={club.stadiumLevel}
-          fans={club.fans}
-          trainingGroundLevel={club.trainingGroundLevel}
-          medicalLevel={club.medicalLevel}
-          maxStamina={club.maxStamina}
-          celebrateKey={celebrateKey}
-          celebrating={celebrating}
-        />
-      </div>
-      </div>
-
       {ftueComplete && (
-        <NextGoalCard
+        <MatchDoor
+          stamina={club.stamina}
+          maxStamina={club.maxStamina}
+          msUntilNext={club.msUntilNext}
+          medicalLevel={club.medicalLevel}
+          questionCount={matchPreview.questionCount}
+          approxCoins={matchPreview.approxCoins}
+          staminaCost={matchPreview.staminaCost}
           coinsPerWin={coinsPerWin}
-          milestoneInput={{
-            coins: club.coins,
-            stadiumLevel: club.stadiumLevel,
-            medicalLevel: club.medicalLevel,
-            trainingGroundLevel: club.trainingGroundLevel,
-          }}
-          onFocusUpgrade={focusUpgrade}
+          milestoneInput={milestoneInput}
+          lastMatch={lastMatch}
         />
       )}
 
-      <div className="hub-deck mt-3 flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <GameIconWell size="sm" src="/icons/upgrade.png" />
-          <h2 className="font-display text-lg font-black text-arena-fg">
-            {t("club.upgrades")}
-          </h2>
-        </div>
-        <AnimatePresence>
-          {error && (
-            <motion.p
-              role="alert"
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="font-display text-xs font-bold text-destructive"
-            >
-              {error}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
-        {UPGRADE_LIST.map((def) => {
-          const level = getClubLevel(club, def.key);
-          const cost = getUpgradeCost(def.key, level);
-          const canAfford = cost !== null && club.coins >= cost;
-          const isForcedStadium = step === 1 && def.key === "STADIUM";
-          const locked =
-            step === 0 || (step === 1 && def.key !== "STADIUM");
-          return (
-            <UpgradeCard
-              key={def.key}
-              id={`club-upgrade-${def.key}`}
-              def={def}
-              level={level}
-              maxStamina={club.maxStamina}
-              cost={cost}
-              canAfford={canAfford}
-              pending={pendingKey === def.key}
-              locked={locked}
-              spotlight={isForcedStadium || goalSpotlightKey === def.key}
-              onUpgrade={() => handleUpgrade(def.key)}
-            />
-          );
-        })}
-      </div>
+      {ftueComplete && (
+        <HubDailyMissions
+          board={dailyBoard}
+          onOpen={() => openMissions("daily")}
+        />
+      )}
 
       {ftueComplete && (
-        <div className="hub-deck mt-4 flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <HubTodayRail
             mysteryStreak={club.mysteryStreak}
             campaignSeason={campaignSeason}
@@ -415,10 +394,50 @@ export function ClubHub({
             items={duelInboxItems}
             variant="club"
           />
-
-          <BusinessPanel club={club} onClubUpdate={setClub} />
         </div>
       )}
+
+      <div className="relative">
+        <p className="mb-1 px-1 font-display text-xs font-black text-arena-muted">
+          {t("club.yourStadium")}
+        </p>
+        <StadiumHero
+          stadiumLevel={club.stadiumLevel}
+          fans={club.fans}
+          trainingGroundLevel={club.trainingGroundLevel}
+          medicalLevel={club.medicalLevel}
+          celebrateKey={celebrateKey}
+          celebrating={celebrating}
+          upgradeReady={upgradeReady}
+          onOpenManage={() => setManageOpen(true)}
+        />
+      </div>
+      </div>
+
+      <ClubManageSheet
+        open={manageOpen}
+        onClose={() => setManageOpen(false)}
+        dismissible={step !== 1}
+        club={club}
+        coinsPerWin={coinsPerWin}
+        pendingKey={pendingKey}
+        goalSpotlightKey={goalSpotlightKey}
+        error={error}
+        showBusiness={ftueComplete}
+        tutorialStep={step}
+        onUpgrade={handleUpgrade}
+        onFocusUpgrade={focusUpgrade}
+        onClubUpdate={setClub}
+        coach={
+          step === 1 ? (
+            <FtueCoach
+              avatarKey={avatarKey}
+              name={avatarName}
+              line={t("ftue.step1Line")}
+            />
+          ) : undefined
+        }
+      />
 
       <AnimatePresence>
         {news && (
@@ -471,37 +490,7 @@ export function ClubHub({
         )}
       </AnimatePresence>
 
-      {/* FTUE Step 1 — dim the hub, spotlight the Stadium card (raised above). */}
-      <AnimatePresence>
-        {step === 1 && (
-          <motion.div
-            key="ftue-dim"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-[1px]"
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {step === 1 && (
-          <motion.div
-            key="ftue-coach-1"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="pointer-events-none fixed inset-x-0 top-3 z-[60] flex justify-center px-4"
-          >
-            <FtueCoach
-              avatarKey={avatarKey}
-              name={avatarName}
-              line={t("ftue.step1Line")}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* FTUE graduation — coach toast + confetti (clears bottom nav). */}
+      {/* FTUE Step 1 lives inside the manage sheet (coach + locked upgrades). */}
       <AnimatePresence>
         {justGraduated && (
           <motion.div

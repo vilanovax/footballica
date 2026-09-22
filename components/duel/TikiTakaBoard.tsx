@@ -396,8 +396,10 @@ export function TikiTakaBoard({
                 strokeLinecap="round"
                 className={hurry ? "stroke-rose-400" : "stroke-emerald-400"}
                 strokeDasharray={circumference}
+                initial={{ strokeDashoffset: 0 }}
                 animate={{
-                  strokeDashoffset: circumference * (1 - (yourTurn ? timerPct : 1)),
+                  strokeDashoffset:
+                    circumference * (1 - (yourTurn ? timerPct : 1)),
                 }}
                 transition={{ duration: 0.2 }}
               />

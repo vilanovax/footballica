@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   nextMilestone,
@@ -104,19 +103,6 @@ export function NextGoalCard({
                 {t("club.nextGoalJump")}
               </p>
             </div>
-
-            <span className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-bubble bg-accent px-3 py-2 font-display text-[11px] font-black text-accent-foreground shadow-[0_3px_0_0_hsl(var(--accent-deep))]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/icons/coin.png"
-                alt=""
-                aria-hidden
-                className="h-3.5 w-3.5"
-              />
-              <span dir="ltr" className="tabular-nums">
-                {toLocaleDigits(goal.cost, locale)}
-              </span>
-            </span>
           </div>
         </GamePanel>
       </motion.button>
@@ -124,57 +110,38 @@ export function NextGoalCard({
   }
 
   return (
-    <Link
-      href="/play"
-      className="block rounded-bubble-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
-    >
-      <motion.div whileTap={{ scale: 0.98 }}>
-        <GamePanel tone={tone} className="px-3 py-3">
-          <div className="relative flex items-center gap-3">
-            <GameIconWell size="lg">
-              <UpgradeIcon
-                upgradeKey={goal.key}
-                size="md"
-                className="h-9 w-9!"
-              />
-            </GameIconWell>
+    <GamePanel tone={tone} className="px-3 py-3">
+      <div className="relative flex items-center gap-3">
+        <GameIconWell size="lg">
+          <UpgradeIcon
+            upgradeKey={goal.key}
+            size="md"
+            className="h-9 w-9!"
+          />
+        </GameIconWell>
 
-            <div className="min-w-0 flex-1">
-              <GameChip>{t("club.nextGoalLabel")}</GameChip>
-              <p className="mt-1 font-display text-sm font-black leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
-                {t("club.nextGoalWins", {
-                  n: toLocaleDigits(wins === Infinity ? 0 : wins, locale),
-                  name,
-                  coins: toLocaleDigits(goal.remaining, locale),
-                })}
-              </p>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/45 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]">
-                <motion.div
-                  className={[
-                    "h-full rounded-full bg-linear-to-r",
-                    GOAL_BAR[goal.key],
-                  ].join(" ")}
-                  initial={false}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ type: "spring", stiffness: 180, damping: 24 }}
-                />
-              </div>
-              <p className="mt-1.5 font-display text-[11px] font-bold text-lime-300">
-                {t("club.nextGoalCta")}
-              </p>
-            </div>
-
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/back.png"
-              alt=""
-              aria-hidden
-              draggable={false}
-              className="h-4 w-4 shrink-0 opacity-60 ltr:rotate-180"
+        <div className="min-w-0 flex-1">
+          <GameChip>{t("club.nextGoalLabel")}</GameChip>
+          <p className="mt-1 font-display text-sm font-black leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
+            {t("club.nextGoalWins", {
+              n: toLocaleDigits(wins === Infinity ? 0 : wins, locale),
+              name,
+              coins: toLocaleDigits(goal.remaining, locale),
+            })}
+          </p>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/45 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]">
+            <motion.div
+              className={[
+                "h-full rounded-full bg-linear-to-r",
+                GOAL_BAR[goal.key],
+              ].join(" ")}
+              initial={false}
+              animate={{ width: `${progressPct}%` }}
+              transition={{ type: "spring", stiffness: 180, damping: 24 }}
             />
           </div>
-        </GamePanel>
-      </motion.div>
-    </Link>
+        </div>
+      </div>
+    </GamePanel>
   );
 }

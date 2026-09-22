@@ -55,6 +55,8 @@ export default async function QuickPage() {
       matchSize={matchSize}
       startingCoins={club.coins}
       helpers={config.helpers}
+      stadiumLevel={club.stadiumLevel}
+      fansPerGoal={config.rewards.fansPerGoal}
     />
   );
 }

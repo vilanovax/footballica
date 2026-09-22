@@ -22,7 +22,7 @@ const TONE: Record<GamePanelTone, string> = {
  */
 export function GamePanel({
   tone = "emerald",
-  pinstripe = true,
+  pinstripe = false,
   className,
   children,
   ...rest

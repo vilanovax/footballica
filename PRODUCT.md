@@ -8,7 +8,7 @@ web
 
 ## Users
 
-**Players** are football fans using a phone (PWA). The job is to play trivia as a match, then spend the result on their club. English and Persian are equally first-class; the product is not Iran-only in audience even if some shipping systems still are.
+**Players** are football fans using a phone (PWA). The job is to play trivia as a match, then spend the result on their club. **Persian (`fa`) is the default player language** (UI, RTL, question banks). English stays complete and equal as a settings choice.
 
 **Operators** use `/admin` to run the live game: questions, modes, missions, challenges, economy config, reports, and player accounts. They are a first-class audience in this record, with a different job (operate content and rules, not play).
 
@@ -65,7 +65,7 @@ Do not invent testimonials, press, user counts, league standings, or third-party
 1. **Match, not exam** — every quiz beat should read as a football action with immediate result.
 2. **Club is the save file** — hub state (stadium, stamina, economy) is why a session continues after the whistle.
 3. **Phone in the hand** — design and copy for one-handed play; desktop is a convenience, not the scene.
-4. **Two languages, one product** — `fa` and `en` must stay complete and equal; RTL is a layout fact, not a theme.
+4. **Two languages, one product** — `fa` is the default; `en` stays complete. RTL is a layout fact, not a theme.
 5. **Players play, operators operate** — keep those jobs on separate surfaces; never ship operator patterns into the match.
 
 ## Accessibility & Inclusion

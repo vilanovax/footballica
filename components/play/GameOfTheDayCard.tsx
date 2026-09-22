@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import type { DailyMysterySnapshot } from "@/actions/mystery/getDailyMystery";
 import type { DailyGridSnapshot } from "@/actions/grid/getDailyGrid";
@@ -119,6 +119,7 @@ function MysteryGotdCard({
       }
       href="/play/mystery"
       cta={cta}
+      done={done}
       rotatesAt={rotatesAt}
     />
   );
@@ -169,6 +170,7 @@ function StarPathGotdCard({
       }
       href="/play/star-path"
       cta={cta}
+      done={done}
       rotatesAt={rotatesAt}
     />
   );
@@ -210,6 +212,7 @@ function GridGotdCard({
       })}`}
       href="/play/grid"
       cta={cta}
+      done={done}
       rotatesAt={rotatesAt}
     />
   );
@@ -258,6 +261,7 @@ function MemoryGotdCard({
       }
       href="/play/memory"
       cta={cta}
+      done={done}
       rotatesAt={rotatesAt}
     />
   );
@@ -271,6 +275,7 @@ function GotdShell({
   meta,
   href,
   cta,
+  done,
   rotatesAt,
 }: {
   kind: GameOfTheDayKind;
@@ -280,6 +285,7 @@ function GotdShell({
   meta: string;
   href: string;
   cta: string;
+  done: boolean;
   rotatesAt: string;
 }) {
   const { t } = useTranslation();
@@ -293,6 +299,43 @@ function GotdShell({
         : kind === "memory"
           ? t("play.gotdKindMemory")
           : t("play.gotdKindStarPath");
+
+  if (done) {
+    return (
+      <div className="flex flex-col gap-2">
+        <h2 className="px-0.5 font-display text-xs font-black text-arena-muted">
+          {t("play.gameOfTheDay")}
+        </h2>
+        <Link
+          href={href}
+          onClick={() => playSound("click")}
+          className="block rounded-[var(--radius-bubble-xl)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+        >
+          <GamePanel tone="emerald" className="px-3 py-2.5">
+            <div className="relative flex items-center gap-3">
+              <GameIconWell
+                size="md"
+                src={icon}
+                className="h-11 w-11"
+                iconClassName="h-7 w-7"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display text-sm font-black text-white">
+                  {title}
+                </p>
+                <p className="mt-0.5 font-display text-xs font-bold text-white/65">
+                  {blurb}
+                </p>
+                <p className="mt-0.5 font-display text-[11px] font-bold tabular-nums text-white/50">
+                  {t("play.gotdRotatesIn", { time: countdown ?? "\u2014" })}
+                </p>
+              </div>
+            </div>
+          </GamePanel>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -342,14 +385,14 @@ function GotdShell({
             className="h-4 w-4 object-contain opacity-90"
           />
           <span className="font-display text-xs font-extrabold tabular-nums text-white/80">
-            {t("play.gotdRotatesIn", { time: countdown })}
+            {t("play.gotdRotatesIn", { time: countdown ?? "\u2014" })}
           </span>
         </GameTile>
 
         <Link
           href={href}
           onClick={() => playSound("click")}
-          className="game-cta game-cta-accent relative mt-3 w-full text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+          className="game-cta game-cta-primary relative mt-3 w-full text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
         >
           {cta}
         </Link>
@@ -358,13 +401,12 @@ function GotdShell({
   );
 }
 
-function useGotdCountdown(rotatesAtIso: string): string {
+function useGotdCountdown(rotatesAtIso: string): string | null {
   const { locale } = useTranslation();
-  const [msLeft, setMsLeft] = useState(() =>
-    Math.max(0, new Date(rotatesAtIso).getTime() - Date.now()),
-  );
+  // Date.now() during render disagrees by ~1s between SSR and hydrate.
+  const [msLeft, setMsLeft] = useState<number | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const target = new Date(rotatesAtIso).getTime();
     const tick = () => setMsLeft(Math.max(0, target - Date.now()));
     tick();
@@ -372,6 +414,7 @@ function useGotdCountdown(rotatesAtIso: string): string {
     return () => window.clearInterval(id);
   }, [rotatesAtIso]);
 
+  if (msLeft === null) return null;
   return formatCountdown(msLeft, locale);
 }
 

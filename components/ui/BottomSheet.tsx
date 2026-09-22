@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { useTranslation } from "@/lib/i18n/useTranslation";
@@ -19,6 +20,8 @@ type BottomSheetProps = {
   tone?: "default" | "dark";
   /** `overlay` stacks above another open sheet (e.g. assign picker). */
   layer?: "default" | "overlay";
+  /** When false, backdrop, Escape, and the close control do nothing. */
+  dismissible?: boolean;
 };
 
 /**
@@ -34,15 +37,22 @@ export function BottomSheet({
   closeLabel = "Close",
   tone = "default",
   layer = "default",
+  dismissible = true,
 }: BottomSheetProps) {
-  const dark = tone === "dark";
-  const zClass = layer === "overlay" ? "z-[80]" : "z-[70]";
   const titleId = useId();
   const { t } = useTranslation();
+  const [mounted, setMounted] = useState(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && dismissible) onCloseRef.current();
     };
     window.addEventListener("keydown", onKey);
     if (layer === "overlay") {
@@ -54,27 +64,77 @@ export function BottomSheet({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose, layer]);
+  }, [open, layer, dismissible]);
+
+  if (!mounted || !open) return null;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className={cn(
-            "fixed inset-0 flex items-end justify-center sm:items-center sm:p-4",
-            zClass,
-          )}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.16 }}
+        <BottomSheetFrame
+          title={title}
+          subtitle={subtitle}
+          closeLabel={closeLabel}
+          tone={tone}
+          layer={layer}
+          dismissible={dismissible}
+          titleId={titleId}
+          closeBackdropLabel={t("common.closeBackdrop")}
+          onClose={() => onCloseRef.current()}
         >
-          <button
-            type="button"
-            aria-label={t("common.closeBackdrop")}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/65 backdrop-blur-[5px]"
-          />
+          {children}
+        </BottomSheetFrame>
+  );
+}
+
+function BottomSheetFrame({
+  title,
+  subtitle,
+  children,
+  closeLabel,
+  tone,
+  layer,
+  dismissible,
+  titleId,
+  closeBackdropLabel,
+  onClose,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  closeLabel: string;
+  tone: "default" | "dark";
+  layer: "default" | "overlay";
+  dismissible: boolean;
+  titleId: string;
+  closeBackdropLabel: string;
+  onClose: () => void;
+}) {
+  const dark = tone === "dark";
+  const zClass = layer === "overlay" ? "z-[80]" : "z-[70]";
+
+  return createPortal(
+    <motion.div
+      className={cn(
+        "fixed inset-0 flex items-end justify-center sm:items-center sm:p-4",
+        zClass,
+      )}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.16 }}
+    >
+          {dismissible ? (
+            <button
+              type="button"
+              aria-label={closeBackdropLabel}
+              onClick={onClose}
+              className="absolute inset-0 bg-black/65 backdrop-blur-[5px]"
+            />
+          ) : (
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-black/65 backdrop-blur-[5px]"
+            />
+          )}
           <motion.div
             role="dialog"
             aria-modal="true"
@@ -127,38 +187,38 @@ export function BottomSheet({
                   </p>
                 )}
               </div>
-              {dark ? (
-                <button
-                  type="button"
-                  aria-label={closeLabel}
-                  onClick={onClose}
-                  className="relative z-20 flex min-h-11 min-w-11 shrink-0 items-center justify-center transition-transform active:scale-90"
-                >
-                  <GameIconWell size="md" src="/icons/close.png" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  aria-label={closeLabel}
-                  onClick={onClose}
-                  className="game-icon-btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted transition-transform active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/icons/close.png"
-                    alt=""
-                    aria-hidden
-                    className="h-4 w-4 object-contain opacity-70"
-                  />
-                </button>
-              )}
+              {dismissible &&
+                (dark ? (
+                  <button
+                    type="button"
+                    aria-label={closeLabel}
+                    onClick={onClose}
+                    className="relative z-20 flex min-h-11 min-w-11 shrink-0 items-center justify-center transition-transform active:scale-90"
+                  >
+                    <GameIconWell size="md" src="/icons/close.png" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    aria-label={closeLabel}
+                    onClick={onClose}
+                    className="game-icon-btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted transition-transform active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/icons/close.png"
+                      alt=""
+                      aria-hidden
+                      className="h-4 w-4 object-contain opacity-70"
+                    />
+                  </button>
+                ))}
             </div>
             <div className="relative overflow-y-auto overscroll-contain px-5 py-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
               {children}
             </div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </motion.div>,
+    document.body,
   );
 }

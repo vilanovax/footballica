@@ -23,6 +23,8 @@ import { ExplanationFact } from "./ExplanationFact";
 import { HelperDock } from "./HelperDock";
 import { GoalBurst } from "./GoalBurst";
 import { MatchLeaveControl } from "./MatchLeaveControl";
+import { MatchPitch } from "./MatchPitch";
+import { stadiumScene } from "@/lib/club/stadiumScene";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
@@ -57,6 +59,10 @@ type QuickMatchProps = {
   startingCoins: number;
   /** Live in-match helper costs. */
   helpers: GameConfig["helpers"];
+  /** Club stadium tier — same pitch language as Penalty. */
+  stadiumLevel: number;
+  /** Fans granted for each correct answer. */
+  fansPerGoal: number;
 };
 
 export function QuickMatch({
@@ -65,6 +71,8 @@ export function QuickMatch({
   matchSize,
   startingCoins,
   helpers,
+  stadiumLevel,
+  fansPerGoal,
 }: QuickMatchProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -223,17 +231,11 @@ export function QuickMatch({
     else break;
   }
 
+  const scene = stadiumScene(stadiumLevel);
+
   return (
     <section className="relative -mx-4 flex flex-1 flex-col bg-arena px-4 text-arena-fg">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-linear-to-b from-arena-deep via-arena to-arena-mid" />
-        <div className="game-pinstripe absolute inset-0 opacity-60" />
-        <div className="absolute -end-16 top-0 h-48 w-48 rounded-full bg-lime-300/12 blur-3xl" />
-        <div className="absolute -start-20 top-40 h-40 w-40 rounded-full bg-emerald-400/15 blur-3xl" />
-      </div>
+      <MatchPitch stadiumLevel={stadiumLevel} />
 
       {process.env.NODE_ENV === "development" ? <FormatDevToggle /> : null}
       <div
@@ -243,7 +245,7 @@ export function QuickMatch({
         ].join(" ")}
         onAnimationEnd={() => setShake(false)}
       >
-        <GamePanel tone="emerald" className="px-3 py-2.5">
+        <GamePanel tone={scene.tone} className="px-3 py-2.5">
           <div className="relative flex items-center gap-2">
             <MatchLeaveControl
               setPaused={setPaused}
@@ -258,6 +260,11 @@ export function QuickMatch({
                   n: toLocaleDigits(currentIndex + 1, lang),
                   total: toLocaleDigits(questions.length, lang),
                 })}
+              </p>
+              <p className="truncate font-display text-[11px] font-bold text-amber-100/90">
+                {t("stadium.lvl")} {toLocaleDigits(scene.index, lang)}
+                {" · "}
+                {t(`stadium.tiers.${scene.index}`)}
               </p>
             </div>
             <GameIconWell size="md" amber src="/icons/energy.png" />
@@ -353,7 +360,7 @@ export function QuickMatch({
         )}
       </div>
 
-      {showGoal && <GoalBurst />}
+      {showGoal && <GoalBurst fans={fansPerGoal} />}
 
       {/* Non-blocking miss flash — pointer-events-none so it never eats a tap
           (auto-advance handles progression; there is no Continue button). */}

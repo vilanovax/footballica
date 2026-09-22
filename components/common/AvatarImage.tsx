@@ -17,15 +17,31 @@ type AvatarImageProps = {
   colorKey?: string | null;
   /** Prefetch for above-the-fold hub / profile heroes. */
   priority?: boolean;
-  /** Responsive hint for next/image (default covers hub + profile sizes). */
+  /**
+   * CSS pixel box this avatar is drawn into (e.g. "48px").
+   * Used as the 1x intrinsic size so next/image emits a 1x/2x srcset.
+   * Do not pass viewport units — a `w` srcset plus `priority` preloads a
+   * candidate the img element then ignores.
+   */
   sizes?: string;
 };
+
+/** Plain `Npx` only. Anything else falls back to the hub default. */
+function avatarPx(sizes: string): number {
+  const match = /^(\d+)px$/.exec(sizes.trim());
+  const px = match ? Number(match[1]) : 96;
+  return px > 0 ? px : 96;
+}
 
 /**
  * Renders an illustrated manager avatar from /public/avatars. The source PNGs
  * already carry their own circular background, so callers only supply size +
  * radius via `className`. On load error, falls back to catalog emoji.
  * Uses next/image so AVIF/WebP derivatives ship instead of raw ~60–90KB PNGs.
+ * Fixed width/height (not fill) so the optimizer emits 1x/2x descriptors.
+ * A fill image with a pixel `sizes` value builds a full `w` srcset; Chrome's
+ * preload scanner and the img element then pick different candidates, which
+ * logs "preloaded but not used" for priority avatars.
  */
 export function AvatarImage({
   avatarKey,
@@ -39,6 +55,7 @@ export function AvatarImage({
     ? (avatarKey as AvatarKey)
     : "TACTICAL_COACH";
   const avatar = getAvatar(key);
+  const px = avatarPx(sizes);
   const [failed, setFailed] = useState(false);
   const accent = getClubColor(colorKey);
 
@@ -73,12 +90,12 @@ export function AvatarImage({
       <Image
         src={avatar.image}
         alt=""
-        fill
-        sizes={sizes}
+        width={px}
+        height={px}
         priority={priority}
         draggable={false}
         onError={() => setFailed(true)}
-        className="object-cover"
+        className="h-full w-full object-cover"
       />
     </span>
   );

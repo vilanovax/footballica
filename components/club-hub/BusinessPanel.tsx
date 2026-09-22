@@ -62,6 +62,7 @@ export function BusinessPanel({ club, onClubUpdate }: BusinessPanelProps) {
   const [staffFocus, setStaffFocus] = useState<BusinessFacilityKey | null>(
     null,
   );
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   function run(
     label: string,
@@ -107,24 +108,94 @@ export function BusinessPanel({ club, onClubUpdate }: BusinessPanelProps) {
 
   return (
     <section className="flex flex-col gap-2">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <span
-            className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-950/35 shadow-[0_0_0_1px_rgba(251,191,36,0.35),0_2px_0_0_rgba(0,0,0,0.25)]"
-            aria-hidden
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/stadium.png"
-              alt=""
-              className="h-4 w-4 object-contain"
-            />
+      <button
+        type="button"
+        aria-expanded={detailsOpen}
+        onClick={() => {
+          haptic(HAPTIC.light);
+          playSound("click");
+          setDetailsOpen((open) => !open);
+        }}
+        className="w-full rounded-bubble-xl text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+      >
+        <GameTile
+          tone="amber"
+          className="flex min-h-touch w-full items-center gap-2 px-3 py-2"
+        >
+          <GameIconWell size="sm" amber src="/icons/stadium.png" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-display text-sm font-black text-arena-fg">
+              {t("club.biz.title")}
+            </span>
+            <span className="mt-0.5 block truncate font-display text-[11px] font-bold text-white/70">
+              {t("club.biz.vaultChip", {
+                cur: toLocaleDigits(biz.vaultBalance, locale),
+                max: toLocaleDigits(biz.vaultCap, locale),
+              })}
+              {" · "}
+              {t("club.biz.rateShort", {
+                rate: toLocaleDigits(biz.totalRatePerHour, locale),
+              })}
+            </span>
           </span>
-          <h2 className="font-display text-lg font-black text-arena-fg">
-            {t("club.biz.title")}
-          </h2>
+          <span className="shrink-0 font-display text-[11px] font-black text-amber-100">
+            {detailsOpen ? t("club.biz.detailsHide") : t("club.biz.detailsShow")}
+          </span>
+        </GameTile>
+      </button>
+
+      {!detailsOpen && (canWithdraw || primaryCollect) && (
+        <div className="flex flex-col gap-2">
+          {canWithdraw ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() =>
+                run("withdraw", () => withdrawVault(), () =>
+                  t("club.biz.withdrawn"),
+                )
+              }
+              className="btn-fantasy btn-fantasy-accent w-full"
+            >
+              {busy === "withdraw"
+                ? "…"
+                : treasurerEarly
+                  ? t("club.biz.withdrawTreasurerCta", {
+                      n: toLocaleDigits(biz.vaultBalance, locale),
+                    })
+                  : t("club.biz.withdrawCta", {
+                      n: toLocaleDigits(biz.vaultBalance, locale),
+                    })}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() =>
+                run(
+                  "collect",
+                  () => collectFacilities("ALL"),
+                  (n) =>
+                    t("club.biz.collected", {
+                      n: toLocaleDigits(n ?? 0, locale),
+                    }),
+                )
+              }
+              className="btn-fantasy btn-fantasy-accent w-full"
+            >
+              {busy === "collect"
+                ? "…"
+                : t("club.biz.collectShort", {
+                    n: toLocaleDigits(biz.collectableTotal, locale),
+                  })}
+            </button>
+          )}
         </div>
-        {/* Full-width equal chips — 2-col wrap keeps touch targets ≥44px */}
+      )}
+
+      {detailsOpen && (
+      <>
+      <div className="flex flex-col gap-2">
         <div className="grid w-full grid-cols-2 gap-2">
           {/* Bank */}
           <button
@@ -674,6 +745,8 @@ export function BusinessPanel({ club, onClubUpdate }: BusinessPanelProps) {
           />
         ))}
       </div>
+      </>
+      )}
 
       <BankBusinessSheet
         open={bankOpen}

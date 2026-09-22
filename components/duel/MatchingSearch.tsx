@@ -204,6 +204,7 @@ export function MatchingSearch({
                 strokeWidth="4"
                 strokeLinecap="round"
                 strokeDasharray={ring}
+                initial={{ strokeDashoffset: ring }}
                 animate={{ strokeDashoffset: ring - dash }}
                 transition={{ duration: 0.15, ease: "linear" }}
               />

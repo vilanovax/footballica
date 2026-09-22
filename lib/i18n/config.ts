@@ -4,7 +4,7 @@ export type Locale = "en" | "fa";
 export type Direction = "ltr" | "rtl";
 
 export const LOCALES: Locale[] = ["en", "fa"];
-export const DEFAULT_LOCALE: Locale = "en";
+export const DEFAULT_LOCALE: Locale = "fa";
 
 // Text direction per locale (Arabic will also be "rtl" when added).
 export const DIRECTION: Record<Locale, Direction> = { en: "ltr", fa: "rtl" };
