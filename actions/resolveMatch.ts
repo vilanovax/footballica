@@ -51,6 +51,21 @@ export type ResolveMatchOptions = {
   helpersUsed?: HelperKey[];
   /** Core game mode (ignored for tutorial). Defaults to "penalty". */
   mode?: MatchModeOption;
+  /**
+   * Category bank for this Penalty (null/omitted = Random mix).
+   * When set on a non-tutorial Penalty, updates CategoryRecord mastery.
+   */
+  categoryId?: string | null;
+};
+
+/** Per-category Penalty PB delta for the result screen. */
+export type PenaltyRecordResult = {
+  previousBest: number;
+  bestGoals: number;
+  isNewRecord: boolean;
+  isPerfect: boolean;
+  /** Distinct banks with ≥1 perfect after this match. */
+  perfectCategories: number;
 };
 
 /** A badge earned by this match, in a serializable shape for the result popup. */
@@ -111,6 +126,8 @@ export type ResolveMatchResult =
       businessBoostGranted: boolean;
       businessBoostMs: number;
       businessBoostBonus: number;
+      /** Category-locked Penalty mastery update (null for Random / Quick / tutorial). */
+      penaltyRecord: PenaltyRecordResult | null;
     }
   | { ok: false; error: string };
 
@@ -138,6 +155,10 @@ export async function resolveMatch(
     : options.mode === "quick"
       ? "QUICK_MATCH"
       : "PENALTY";
+  const requestedCategoryId =
+    typeof options.categoryId === "string" && options.categoryId.trim()
+      ? options.categoryId.trim()
+      : null;
 
   if (!Array.isArray(submissions) || submissions.length === 0) {
     return { ok: false, error: "No kicks submitted." };
@@ -247,6 +268,74 @@ export async function resolveMatch(
         new Date(),
       );
 
+      // ── Category-locked Penalty mastery (Random / Quick / tutorial skip).
+      let matchCategoryId: string | null = null;
+      let penaltyRecord: PenaltyRecordResult | null = null;
+      let penaltyPerfectCategories = 0;
+
+      if (
+        !isTutorial &&
+        matchMode === "PENALTY" &&
+        requestedCategoryId
+      ) {
+        const cat = await tx.category.findFirst({
+          where: {
+            id: requestedCategoryId,
+            isActive: true,
+            challengeOnly: false,
+          },
+          select: { id: true },
+        });
+        if (cat) {
+          matchCategoryId = cat.id;
+          const existing = await tx.categoryRecord.findUnique({
+            where: {
+              clubId_categoryId: { clubId: club.id, categoryId: cat.id },
+            },
+          });
+          const previousBest = existing?.maxPenaltyGoals ?? 0;
+          const goals = finalRewards.goals;
+          const isPerfect = finalRewards.perfect;
+          const isNewRecord = goals > previousBest;
+          const nextBest = Math.max(previousBest, goals);
+
+          await tx.categoryRecord.upsert({
+            where: {
+              clubId_categoryId: { clubId: club.id, categoryId: cat.id },
+            },
+            create: {
+              clubId: club.id,
+              categoryId: cat.id,
+              maxPenaltyGoals: goals,
+              perfectPenaltyCount: isPerfect ? 1 : 0,
+              matchesPlayed: 1,
+            },
+            update: {
+              maxPenaltyGoals: nextBest,
+              perfectPenaltyCount: isPerfect
+                ? { increment: 1 }
+                : undefined,
+              matchesPlayed: { increment: 1 },
+            },
+          });
+
+          penaltyPerfectCategories = await tx.categoryRecord.count({
+            where: {
+              clubId: club.id,
+              perfectPenaltyCount: { gt: 0 },
+            },
+          });
+
+          penaltyRecord = {
+            previousBest,
+            bestGoals: nextBest,
+            isNewRecord,
+            isPerfect,
+            perfectCategories: penaltyPerfectCategories,
+          };
+        }
+      }
+
       // ── Achievements: evaluate against this match + the post-match player
       // stats, skipping badges already owned. Each new badge pays a small
       // one-off reward (coins + XP) snapshotted onto the ClubBadge row.
@@ -265,6 +354,7 @@ export async function resolveMatch(
             perfect: finalRewards.perfect,
             usedHelp,
             isTutorial,
+            categoryScoped: matchCategoryId != null,
           },
           player: {
             matchesPlayed: newMatchesPlayed,
@@ -279,6 +369,7 @@ export async function resolveMatch(
             gridStreak: club.gridStreak,
             longestGridStreak: club.longestGridStreak,
             gridSolves: club.gridSolves,
+            penaltyPerfectCategories,
           },
         },
         ownedSlugs,
@@ -308,6 +399,7 @@ export async function resolveMatch(
           clubId: club.id,
           mode: matchMode,
           status: "COMPLETED",
+          categoryId: matchCategoryId,
           goalsFor: finalRewards.goals,
           goalsAgainst: finalRewards.misses,
           questionsTotal: verifiedLog.length,
@@ -333,6 +425,7 @@ export async function resolveMatch(
           perfect: finalRewards.perfect,
           combo: finalRewards.combo,
           isTutorial,
+          categoryScoped: matchCategoryId != null,
         },
         tx,
       );
@@ -485,6 +578,7 @@ export async function resolveMatch(
         businessBoostBonus: grantBusinessBoost
           ? config.businessEconomy.firstWinBoostBonus
           : 0,
+        penaltyRecord,
       };
     });
 

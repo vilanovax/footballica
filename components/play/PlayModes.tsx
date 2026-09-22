@@ -4,7 +4,10 @@ import type { ReactNode } from "react";
 import type { DuelSnapshot } from "@/lib/duel/snapshot";
 import type { DuelInboxItem } from "@/actions/duel/getInboxCount";
 import type { PlayModeEconomy } from "@/lib/play/modeEconomy";
-import { buildPlayPlaylist } from "@/lib/play/buildPlaylist";
+import {
+  buildPlayPlaylist,
+  type NearPerfectTip,
+} from "@/lib/play/buildPlaylist";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { RecentDuelHistory } from "@/components/duel/RecentDuelHistory";
@@ -26,6 +29,8 @@ type PlayModesProps = {
   modes: Record<"penalty" | "quick" | "survival" | "duel", PlayModeEconomy>;
   /** Live premium challenges — chip on Survival card only. */
   liveChallengeCount?: number;
+  /** Category Penalty one goal shy of Perfect — Recommended chip. */
+  nearPerfect?: NearPerfectTip | null;
   /** Streamed Game of the Day slot (Suspense from the server page). */
   gotd?: ReactNode;
 };
@@ -43,6 +48,7 @@ export function PlayModes({
   survivalBest,
   modes,
   liveChallengeCount = 0,
+  nearPerfect = null,
   gotd = null,
 }: PlayModesProps) {
   const { t, locale } = useTranslation();
@@ -60,6 +66,7 @@ export function PlayModes({
     duelHref,
     survivalBest,
     liveChallengeCount,
+    nearPerfect,
   });
 
   return (

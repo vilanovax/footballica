@@ -141,6 +141,19 @@ export async function getProfileSnapshot(): Promise<ProfileSnapshot | null> {
   if (!user?.club) return null;
   const club = user.club;
 
+  const perfectedRows = await prisma.categoryRecord.findMany({
+    where: { clubId: club.id, perfectPenaltyCount: { gt: 0 } },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      categoryId: true,
+      perfectPenaltyCount: true,
+      maxPenaltyGoals: true,
+      category: {
+        select: { nameEn: true, nameFa: true, icon: true },
+      },
+    },
+  });
+
   return {
     managerName: user.displayName ?? "Manager",
     clubName: club.name,
@@ -161,6 +174,15 @@ export async function getProfileSnapshot(): Promise<ProfileSnapshot | null> {
     gridStreak: club.gridStreak,
     longestGridStreak: club.longestGridStreak,
     gridSolves: club.gridSolves,
+    penaltyPerfectCategories: perfectedRows.length,
+    perfectedBanks: perfectedRows.map((r) => ({
+      categoryId: r.categoryId,
+      nameEn: r.category.nameEn,
+      nameFa: r.category.nameFa,
+      icon: r.category.icon,
+      perfectCount: r.perfectPenaltyCount,
+      bestGoals: r.maxPenaltyGoals,
+    })),
     badges: club.badges.map((b) => ({
       slug: b.badgeSlug,
       unlockedAt: b.unlockedAt.toISOString(),

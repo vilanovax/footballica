@@ -5,6 +5,7 @@ import { getMyDuels } from "@/actions/duel/getMyDuels";
 import { getDuelInbox } from "@/actions/duel/getInboxCount";
 import { getGameConfig } from "@/lib/game/gameConfig";
 import { getPlayModeEconomy } from "@/lib/play/modeEconomy";
+import { findNearPerfectPenalty } from "@/lib/play/nearPerfectPenalty";
 import { listRecordChallenges } from "@/actions/challenge/recordChallenge";
 import { prisma } from "@/lib/prisma";
 import { PlayModes } from "@/components/play/PlayModes";
@@ -32,6 +33,11 @@ export default async function PlayPage() {
   ]);
   if (!club) redirect("/onboarding");
 
+  const nearPerfect = await findNearPerfectPenalty({
+    clubId: user.club.id,
+    questionCount: config.match.questionCount,
+  });
+
   const recentDuels = res.ok ? res.history : [];
   const modes = getPlayModeEconomy(config);
   const survivalBest = bestAgg._max.maxSurvivalScore ?? 0;
@@ -49,6 +55,7 @@ export default async function PlayPage() {
       survivalBest={survivalBest}
       modes={modes}
       liveChallengeCount={liveChallengeCount}
+      nearPerfect={nearPerfect}
       gotd={
         <Suspense fallback={<GotdSkeleton />}>
           <PlayGotdSection config={config} />

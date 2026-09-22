@@ -177,6 +177,7 @@ export async function submitMysteryGuess(
               gridStreak: club.gridStreak,
               longestGridStreak: club.longestGridStreak,
               gridSolves: club.gridSolves,
+              penaltyPerfectCategories: 0,
             },
           },
           ownedSlugs,

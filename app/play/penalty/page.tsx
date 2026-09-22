@@ -76,11 +76,37 @@ export default async function PenaltyPage({
   if (!wantRandom && !categoryId) {
     const listed = await listPenaltyCategories();
     if (!listed.ok) redirect("/login");
+
+    const recordRows = await prisma.categoryRecord.findMany({
+      where: {
+        clubId: user.club.id,
+        categoryId: { in: listed.categories.map((c) => c.id) },
+      },
+      select: {
+        categoryId: true,
+        maxPenaltyGoals: true,
+        perfectPenaltyCount: true,
+      },
+    });
+    const records: Record<
+      string,
+      { bestGoals: number; hasPerfect: boolean }
+    > = Object.fromEntries(
+      recordRows.map((r) => [
+        r.categoryId,
+        {
+          bestGoals: r.maxPenaltyGoals,
+          hasPerfect: r.perfectPenaltyCount > 0,
+        },
+      ]),
+    );
+
     return (
       <PenaltyCategoryPicker
         categories={listed.categories}
         questionCount={listed.questionCount}
         staminaCost={1}
+        records={records}
       />
     );
   }

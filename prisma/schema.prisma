@@ -165,6 +165,8 @@ enum MissionObjective {
   PLAY_DUEL
   /// Won a Draft Duel (includes walkover / expire wins).
   WIN_DUEL
+  /// Perfect category-locked Penalty shootout (every kick scored).
+  PERFECT_PENALTY
 }
 
 /// Business-layer facilities (ADR 003) — Club Funds only, not match coins.
@@ -807,7 +809,7 @@ model ClubChallengeRun {
   @@index([clubId])
 }
 
-/// Per-club, per-category Survival high-score ledger.
+/// Per-club, per-category high-score ledger (Survival + Penalty mastery).
 model CategoryRecord {
   id               String   @id @default(cuid())
   clubId           String
@@ -816,12 +818,18 @@ model CategoryRecord {
   category         Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   /// Best correct-answer streak/score in Survival for this category.
   maxSurvivalScore Int      @default(0)
+  /// Best goals scored in a category-locked Penalty shootout.
+  maxPenaltyGoals  Int      @default(0)
+  /// Times the club finished a perfect Penalty in this category.
+  perfectPenaltyCount Int   @default(0)
+  /// Combined Survival + Penalty runs logged against this bank.
   matchesPlayed    Int      @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   @@unique([clubId, categoryId])
   @@index([categoryId, maxSurvivalScore])
+  @@index([categoryId, maxPenaltyGoals])
   @@index([clubId])
 }
 

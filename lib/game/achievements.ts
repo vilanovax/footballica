@@ -23,6 +23,11 @@ export type MatchStats = {
   usedHelp: boolean;
   /** FTUE tutorial run — excluded from "quality" badges so they stay meaningful. */
   isTutorial: boolean;
+  /**
+   * Penalty shootout locked to one category bank (not Random mix).
+   * Gates category-mastery badges so Random perfects stay on Clean Sheet only.
+   */
+  categoryScoped?: boolean;
 };
 
 /** Lifetime player stats AFTER this match has been applied. */
@@ -43,7 +48,12 @@ export type PlayerStats = {
   longestGridStreak: number;
   /** Lifetime days solved (Football Grid). */
   gridSolves: number;
-};
+  /**
+   * Distinct category banks with ≥1 perfect Penalty (post-match).
+   * Used for collection milestone badges.
+   */
+  penaltyPerfectCategories: number;
+}
 
 export type AchievementContext = {
   match: MatchStats;
@@ -118,6 +128,61 @@ export const ACHIEVEMENTS: Achievement[] = [
     unlocksAvatar: "GOALKEEPER_LEGEND",
     check: ({ match }) => !match.isTutorial && match.perfect && match.total >= 3,
   },
+  {
+    slug: "penalty_bank_perfect",
+    category: "skill",
+    tier: "bronze",
+    emoji: "🎯",
+    nameEn: "Bank Perfect",
+    nameFa: "پرفکت دسته",
+    descriptionEn: "Score every kick in a category-locked Penalty.",
+    descriptionFa: "در پنالتی قفل‌شده روی یک دسته، همه را گل کن.",
+    reward: { coins: 35, xp: 10 },
+    check: ({ match }) =>
+      !match.isTutorial &&
+      match.perfect &&
+      match.categoryScoped === true &&
+      match.total >= 3,
+  },
+  {
+    slug: "penalty_banks_3",
+    category: "skill",
+    tier: "silver",
+    emoji: "🏅",
+    nameEn: "Triple Bank",
+    nameFa: "سه‌گانهٔ دسته",
+    descriptionEn: "Perfect Penalty in 3 different categories.",
+    descriptionFa: "در ۳ دستهٔ مختلف پنالتی پرفکت بزن.",
+    reward: { coins: 75, xp: 25 },
+    check: ({ player }) => player.penaltyPerfectCategories >= 3,
+    progress: (p) => toward(p.penaltyPerfectCategories, 3),
+  },
+  {
+    slug: "penalty_banks_5",
+    category: "skill",
+    tier: "silver",
+    emoji: "🏆",
+    nameEn: "Five Banks",
+    nameFa: "پنج‌گانهٔ دسته",
+    descriptionEn: "Perfect Penalty in 5 different categories.",
+    descriptionFa: "در ۵ دستهٔ مختلف پنالتی پرفکت بزن.",
+    reward: { coins: 120, xp: 40 },
+    check: ({ player }) => player.penaltyPerfectCategories >= 5,
+    progress: (p) => toward(p.penaltyPerfectCategories, 5),
+  },
+  {
+    slug: "penalty_banks_10",
+    category: "skill",
+    tier: "gold",
+    emoji: "👑",
+    nameEn: "Category King",
+    nameFa: "سلطان دسته‌ها",
+    descriptionEn: "Perfect Penalty in 10 different categories.",
+    descriptionFa: "در ۱۰ دستهٔ مختلف پنالتی پرفکت بزن.",
+    reward: { coins: 250, xp: 80 },
+    check: ({ player }) => player.penaltyPerfectCategories >= 10,
+    progress: (p) => toward(p.penaltyPerfectCategories, 10),
+  },
 
   // ── Purity (no help) ────────────────────────────────────────────────────────
   {
@@ -131,6 +196,23 @@ export const ACHIEVEMENTS: Achievement[] = [
     descriptionFa: "یک مسابقه را بدون هیچ کمک یا سوپرپاور ببر.",
     reward: { coins: 30, xp: 0 },
     check: ({ match }) => !match.isTutorial && match.won && !match.usedHelp,
+  },
+  {
+    slug: "penalty_pure_bank",
+    category: "purity",
+    tier: "gold",
+    emoji: "💎",
+    nameEn: "Untouchable Bank",
+    nameFa: "دستهٔ دست‌نخورده",
+    descriptionEn: "Perfect a category Penalty without any help.",
+    descriptionFa: "پنالتی یک دسته را بدون هیچ کمک، پرفکت تمام کن.",
+    reward: { coins: 80, xp: 30 },
+    check: ({ match }) =>
+      !match.isTutorial &&
+      match.perfect &&
+      match.categoryScoped === true &&
+      !match.usedHelp &&
+      match.total >= 3,
   },
 
   // ── Dedication (daily streak) ────────────────────────────────────────────────

@@ -33,6 +33,11 @@ const FlagPickerModal = dynamic(() =>
 const MissionDrawer = dynamic(() =>
   import("@/components/profile/MissionDrawer").then((m) => m.MissionDrawer),
 );
+const PerfectedBanksShelf = dynamic(() =>
+  import("@/components/profile/PerfectedBanksShelf").then(
+    (m) => m.PerfectedBanksShelf,
+  ),
+);
 import { calculateLevel, MAX_LEVEL } from "@/lib/game/economy";
 import { playerTitleBand } from "@/lib/game/playerTitle";
 import {
@@ -193,6 +198,7 @@ export function PlayerProfile({
     gridStreak: profile.gridStreak,
     longestGridStreak: profile.longestGridStreak,
     gridSolves: profile.gridSolves,
+    penaltyPerfectCategories: profile.penaltyPerfectCategories,
   };
 
   const winHintKey =
@@ -600,6 +606,8 @@ export function PlayerProfile({
         )}
         </GamePanel>
       </motion.div>
+
+      <PerfectedBanksShelf banks={profile.perfectedBanks} />
 
       {/* ── Trophy cabinet ───────────────────────────────────────────────── */}
       <GamePanel tone="emerald" className="p-3">

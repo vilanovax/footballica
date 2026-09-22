@@ -216,6 +216,7 @@ export function PenaltyMatch({
         totalKicks={questions.length}
         tutorial={tutorial}
         helpersUsed={helpersLog}
+        categoryId={categoryId}
         submissions={log.map((k) => ({
           questionId: k.questionId,
           selectedIndex: k.selectedIndex,

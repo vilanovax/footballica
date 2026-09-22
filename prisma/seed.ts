@@ -212,7 +212,8 @@ async function seedMissionBatches() {
       | "WIN_MATCHES"
       | "PERFECT_COMBO"
       | "PLAY_DUEL"
-      | "WIN_DUEL";
+      | "WIN_DUEL"
+      | "PERFECT_PENALTY";
     targetValue: number;
     rewardCoins: number;
     rewardXp: number;

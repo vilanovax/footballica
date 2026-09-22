@@ -22,6 +22,7 @@ const ITEM_ICON: Record<PlayPlaylistItem["id"], string> = {
   duel_turn: "/icons/target.png",
   live_challenge: "/icons/trophy.png",
   beat_record: "/icons/streak.png",
+  near_perfect: "/icons/target.png",
   quick_penalty: "/icons/nav-ball.png",
   new_duel: "/icons/target.png",
 };
@@ -54,8 +55,25 @@ export function PlayPlaylist({
                 ? t("play.playlist.live_challenge.blurb", {
                     n: toLocaleDigits(liveChallengeCount, locale),
                   })
-                : t(`play.playlist.${item.id}.blurb`);
-          const hot = item.id === "duel_turn" || item.id === "live_challenge";
+                : item.id === "near_perfect" && item.meta
+                  ? t(
+                      item.meta.needsEnergy
+                        ? "play.playlist.near_perfect.blurbEnergy"
+                        : "play.playlist.near_perfect.blurb",
+                      {
+                        name:
+                          locale === "fa"
+                            ? item.meta.nameFa
+                            : item.meta.nameEn,
+                        goals: toLocaleDigits(item.meta.goals, locale),
+                        total: toLocaleDigits(item.meta.total, locale),
+                      },
+                    )
+                  : t(`play.playlist.${item.id}.blurb`);
+          const hot =
+            item.id === "duel_turn" ||
+            item.id === "live_challenge" ||
+            item.id === "near_perfect";
 
           return (
             <Link

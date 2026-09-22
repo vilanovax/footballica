@@ -132,6 +132,8 @@ export function playHrefForObjective(type: MissionObjective): string {
     case "PLAY_DUEL":
     case "WIN_DUEL":
       return "/play/duel";
+    case "PERFECT_PENALTY":
+      return "/play/penalty";
     default:
       return "/play";
   }

@@ -203,6 +203,7 @@ export async function submitGridGuess(input: {
               gridStreak,
               longestGridStreak: streak.longestGridStreak,
               gridSolves,
+              penaltyPerfectCategories: 0,
             },
           },
           ownedSlugs,

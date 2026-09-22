@@ -60,6 +60,11 @@ const OBJECTIVES = [
     tip: "Best consecutive-correct streak in one match.",
   },
   {
+    value: "PERFECT_PENALTY",
+    label: "Perfect Penalty",
+    tip: "Category-locked Penalty with every kick scored.",
+  },
+  {
     value: "PLAY_DUEL",
     label: "Play a duel",
     tip: "Finish Draft Duels (any outcome).",

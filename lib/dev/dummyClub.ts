@@ -74,5 +74,19 @@ export type ProfileSnapshot = {
   gridStreak: number;
   longestGridStreak: number;
   gridSolves: number;
+  /** Distinct category banks with ≥1 perfect Penalty. */
+  penaltyPerfectCategories: number;
+  /** Perfected category-locked Penalty banks (profile showcase shelf). */
+  perfectedBanks: PerfectedBank[];
   badges: { slug: string; unlockedAt: string }[];
+};
+
+/** Category bank the club has Perfected in Penalty. */
+export type PerfectedBank = {
+  categoryId: string;
+  nameEn: string;
+  nameFa: string;
+  icon: string | null;
+  perfectCount: number;
+  bestGoals: number;
 };

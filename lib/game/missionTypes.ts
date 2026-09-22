@@ -8,6 +8,11 @@ export type MissionMatchLog = {
   perfect: boolean;
   combo: number;
   isTutorial: boolean;
+  /**
+   * Penalty locked to one category bank (not Random).
+   * Gates PERFECT_PENALTY so Random clean sheets don't farm the daily.
+   */
+  categoryScoped?: boolean;
   /** Draft Duel finished (any outcome). */
   playedDuel?: boolean;
   /** Draft Duel win (including expire walkover). */

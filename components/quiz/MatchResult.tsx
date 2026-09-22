@@ -35,6 +35,11 @@ type MatchResultProps = {
   helpersUsed?: HelperKey[];
   /** Core mode — logged server-side and drives the win/lose headline copy. */
   mode?: MatchModeOption;
+  /**
+   * Category bank for this Penalty (null = Random). Forwarded to settle so
+   * CategoryRecord mastery updates.
+   */
+  categoryId?: string | null;
   onPlayAgain: () => void;
   onExit: () => void;
 };
@@ -75,6 +80,7 @@ export function MatchResult({
   usedHelp = false,
   helpersUsed = [],
   mode = "penalty",
+  categoryId = null,
   onPlayAgain,
   onExit,
 }: MatchResultProps) {
@@ -107,6 +113,7 @@ export function MatchResult({
           usedHelp: usedHelp || helpersUsed.length > 0,
           helpersUsed,
           mode,
+          categoryId,
         });
         const next: SaveState = result.ok
           ? { status: "saved", data: result }
@@ -126,7 +133,7 @@ export function MatchResult({
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, submissions, tutorial, usedHelp, helpersUsed, mode]);
+  }, [cacheKey, submissions, tutorial, usedHelp, helpersUsed, mode, categoryId]);
 
   function leaveToUpgrade() {
     usePenaltyStore.getState().reset();
@@ -142,6 +149,7 @@ export function MatchResult({
       usedHelp: usedHelp || helpersUsed.length > 0,
       helpersUsed,
       mode,
+      categoryId,
     });
     const next: SaveState = result.ok
       ? { status: "saved", data: result }
@@ -218,6 +226,7 @@ export function MatchResult({
     missions,
     businessBoostGranted,
     businessBoostBonus,
+    penaltyRecord,
   } = save.data;
   const won = confirmed.won;
   const outOfEnergy = balances.stamina <= 0;
@@ -354,11 +363,99 @@ export function MatchResult({
       : t("result.streakStarted")
     : null;
 
+  const trophies: Array<{
+    key: string;
+    emoji: string;
+    title: string;
+    subtitle?: string;
+  }> = [];
+  if (penaltyRecord?.isNewRecord) {
+    trophies.push({
+      key: "record",
+      emoji: "📈",
+      title: t("result.newRecordTrophy"),
+      subtitle: t("result.penaltyNewRecord", {
+        goals: toLocaleDigits(penaltyRecord.bestGoals, locale),
+        total: toLocaleDigits(totalKicks, locale),
+      }),
+    });
+  } else if (
+    penaltyRecord &&
+    penaltyRecord.previousBest > 0 &&
+    !penaltyRecord.isPerfect
+  ) {
+    trophies.push({
+      key: "toBeat",
+      emoji: "🎯",
+      title: t("result.penaltyRecordHintTitle"),
+      subtitle: t("result.penaltyRecordHint", {
+        goals: toLocaleDigits(penaltyRecord.previousBest, locale),
+        total: toLocaleDigits(totalKicks, locale),
+      }),
+    });
+  }
+  if (penaltyRecord?.isPerfect) {
+    trophies.push({
+      key: "perfectBank",
+      emoji: "💎",
+      title: t("result.penaltyPerfectTrophy"),
+      subtitle: t("result.penaltyPerfectHint", {
+        n: toLocaleDigits(penaltyRecord.perfectCategories, locale),
+      }),
+    });
+  }
+
   const upgradeReady = Boolean(milestone?.affordable && !tutorial);
   const missionsReady =
     missions.chestReady ||
     missions.updates.some((u) => u.justCompleted) ||
     missions.missions.some((m) => m.isCompleted && !m.isClaimed);
+
+  // One goal shy of Perfect — this run or sticky PB chase.
+  const nearPerfect =
+    !tutorial &&
+    mode === "penalty" &&
+    totalKicks >= 2 &&
+    (confirmed.goals === totalKicks - 1 ||
+      (penaltyRecord != null &&
+        !penaltyRecord.isPerfect &&
+        penaltyRecord.bestGoals === totalKicks - 1));
+
+  const ctaNotice = tutorial
+    ? t("result.spendCoins")
+    : nearPerfect && outOfEnergy && !upgradeReady
+      ? t("result.nearPerfectOutOfEnergy")
+      : nearPerfect && !outOfEnergy
+        ? t("result.nearPerfectNotice")
+        : outOfEnergy && !upgradeReady
+          ? t("result.outOfEnergy")
+          : missionsReady && !upgradeReady
+            ? t("result.missionsReadyOnClub")
+            : null;
+
+  const primaryCta = upgradeReady
+    ? {
+        label: nearPerfect
+          ? t("result.nearPerfectEnergyCta")
+          : t("result.goUpgrade"),
+        onClick: leaveToUpgrade,
+        variant: "primary" as const,
+      }
+    : outOfEnergy && nearPerfect
+      ? {
+          label: t("result.nearPerfectEnergyCta"),
+          onClick: leaveToUpgrade,
+          variant: "primary" as const,
+        }
+      : hidePlayAgain
+        ? null
+        : {
+            label: nearPerfect
+              ? t("result.nearPerfectCta")
+              : t("result.playAgain"),
+            onClick: onPlayAgain,
+            variant: "primary" as const,
+          };
 
   return (
     <PostMatchSummary
@@ -398,6 +495,7 @@ export function MatchResult({
         badges: unlockedBadges,
         missions,
         streakNote,
+        trophies,
         // Affordable upgrade is the footer CTA — don't repeat it as a card.
         milestone:
           milestone && milestoneBody && !upgradeReady
@@ -410,26 +508,8 @@ export function MatchResult({
             : null,
       }}
       ctas={{
-        notice: tutorial
-          ? t("result.spendCoins")
-          : outOfEnergy && !upgradeReady
-            ? t("result.outOfEnergy")
-            : missionsReady && !upgradeReady
-              ? t("result.missionsReadyOnClub")
-              : null,
-        primary: upgradeReady
-          ? {
-              label: t("result.goUpgrade"),
-              onClick: leaveToUpgrade,
-              variant: "primary",
-            }
-          : hidePlayAgain
-            ? null
-            : {
-                label: t("result.playAgain"),
-                onClick: onPlayAgain,
-                variant: "primary",
-              },
+        notice: ctaNotice,
+        primary: primaryCta,
         secondary: upgradeReady
           ? hidePlayAgain
             ? {
@@ -445,7 +525,7 @@ export function MatchResult({
           : {
               label: t("common.backToClub"),
               onClick: onExit,
-              variant: hidePlayAgain ? "primary" : "accent",
+              variant: hidePlayAgain && !nearPerfect ? "primary" : "accent",
             },
       }}
     />

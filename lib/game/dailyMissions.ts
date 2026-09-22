@@ -57,18 +57,20 @@ const DAILY_TEMPLATE = [
     sortOrder: 1,
   },
   {
-    titleEn: "Win 1 match today",
-    titleFa: "امروز ۱ برد بگیر",
-    objectiveType: "WIN_MATCHES" as const,
+    titleEn: "Perfect a category Penalty",
+    titleFa: "یک پنالتی دسته را پرفکت کن",
+    objectiveType: "PERFECT_PENALTY" as const,
     targetValue: 1,
-    rewardCoins: 25,
-    rewardXp: 10,
+    rewardCoins: 40,
+    rewardXp: 15,
     sortOrder: 2,
   },
 ];
 
 /**
  * Idempotently create today's DAILY batch (Tehran calendar) with 3 missions.
+ * Also migrates the legacy "Win 1 match today" slot → Perfect Penalty when
+ * still using the stock template (admin-customized wins are left alone).
  */
 export async function ensureTodayDailyBatch(db: Db = prisma, now = new Date()) {
   const { dayKey, startsAt, endsAt, batchIndex } = tehranDayWindow(now);
@@ -77,7 +79,33 @@ export async function ensureTodayDailyBatch(db: Db = prisma, now = new Date()) {
     where: { dayKey },
     include: { missions: { orderBy: { sortOrder: "asc" } } },
   });
-  if (existing) return existing;
+  if (existing) {
+    const legacyWin = existing.missions.find(
+      (m) =>
+        m.objectiveType === "WIN_MATCHES" &&
+        m.titleEn === "Win 1 match today",
+    );
+    if (legacyWin) {
+      const tip = DAILY_TEMPLATE[2]!;
+      await db.mission.update({
+        where: { id: legacyWin.id },
+        data: {
+          titleEn: tip.titleEn,
+          titleFa: tip.titleFa,
+          objectiveType: tip.objectiveType,
+          targetValue: tip.targetValue,
+          rewardCoins: tip.rewardCoins,
+          rewardXp: tip.rewardXp,
+        },
+      });
+      const refreshed = await db.missionBatch.findUnique({
+        where: { dayKey },
+        include: { missions: { orderBy: { sortOrder: "asc" } } },
+      });
+      if (refreshed) return refreshed;
+    }
+    return existing;
+  }
 
   try {
     return await db.missionBatch.create({

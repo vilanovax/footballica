@@ -12,6 +12,7 @@ const ObjectiveSchema = z.enum([
   "PERFECT_COMBO",
   "PLAY_DUEL",
   "WIN_DUEL",
+  "PERFECT_PENALTY",
 ]);
 
 const BatchSchema = z.object({

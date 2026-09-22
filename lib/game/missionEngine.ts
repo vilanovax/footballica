@@ -61,6 +61,9 @@ function deltaForObjective(
       return log.playedDuel ? (log.wonDuel ? 1 : 0) : log.won ? 1 : 0;
     case "PERFECT_COMBO":
       return log.combo;
+    case "PERFECT_PENALTY":
+      // Category-locked Perfect only — Random / Quick / duel never count.
+      return log.perfect && log.categoryScoped === true ? 1 : 0;
     case "PLAY_DUEL":
       if (log.duelTurn) return 0;
       return log.playedDuel ? 1 : 0;

@@ -22,6 +22,11 @@ type PenaltyCategoryPickerProps = {
   questionCount: number;
   /** Stamina spent on kickoff (default 1). */
   staminaCost?: number;
+  /**
+   * Personal bests keyed by categoryId — goals + whether they ever
+   * finished a perfect shootout in that bank.
+   */
+  records?: Record<string, { bestGoals: number; hasPerfect: boolean }>;
 };
 
 /**
@@ -31,6 +36,7 @@ export function PenaltyCategoryPicker({
   categories,
   questionCount,
   staminaCost = 1,
+  records = {},
 }: PenaltyCategoryPickerProps) {
   const { t, locale } = useTranslation();
   const router = useRouter();
@@ -183,6 +189,9 @@ export function PenaltyCategoryPicker({
               const name = locale === "fa" ? c.nameFa : c.nameEn;
               const busy = pending && pendingKey === c.id;
               const spot = toLocaleDigits(i + 1, locale);
+              const rec = records[c.id];
+              const best = rec?.bestGoals ?? 0;
+              const hasPerfect = rec?.hasPerfect ?? false;
               return (
                 <motion.button
                   key={c.id}
@@ -212,6 +221,7 @@ export function PenaltyCategoryPicker({
                     className={cn(
                       "flex min-h-[3.75rem] items-center gap-3 bg-arena/90 px-3 py-2.5 text-white shadow-arena-ring",
                       busy && "ring-2 ring-arena-amber",
+                      hasPerfect && "ring-1 ring-emerald-400/50",
                     )}
                   >
                     <span
@@ -227,10 +237,45 @@ export function PenaltyCategoryPicker({
                       <span className="block truncate font-display text-base font-black text-white">
                         {busy ? t("quiz.penaltyPick.starting") : name}
                       </span>
-                      <span className="mt-0.5 block font-display text-[11px] font-bold tabular-nums text-white/55">
-                        {t("quiz.penaltyPick.questions", {
-                          n: toLocaleDigits(c.questionCount, locale),
-                        })}
+                      <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <GameChip className="tabular-nums">
+                          {t("quiz.penaltyPick.questions", {
+                            n: toLocaleDigits(c.questionCount, locale),
+                          })}
+                        </GameChip>
+                        {best > 0 ? (
+                          <GameChip
+                            tone="amber"
+                            className="gap-1 tabular-nums"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src="/icons/trophy.png"
+                              alt=""
+                              draggable={false}
+                              className="h-3 w-3 object-contain"
+                            />
+                            {t("quiz.penaltyPick.yourBest", {
+                              goals: toLocaleDigits(best, locale),
+                              total: toLocaleDigits(questionCount, locale),
+                            })}
+                          </GameChip>
+                        ) : null}
+                        {hasPerfect ? (
+                          <GameChip
+                            tone="emerald"
+                            className="gap-1 tabular-nums"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src="/icons/target.png"
+                              alt=""
+                              draggable={false}
+                              className="h-3 w-3 object-contain"
+                            />
+                            {t("quiz.penaltyPick.perfected")}
+                          </GameChip>
+                        ) : null}
                       </span>
                     </span>
                     <span
