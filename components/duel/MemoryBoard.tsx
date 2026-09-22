@@ -268,8 +268,8 @@ export function MemoryBoard({
         />
         {/* Pitch markings under the grid */}
         <div className="absolute inset-x-[10%] top-[42%] h-px bg-white/12" />
-        <div className="absolute start-1/2 top-[32%] h-[40%] w-px -translate-x-1/2 bg-white/10" />
-        <div className="absolute start-1/2 top-[52%] h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.1)]" />
+        <div className="absolute inset-s-1/2 top-[32%] h-[40%] w-px -translate-x-1/2 bg-white/10" />
+        <div className="absolute inset-s-1/2 top-[52%] h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.1)]" />
         <div
           className={cn(
             "absolute -inset-e-10 top-16 h-36 w-36 rounded-full blur-3xl",
@@ -284,7 +284,7 @@ export function MemoryBoard({
         <GamePanel tone={theme.panelTone} className="px-3 py-2.5">
           <div className="relative flex items-center gap-3">
             {/* Pair progress ring */}
-            <div className="relative h-[4.25rem] w-[4.25rem] shrink-0">
+            <div className="relative h-17 w-17 shrink-0">
               <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
                 <circle
                   cx="40"
@@ -474,11 +474,11 @@ export function MemoryBoard({
               whileTap={
                 state === "down" && !locked ? { scale: 0.93, y: 2 } : undefined
               }
-              className="relative aspect-square min-h-touch min-w-touch [perspective:1000px]"
+              className="relative aspect-square min-h-touch min-w-touch perspective-[1000px]"
               aria-label={faceUp ? cardLabel(card) : t("duel.memory.cardBack")}
             >
               <motion.div
-                className="relative h-full w-full [transform-style:preserve-3d]"
+                className="relative h-full w-full transform-3d"
                 animate={{ rotateY: faceUp ? 180 : 0 }}
                 transition={
                   reduceMotion
@@ -489,7 +489,7 @@ export function MemoryBoard({
                 {/* Back — kit tile */}
                 <div
                   className={cn(
-                    "absolute inset-0 flex flex-col items-center justify-center overflow-hidden rounded-2xl [backface-visibility:hidden]",
+                    "absolute inset-0 flex flex-col items-center justify-center overflow-hidden rounded-2xl backface-hidden",
                     "bg-linear-to-br from-arena-mid via-arena-deep to-arena",
                     selected
                       ? theme.pickRing
@@ -524,7 +524,7 @@ export function MemoryBoard({
                 {/* Front */}
                 <div
                   className={cn(
-                    "absolute inset-0 flex flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl px-1 [backface-visibility:hidden] [transform:rotateY(180deg)]",
+                    "absolute inset-0 flex flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl px-1 backface-hidden transform-[rotateY(180deg)]",
                     matched
                       ? cn(
                           "bg-linear-to-br",
@@ -549,7 +549,7 @@ export function MemoryBoard({
                   {/* Face type chip */}
                   <span
                     className={cn(
-                      "absolute start-1 top-1 rounded px-1 py-px font-display text-[8px] font-black uppercase tracking-wide",
+                      "absolute inset-s-1 top-1 rounded px-1 py-px font-display text-[8px] font-black uppercase tracking-wide",
                       isPlayer
                         ? "bg-sky-400/25 text-sky-100"
                         : "bg-amber-400/25 text-amber-100",
@@ -564,7 +564,7 @@ export function MemoryBoard({
                       src="/icons/done.png"
                       alt=""
                       draggable={false}
-                      className="absolute end-1 top-1 h-3.5 w-3.5 object-contain opacity-90"
+                      className="absolute inset-e-1 top-1 h-3.5 w-3.5 object-contain opacity-90"
                     />
                   ) : null}
 

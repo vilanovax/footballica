@@ -19,13 +19,13 @@ export function MatchPitch({ stadiumLevel }: MatchPitchProps) {
       <div className="game-pinstripe absolute inset-0 opacity-40" />
       <div
         className={[
-          "absolute -end-16 top-0 h-48 w-48 rounded-full blur-3xl",
+          "absolute -inset-e-16 top-0 h-48 w-48 rounded-full blur-3xl",
           scene.glow,
         ].join(" ")}
       />
       <div
         className={[
-          "absolute -start-20 bottom-16 h-40 w-40 rounded-full blur-3xl",
+          "absolute -inset-s-20 bottom-16 h-40 w-40 rounded-full blur-3xl",
           scene.orb,
         ].join(" ")}
       />
@@ -35,7 +35,7 @@ export function MatchPitch({ stadiumLevel }: MatchPitchProps) {
         alt=""
         draggable={false}
         className={[
-          "absolute end-3 top-3 h-14 w-14 object-contain opacity-30",
+          "absolute inset-e-3 top-3 h-14 w-14 object-contain opacity-30",
           scene.art,
         ].join(" ")}
       />

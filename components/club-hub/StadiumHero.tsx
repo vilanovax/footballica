@@ -75,7 +75,7 @@ export function StadiumHero({
         <div
           aria-hidden
           className={[
-            "pointer-events-none absolute -end-10 top-0 h-36 w-36 rounded-full blur-3xl",
+            "pointer-events-none absolute -inset-e-10 top-0 h-36 w-36 rounded-full blur-3xl",
             scene.glow,
           ].join(" ")}
         />
@@ -85,24 +85,24 @@ export function StadiumHero({
           <>
             <motion.div
               aria-hidden
-              className="pointer-events-none absolute start-[12%] top-0 h-[55%] w-10 origin-top bg-linear-to-b from-sky-200/35 to-transparent"
+              className="pointer-events-none absolute inset-s-[12%] top-0 h-[55%] w-10 origin-top bg-linear-to-b from-sky-200/35 to-transparent"
               style={{ transform: "skewX(-12deg)" }}
               animate={reduceMotion ? undefined : { opacity: [0.35, 0.7, 0.35] }}
               transition={{ duration: 2.2, repeat: Infinity }}
             />
             <motion.div
               aria-hidden
-              className="pointer-events-none absolute end-[12%] top-0 h-[55%] w-10 origin-top bg-linear-to-b from-sky-200/35 to-transparent"
+              className="pointer-events-none absolute inset-e-[12%] top-0 h-[55%] w-10 origin-top bg-linear-to-b from-sky-200/35 to-transparent"
               style={{ transform: "skewX(12deg)" }}
               animate={reduceMotion ? undefined : { opacity: [0.35, 0.7, 0.35] }}
               transition={{ duration: 2.2, repeat: Infinity, delay: 0.35 }}
             />
             <span
-              className="absolute start-3 top-2 h-2.5 w-8 rounded-sm bg-sky-100/90 shadow-[0_3px_8px_rgba(186,230,253,0.7)]"
+              className="absolute inset-s-3 top-2 h-2.5 w-8 rounded-sm bg-sky-100/90 shadow-[0_3px_8px_rgba(186,230,253,0.7)]"
               aria-hidden
             />
             <span
-              className="absolute end-3 top-2 h-2.5 w-8 rounded-sm bg-sky-100/90 shadow-[0_3px_8px_rgba(186,230,253,0.7)]"
+              className="absolute inset-e-3 top-2 h-2.5 w-8 rounded-sm bg-sky-100/90 shadow-[0_3px_8px_rgba(186,230,253,0.7)]"
               aria-hidden
             />
           </>
@@ -130,7 +130,7 @@ export function StadiumHero({
 
         {/* Crowd seats — CSS dots in stands, density from fans */}
         <div
-          className="absolute inset-x-[22%] top-[34%] z-[1] flex flex-wrap justify-center gap-1 px-1"
+          className="absolute inset-x-[22%] top-[34%] z-1 flex flex-wrap justify-center gap-1 px-1"
           aria-hidden
         >
           {Array.from({ length: crowdN }).map((_, i) => (
@@ -264,7 +264,7 @@ function FacilityBadge({
     <motion.div
       className={[
         "absolute bottom-[52%] z-10",
-        side === "start" ? "start-2" : "end-2",
+        side === "start" ? "inset-s-2" : "inset-e-2",
         grown ? "" : "opacity-70",
       ].join(" ")}
       animate={pulse ? { scale: [1, 1.08, 1] } : undefined}

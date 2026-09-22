@@ -177,8 +177,8 @@ export function DraftPicker({
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
         <div className="game-sheet-wash absolute inset-x-0 top-0 h-40" />
         <div className="absolute inset-x-0 top-0 h-40 bg-linear-to-b from-orange-500/20 to-transparent" />
-        <div className="absolute -start-16 top-1/3 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
-        <div className="absolute -end-12 bottom-1/4 h-44 w-44 rounded-full bg-emerald-400/12 blur-3xl" />
+        <div className="absolute -inset-s-16 top-1/3 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
+        <div className="absolute -inset-e-12 bottom-1/4 h-44 w-44 rounded-full bg-emerald-400/12 blur-3xl" />
       </div>
 
       <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-4 px-3 pb-4 pt-4">
@@ -247,7 +247,7 @@ export function DraftPicker({
                 <GamePanel
                   tone="rose"
                   className={cn(
-                    "flex min-h-[5.25rem] items-stretch",
+                    "flex min-h-21 items-stretch",
                     specialSelected && "ring-2 ring-arena-amber",
                   )}
                 >
@@ -256,7 +256,7 @@ export function DraftPicker({
                     disabled={busy}
                     whileTap={busy ? undefined : { scale: 0.985 }}
                     onClick={lockSpecial}
-                    className="relative flex min-h-[5.25rem] min-w-0 flex-1 items-center gap-3 p-3.5 text-start disabled:cursor-wait"
+                    className="relative flex min-h-21 min-w-0 flex-1 items-center gap-3 p-3.5 text-start disabled:cursor-wait"
                   >
                     <GameIconWell
                       size="lg"
@@ -355,14 +355,14 @@ export function DraftPicker({
                     <GamePanel
                       tone={theme.panel}
                       className={cn(
-                        "flex min-h-[5.25rem] items-center gap-3 p-3.5",
+                        "flex min-h-21 items-center gap-3 p-3.5",
                         selected && `ring-2 ${theme.ring}`,
                       )}
                     >
                     <div
                       aria-hidden
                       className={[
-                        "pointer-events-none absolute inset-y-0 start-0 w-1.5",
+                        "pointer-events-none absolute inset-y-0 inset-s-0 w-1.5",
                         theme.bar,
                       ].join(" ")}
                     />
