@@ -305,7 +305,7 @@ export function ClubHub({
                 >
                   <HubIcon kind="mission" size="md" priority />
                   {missionReadyCount > 0 && (
-                    <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
+                    <span className="absolute -inset-e-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
                       {toLocaleDigits(Math.min(missionReadyCount, 9), locale)}
                       {missionReadyCount > 9 ? "+" : ""}
                     </span>
@@ -322,7 +322,7 @@ export function ClubHub({
                     whileTap={{ scale: 0.9 }}
                   >
                     <HubIcon kind="news" size="md" />
-                    <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
+                    <span className="absolute -inset-e-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
                       {toLocaleDigits(1, locale)}
                     </span>
                   </motion.button>
@@ -364,6 +364,9 @@ export function ClubHub({
           approxCoins={matchPreview.approxCoins}
           staminaCost={matchPreview.staminaCost}
           coinsPerWin={coinsPerWin}
+          coins={club.coins}
+          staminaRefillCost={staminaRefillCost}
+          onClubUpdate={setClub}
           milestoneInput={milestoneInput}
           lastMatch={lastMatch}
         />
@@ -373,6 +376,9 @@ export function ClubHub({
         <HubDailyMissions
           board={dailyBoard}
           onOpen={() => openMissions("daily")}
+          onBalances={(balances) =>
+            setClub((c) => ({ ...c, coins: balances.coins }))
+          }
         />
       )}
 
@@ -475,7 +481,7 @@ export function ClubHub({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 pb-[calc(theme(spacing.nav)+1rem)] backdrop-blur-sm sm:pb-4"
+            className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 pb-[calc(var(--spacing-nav)+1rem)] backdrop-blur-sm sm:pb-4"
           >
             <FtueCoach
               avatarKey={avatarKey}
@@ -498,7 +504,7 @@ export function ClubHub({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center px-4 pb-[calc(theme(spacing.nav)+1rem)] sm:items-start sm:pt-3 sm:pb-0"
+            className="pointer-events-none fixed inset-0 z-60 flex items-center justify-center px-4 pb-[calc(var(--spacing-nav)+1rem)] sm:items-start sm:pt-3 sm:pb-0"
           >
             <div className="relative w-full max-w-mobile">
               <Confetti />

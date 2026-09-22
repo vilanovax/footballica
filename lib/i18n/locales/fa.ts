@@ -607,6 +607,8 @@ const fa: Dictionary = {
     matchDoorStart: "شروع مسابقه",
     matchDoorEnergy: "هر مسابقه {n} انرژی",
     matchDoorEmpty: "انرژی تمام شد",
+    matchDoorRefill: "شارژ انرژی",
+    matchDoorRefillHint: "با {n} سکه پر کن و دوباره بازی کن",
     matchDoorRegen: "انرژی بعدی {time}",
     matchDoorWins: "{n} برد تا {name}",
     lastMatchWin: "برد قبلی",

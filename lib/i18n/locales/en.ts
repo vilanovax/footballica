@@ -607,6 +607,8 @@ const en = {
     matchDoorStart: "Kick off",
     matchDoorEnergy: "Each match costs {n} energy",
     matchDoorEmpty: "Out of energy",
+    matchDoorRefill: "Refill energy",
+    matchDoorRefillHint: "Fill up for {n} coins and play again",
     matchDoorRegen: "Next energy {time}",
     matchDoorWins: "{n} wins until {name}",
     lastMatchWin: "Last win",
