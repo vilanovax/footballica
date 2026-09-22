@@ -373,13 +373,19 @@ async function playAttackTurn(
   if (round.attackSubmittedAt) return false;
 
   const { duelHasSpecialRound } = await import("@/lib/duel/specialRounds");
-  const { isLiveModeEnabledInDuel } = await import("@/lib/game/liveModes");
+  const { duelEnabledModes } = await import("@/lib/game/liveModes");
   const { getGameConfig } = await import("@/lib/game/gameConfig");
+  const { offeredSpecialForTurn } = await import("@/lib/duel/offeredSpecial");
   const liveConfig = await getGameConfig();
+  const offered = offeredSpecialForTurn(
+    duel.id,
+    roundNumber,
+    duelEnabledModes(liveConfig),
+  );
   const memoryStillOpen =
     !duelHasSpecialRound(duel.rounds.filter((r) => r.id !== round.id)) &&
     round.roundType === "QUIZ" &&
-    isLiveModeEnabledInDuel("memory", liveConfig);
+    offered === "memory";
 
   // Prefer Memory when still available (keeps old R2 flavor if R1 was quiz).
   const playMemory =

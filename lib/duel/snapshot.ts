@@ -24,6 +24,7 @@ import {
   liveModesFromConfig,
 } from "@/lib/game/liveModes";
 import { duelHasSpecialRound } from "@/lib/duel/specialRounds";
+import { offeredSpecialForTurn } from "@/lib/duel/offeredSpecial";
 import { parseStarPathBoard } from "@/lib/duel/starPathTypes";
 import { parseMysteryBoard } from "@/lib/duel/mysteryTypes";
 import { parseGridBoard } from "@/lib/duel/gridTypes";
@@ -97,10 +98,15 @@ export type DuelSnapshot = {
   /** Draft categories for the active attack round (when picking). */
   draftOptions?: DuelCategoryOption[];
   /**
-   * @deprecated Use specialAvailable — kept so older clients still show Memory.
+   * @deprecated Use offeredSpecial — kept so older clients still show Memory.
    */
   memoryAvailable: boolean;
-  /** Admin-enabled specials the attacker may still pick this turn. */
+  /**
+   * Server-picked special for this attack turn (exactly one, or null).
+   * Player chooses Special vs Quiz — not which LiveMode.
+   */
+  offeredSpecial: LiveModeId | null;
+  /** Length 0 or 1 — mirror of offeredSpecial for older DraftPicker props. */
   specialAvailable: LiveModeId[];
   challenger: DuelPartySnapshot | null;
   opponent: DuelPartySnapshot | null;
@@ -206,8 +212,15 @@ export function toDuelSnapshot(
     !questionsLocked &&
     !activeRound.attackSubmittedAt;
 
-  const specialAvailable: LiveModeId[] = canPickSpecial
+  const enabled = canPickSpecial
     ? duelEnabledModes({ ...DEFAULT_GAME_CONFIG, liveModes })
+    : [];
+  const offeredSpecial =
+    canPickSpecial && activeRound
+      ? offeredSpecialForTurn(duel.id, activeRound.roundNumber, enabled)
+      : null;
+  const specialAvailable: LiveModeId[] = offeredSpecial
+    ? [offeredSpecial]
     : [];
 
   return {
@@ -231,7 +244,8 @@ export function toDuelSnapshot(
     youTimedOut,
     youAre,
     draftOptions,
-    memoryAvailable: specialAvailable.includes("memory"),
+    memoryAvailable: offeredSpecial === "memory",
+    offeredSpecial,
     specialAvailable,
     challenger: partyFromUser(duel.challenger),
     opponent: partyFromUser(duel.opponent),

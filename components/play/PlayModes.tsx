@@ -4,11 +4,13 @@ import type { ReactNode } from "react";
 import type { DuelSnapshot } from "@/lib/duel/snapshot";
 import type { DuelInboxItem } from "@/actions/duel/getInboxCount";
 import type { PlayModeEconomy } from "@/lib/play/modeEconomy";
+import { buildPlayPlaylist } from "@/lib/play/buildPlaylist";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { RecentDuelHistory } from "@/components/duel/RecentDuelHistory";
 import { DuelInboxBanner, formatDuelInboxDeadline } from "@/components/duel/DuelInboxBanner";
 import { MatchCard } from "@/components/play/MatchCard";
+import { PlayPlaylist } from "@/components/play/PlayPlaylist";
 import { ResourceIcon } from "@/components/common/ResourceIcon";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GamePanel } from "@/components/ui/game/GamePanel";
@@ -29,9 +31,8 @@ type PlayModesProps = {
 };
 
 /**
- * Match Day Phase 1 — Arena Match Cards, Solo / Online groups,
- * economy chips from GameConfig, 1-click CTA + [i] sheet.
- * Challenges live under Survival lobby (`/play/survival`).
+ * Match Day — Today (GotD) · Recommended playlist · Quick Play · Challenge · Compete.
+ * Economy chips from GameConfig. Challenges live under Survival lobby.
  */
 export function PlayModes({
   recentDuels = [],
@@ -52,6 +53,14 @@ export function PlayModes({
   const duelDeadline = topDuel
     ? formatDuelInboxDeadline(topDuel.turnDeadlineAt, locale, t)
     : null;
+
+  const playlist = buildPlayPlaylist({
+    stamina,
+    inboxCount,
+    duelHref,
+    survivalBest,
+    liveChallengeCount,
+  });
 
   return (
     <section className="flex flex-1 flex-col gap-4 pb-4">
@@ -99,9 +108,15 @@ export function PlayModes({
 
       {gotd}
 
+      <PlayPlaylist
+        items={playlist}
+        liveChallengeCount={liveChallengeCount}
+        inboxCount={inboxCount}
+      />
+
       <div className="hub-deck flex flex-col gap-2">
         <h2 className="px-0.5 font-display text-xs font-black text-arena-muted">
-          {t("play.groupSolo")}
+          {t("play.groupQuickPlay")}
         </h2>
         <MatchCard
           modeId="penalty"
@@ -125,6 +140,12 @@ export function PlayModes({
           economy={modes.quick}
           stamina={stamina}
         />
+      </div>
+
+      <div className="hub-deck flex flex-col gap-2">
+        <h2 className="px-0.5 font-display text-xs font-black text-arena-muted">
+          {t("play.groupChallenge")}
+        </h2>
         <MatchCard
           modeId="survival"
           tone="survival"
@@ -141,7 +162,7 @@ export function PlayModes({
 
       <div className="hub-deck flex flex-col gap-2">
         <h2 className="px-0.5 font-display text-xs font-black text-arena-muted">
-          {t("play.groupOnline")}
+          {t("play.groupCompete")}
         </h2>
         <MatchCard
           modeId="duel"

@@ -21,6 +21,7 @@ export type SelectMemoryResult =
         | "memory_already_used"
         | "special_already_used"
         | "mode_disabled"
+        | "not_offered"
         | "already_locked"
         | "server_error";
     };

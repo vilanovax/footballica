@@ -6,9 +6,11 @@ import { prisma } from "@/lib/prisma";
 import { getGameConfig } from "@/lib/game/gameConfig";
 import type { LiveModeId } from "@/lib/game/economy";
 import {
+  duelEnabledModes,
   isLiveModeEnabledInDuel,
   LIVE_MODE_TO_DUEL_TYPE,
 } from "@/lib/game/liveModes";
+import { offeredSpecialForTurn } from "@/lib/duel/offeredSpecial";
 import { requireUserClub } from "@/lib/player/current";
 import { canUserAct, describeTurn } from "@/lib/duel/fsm";
 import { duelHasSpecialRound } from "@/lib/duel/specialRounds";
@@ -27,6 +29,7 @@ export type LockSpecialError =
   | "not_your_turn"
   | "special_already_used"
   | "mode_disabled"
+  | "not_offered"
   | "already_locked"
   | "server_error";
 
@@ -102,6 +105,16 @@ export async function lockDuelSpecialRound(
         boardJson: round.boardJson,
         roundNumber: round.roundNumber,
       };
+    }
+
+    // Fresh lock: mode must match the server-offered special for this turn
+    const offered = offeredSpecialForTurn(
+      duel.id,
+      round.roundNumber,
+      duelEnabledModes(config),
+    );
+    if (!offered || mode !== offered) {
+      return { ok: false, error: "not_offered" };
     }
 
     if (duelHasSpecialRound(duel.rounds.filter((r) => r.id !== round.id))) {

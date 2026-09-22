@@ -259,7 +259,7 @@ export function DuelSpecialPlay({ duelId, duel, mode, onDone }: Props) {
         <ol className="relative mx-auto w-full max-w-sm space-y-0 px-1">
           <div
             aria-hidden
-            className="absolute start-[1.35rem] top-3 bottom-3 w-0.5 bg-linear-to-b from-amber-400/80 via-amber-400/25 to-white/10"
+            className="absolute inset-s-[1.35rem] top-3 bottom-3 w-0.5 bg-linear-to-b from-amber-400/80 via-amber-400/25 to-white/10"
           />
           {path.map((step, i) => {
             const revealed = i < log.cluesRevealed;
@@ -287,12 +287,12 @@ export function DuelSpecialPlay({ duelId, duel, mode, onDone }: Props) {
                 </span>
                 <div
                   className={[
-                    "min-h-[3.25rem] flex-1 rounded-2xl border px-3.5 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.25)]",
+                    "min-h-13 flex-1 rounded-2xl border px-3.5 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.25)]",
                     revealed
                       ? current
                         ? "border-amber-300/60 bg-linear-to-br from-amber-400/25 to-orange-500/15"
                         : "border-white/15 bg-white/10"
-                      : "border-dashed border-white/10 bg-white/[0.03]",
+                      : "border-dashed border-white/10 bg-white/3",
                   ].join(" ")}
                 >
                   <p
@@ -492,7 +492,7 @@ export function DuelSpecialPlay({ duelId, duel, mode, onDone }: Props) {
                   "grid grid-cols-3 gap-1.5 rounded-2xl p-1.5",
                   i === used
                     ? "bg-white/10 ring-1 ring-white/25"
-                    : "bg-white/[0.03]",
+                    : "bg-white/3",
                 ].join(" ")}
               >
                 {Array.from({ length: 6 }).map((__, j) => (
@@ -625,7 +625,7 @@ export function DuelSpecialPlay({ duelId, duel, mode, onDone }: Props) {
             ))}
             {(board?.rows ?? []).map((r, ri) => (
               <div key={r.id} className="contents">
-                <div className="flex min-h-[4.25rem] items-center rounded-xl bg-white/10 px-1.5 font-display text-[10px] font-extrabold leading-tight text-white/85">
+                <div className="flex min-h-17 items-center rounded-xl bg-white/10 px-1.5 font-display text-[10px] font-extrabold leading-tight text-white/85">
                   {locale === "fa" ? r.labelFa : r.labelEn}
                 </div>
                 {Array.from({ length: GRID_SIZE }, (_, ci) => {
@@ -648,12 +648,12 @@ export function DuelSpecialPlay({ duelId, duel, mode, onDone }: Props) {
                         haptic(HAPTIC.tap);
                       }}
                       className={[
-                        "relative flex min-h-[4.25rem] flex-col items-center justify-center rounded-2xl px-1 py-1.5 text-center transition-colors",
+                        "relative flex min-h-17 flex-col items-center justify-center rounded-2xl px-1 py-1.5 text-center transition-colors",
                         filled
                           ? "bg-linear-to-br from-emerald-500/35 to-teal-600/30 text-white shadow-[0_0_0_1px_rgba(52,211,153,0.5),0_0_18px_rgba(52,211,153,0.25)]"
                           : selected
                             ? "bg-amber-400/25 text-white shadow-[0_0_0_1px_rgba(252,211,77,0.8)] ring-2 ring-amber-300/40"
-                            : "bg-white/[0.04] text-white/50 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] hover:bg-white/10",
+                            : "bg-white/4 text-white/50 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] hover:bg-white/10",
                       ].join(" ")}
                     >
                       {filled ? (
@@ -743,13 +743,13 @@ function SpecialArena({
           }}
         />
         <div className="absolute inset-x-[12%] top-[38%] h-px bg-white/12" />
-        <div className="absolute start-1/2 top-[28%] h-[44%] w-px -translate-x-1/2 bg-white/10" />
-        <div className="absolute start-1/2 top-[48%] h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10" />
+        <div className="absolute inset-s-1/2 top-[28%] h-[44%] w-px -translate-x-1/2 bg-white/10" />
+        <div className="absolute inset-s-1/2 top-[48%] h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-black/55 to-transparent" />
       </div>
 
       <header className="relative z-10 flex items-center gap-3 px-3 pt-3">
-        <div className="relative h-[4.5rem] w-[4.5rem] shrink-0">
+        <div className="relative h-18 w-18 shrink-0">
           <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
             <circle
               cx="40"

@@ -18,7 +18,8 @@ import { drawCategoryQuestions } from "@/lib/duel/draw";
 import { fabricateBotMemoryLog } from "@/lib/duel/memoryBot";
 import { parseMemoryBoard } from "@/lib/duel/memoryBoard";
 import { gradeDuelAnswers } from "@/lib/duel/grade";
-import { isLiveModeEnabledInDuel } from "@/lib/game/liveModes";
+import { duelEnabledModes } from "@/lib/game/liveModes";
+import { offeredSpecialForTurn } from "@/lib/duel/offeredSpecial";
 
 export const BOT_EMAIL = "bot@footballica.local";
 const BOT_CLUB_NAME = "Bot United";
@@ -243,8 +244,13 @@ export async function runBotTurnIfDue(duelId: string, now = new Date()): Promise
     if (round2.roundType !== "QUIZ") return false;
 
     const specialSpent = duelHasSpecialRound(duel.rounds);
-    const canBotMemory =
-      !specialSpent && isLiveModeEnabledInDuel("memory", config);
+    const offered = offeredSpecialForTurn(
+      duel.id,
+      2,
+      duelEnabledModes(config),
+    );
+    // Bot special path only implements Memory today — play quiz otherwise.
+    const canBotMemory = !specialSpent && offered === "memory";
 
     let attackCorrect = 0;
     let opponentCorrect = duel.opponentCorrect;
@@ -375,8 +381,12 @@ export async function runBotTurnIfDue(duelId: string, now = new Date()): Promise
 
   // ── Attack round 2 ────────────────────────────────────────────────────────
   const specialSpent = duelHasSpecialRound(duel.rounds);
-  const canBotMemory =
-    !specialSpent && isLiveModeEnabledInDuel("memory", config);
+  const offered = offeredSpecialForTurn(
+    duel.id,
+    2,
+    duelEnabledModes(config),
+  );
+  const canBotMemory = !specialSpent && offered === "memory";
   let attackCorrect = 0;
 
   const challengerCorrect = duel.challengerCorrect;

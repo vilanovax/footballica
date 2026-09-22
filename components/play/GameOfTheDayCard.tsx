@@ -11,6 +11,7 @@ import {
   gameOfTheDayRotation,
   type GameOfTheDayKind,
 } from "@/lib/grid/gotd";
+import { gotdHabitHeadline } from "@/lib/play/gotdBrand";
 import {
   DEFAULT_GAME_CONFIG,
   type GameConfig,
@@ -121,6 +122,7 @@ function MysteryGotdCard({
       cta={cta}
       done={done}
       rotatesAt={rotatesAt}
+      streak={mystery.mysteryStreak}
     />
   );
 }
@@ -172,6 +174,7 @@ function StarPathGotdCard({
       cta={cta}
       done={done}
       rotatesAt={rotatesAt}
+      streak={starPath.starPathStreak}
     />
   );
 }
@@ -214,6 +217,7 @@ function GridGotdCard({
       cta={cta}
       done={done}
       rotatesAt={rotatesAt}
+      streak={grid.gridStreak}
     />
   );
 }
@@ -263,6 +267,7 @@ function MemoryGotdCard({
       cta={cta}
       done={done}
       rotatesAt={rotatesAt}
+      streak={memory.memoryStreak}
     />
   );
 }
@@ -277,6 +282,7 @@ function GotdShell({
   cta,
   done,
   rotatesAt,
+  streak = 0,
 }: {
   kind: GameOfTheDayKind;
   icon: string;
@@ -287,9 +293,12 @@ function GotdShell({
   cta: string;
   done: boolean;
   rotatesAt: string;
+  streak?: number;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const countdown = useGotdCountdown(rotatesAt);
+  const habit = gotdHabitHeadline(kind, locale);
+  const streakOnLine = !done && streak > 0;
 
   const kindLabel =
     kind === "mystery"
@@ -298,14 +307,21 @@ function GotdShell({
         ? t("play.gotdKindGrid")
         : kind === "memory"
           ? t("play.gotdKindMemory")
-          : t("play.gotdKindStarPath");
+          : kind === "tikiTaka"
+            ? t("play.gotdKindTikiTaka")
+            : t("play.gotdKindStarPath");
 
   if (done) {
     return (
       <div className="flex flex-col gap-2">
-        <h2 className="px-0.5 font-display text-xs font-black text-arena-muted">
-          {t("play.gameOfTheDay")}
-        </h2>
+        <div className="flex items-center justify-between gap-2 px-0.5">
+          <h2 className="font-display text-xs font-black text-arena-muted">
+            {t("play.groupToday")}
+          </h2>
+          <GameChip tone="emerald" className="text-[10px]">
+            {habit}
+          </GameChip>
+        </div>
         <Link
           href={href}
           onClick={() => playSound("click")}
@@ -341,10 +357,10 @@ function GotdShell({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2 px-0.5">
         <h2 className="font-display text-xs font-black text-arena-muted">
-          {t("play.gameOfTheDay")}
+          {t("play.groupToday")}
         </h2>
         <GameChip tone="amber" className="text-[10px]">
-          {kindLabel}
+          {habit}
         </GameChip>
       </div>
 
@@ -363,7 +379,10 @@ function GotdShell({
             iconClassName="h-10 w-10"
           />
           <div className="min-w-0 flex-1">
-            <p className="font-display text-xl font-black leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
+            <p className="font-display text-[11px] font-black uppercase tracking-[0.12em] text-amber-200/90">
+              {kindLabel}
+            </p>
+            <p className="mt-0.5 font-display text-xl font-black leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
               {title}
             </p>
             <p className="mt-1 font-display text-sm font-bold text-white/70">
@@ -372,6 +391,18 @@ function GotdShell({
             <p className="mt-1.5 font-display text-[11px] font-black text-amber-200">
               {meta}
             </p>
+            {streakOnLine && (
+              <p className="mt-1.5 font-display text-xs font-black text-rose-200">
+                {t("play.gotdStreakRisk", {
+                  n: toLocaleDigits(streak, locale),
+                })}
+              </p>
+            )}
+            {!streakOnLine && (
+              <p className="mt-1.5 font-display text-xs font-bold text-white/55">
+                {t("play.gotdFomo")}
+              </p>
+            )}
           </div>
         </div>
 

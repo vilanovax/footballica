@@ -12,11 +12,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { getDuel } from "@/actions/duel/getDuel";
 import { selectDuelCategory } from "@/actions/duel/selectCategory";
-import { selectDuelMemory } from "@/actions/duel/selectMemory";
-import { selectDuelStarPath } from "@/actions/duel/selectStarPath";
-import { selectDuelMystery } from "@/actions/duel/selectMystery";
-import { selectDuelGrid } from "@/actions/duel/selectGrid";
-import { selectDuelTikiTaka } from "@/actions/duel/selectTikiTaka";
+import { selectDuelSpecial } from "@/actions/duel/selectSpecial";
 import { submitDuelAttack } from "@/actions/duel/submitAttack";
 import {
   beginDuelDefend,
@@ -32,7 +28,6 @@ import type {
   MemoryBoardJson,
 } from "@/lib/duel/memoryTypes";
 import type { QuizQuestion } from "@/lib/quiz/types";
-import type { LiveModeId } from "@/lib/game/economy";
 import { isSpecialDuelRoundType } from "@/lib/game/liveModes";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { playSound } from "@/lib/audio/SoundManager";
@@ -495,11 +490,14 @@ export function DuelArena({
     });
   }
 
-  function handlePickMemory() {
+  function handlePickSpecial() {
     startTransition(async () => {
-      const res = await selectDuelMemory(duelId);
+      const res = await selectDuelSpecial(duelId);
       if (!res.ok) {
-        if (res.error === "memory_already_used") {
+        if (
+          res.error === "special_already_used" ||
+          res.error === "not_offered"
+        ) {
           toast.error(t("duel.errMemoryUsed"));
         } else {
           toast.error(t("duel.errGeneric"));
@@ -509,54 +507,21 @@ export function DuelArena({
       }
       setDuel(res.duel);
       setQuestions(null);
-      setMemoryBoard(res.board);
-      setMemoryEndsAt(null);
-      setPhase({ kind: "loading" });
-      playSound("whistle");
-      // beginMemoryTurn effect will stamp the clock + open the board.
-      void refresh();
-    });
-  }
-
-  function handlePickSpecial(mode: LiveModeId) {
-    if (mode === "memory") {
-      handlePickMemory();
-      return;
-    }
-    if (mode === "tikiTaka") {
-      startTransition(async () => {
-        const res = await selectDuelTikiTaka(duelId);
-        if (!res.ok) {
-          toast.error(t("duel.errGeneric"));
-          void refresh();
-          return;
-        }
-        setDuel(res.duel);
-        setQuestions(null);
-        setMemoryBoard(null);
+      if (res.mode === "memory" && res.board) {
+        setMemoryBoard(res.board);
         setMemoryEndsAt(null);
-        setPhase({ kind: "tiki" });
+        setPhase({ kind: "loading" });
         playSound("whistle");
-      });
-      return;
-    }
-    startTransition(async () => {
-      const res =
-        mode === "starPath"
-          ? await selectDuelStarPath(duelId)
-          : mode === "mystery"
-            ? await selectDuelMystery(duelId)
-            : await selectDuelGrid(duelId);
-      if (!res.ok) {
-        toast.error(t("duel.errGeneric"));
         void refresh();
         return;
       }
-      setDuel(res.duel);
-      setQuestions(null);
       setMemoryBoard(null);
       setMemoryEndsAt(null);
-      setPhase({ kind: "special", mode: "attack" });
+      if (res.mode === "tikiTaka") {
+        setPhase({ kind: "tiki" });
+      } else {
+        setPhase({ kind: "special", mode: "attack" });
+      }
       playSound("whistle");
     });
   }
@@ -701,7 +666,6 @@ export function DuelArena({
         specialAvailable={duel.specialAvailable}
         pending={pending}
         onPick={handlePickCategory}
-        onPickMemory={handlePickMemory}
         onPickSpecial={handlePickSpecial}
       />
     );

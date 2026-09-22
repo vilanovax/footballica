@@ -20,6 +20,7 @@ export type SelectMysteryResult =
         | "not_your_turn"
         | "special_already_used"
         | "mode_disabled"
+        | "not_offered"
         | "already_locked"
         | "server_error";
     };

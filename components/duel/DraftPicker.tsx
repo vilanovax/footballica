@@ -19,12 +19,14 @@ type DraftPickerProps = {
   options: DuelCategoryOption[];
   /** @deprecated Prefer specialAvailable */
   memoryAvailable?: boolean;
-  /** Admin-enabled specials still pickable this turn. */
+  /** Server-offered special for this turn (length 0 or 1). */
   specialAvailable?: LiveModeId[];
   pending?: boolean;
   onPick: (categoryId: string) => void;
+  /** @deprecated Prefer onPickSpecial */
   onPickMemory?: () => void;
-  onPickSpecial?: (mode: LiveModeId) => void;
+  /** Lock the server-offered special (no client mode choice). */
+  onPickSpecial?: () => void;
 };
 
 /** Accent themes per quiz slot — Arena dark chrome accents. */
@@ -69,34 +71,36 @@ const WEAPON_THEMES = [
 
 const SPECIAL_META: Record<
   LiveModeId,
-  { pickId: string; icon: string; accent: string }
+  { pickId: string; iconSrc: string; accent: string }
 > = {
   memory: {
     pickId: "__memory__",
-    icon: "🃏",
+    iconSrc: "/icons/memory-ball.png",
     accent: "rose",
   },
   mystery: {
     pickId: "__mystery__",
-    icon: "🕵️",
+    iconSrc: "/icons/mystery.png",
     accent: "sky",
   },
   grid: {
     pickId: "__grid__",
-    icon: "▦",
+    iconSrc: "/icons/guesses.png",
     accent: "emerald",
   },
   starPath: {
     pickId: "__star_path__",
-    icon: "⭐",
+    iconSrc: "/icons/streak.png",
     accent: "amber",
   },
   tikiTaka: {
     pickId: "__tiki_taka__",
-    icon: "⨯",
+    iconSrc: "/icons/target.png",
     accent: "sky",
   },
 };
+
+const SPECIAL_PICK_ID = "__special__";
 
 /**
  * Attack loadout — special formats (once) + quiz banks.
@@ -113,6 +117,9 @@ export function DraftPicker({
   const { t, locale } = useTranslation();
   const reduceMotion = useReducedMotion();
   const [pickedId, setPickedId] = useState<string | null>(null);
+  const [revealedSpecial, setRevealedSpecial] = useState<LiveModeId | null>(
+    null,
+  );
   const [helpMode, setHelpMode] = useState<LiveModeId | null>(null);
   const shots = DEFAULT_GAME_CONFIG.duel.questionsPerAttack;
   const pairs = DEFAULT_GAME_CONFIG.duel.memoryPairs;
@@ -125,6 +132,43 @@ export function DraftPicker({
         : []
   ).filter((mode) => Boolean(SPECIAL_META[mode]));
   const hasSpecials = specials.length > 0;
+  const onlySpecial = specials.length === 1 ? specials[0]! : null;
+  const specialPreviewLabel = onlySpecial
+    ? locale === "fa"
+      ? LIVE_MODE_LABELS[onlySpecial].fa
+      : LIVE_MODE_LABELS[onlySpecial].en
+    : null;
+
+  function lockSpecial() {
+    if (busy || !hasSpecials) return;
+    // Server already chose which LiveMode — client only commits Special vs Quiz.
+    const mode = onlySpecial ?? specials[0];
+    if (!mode) return;
+    setPickedId(SPECIAL_PICK_ID);
+    setRevealedSpecial(mode);
+    haptic(HAPTIC.tap);
+    playSound("click");
+    onPickSpecial?.();
+  }
+
+  const specialSelected = pickedId === SPECIAL_PICK_ID;
+  const shownSpecial = revealedSpecial ?? onlySpecial;
+  const shownSpecialMeta = shownSpecial ? SPECIAL_META[shownSpecial] : null;
+  const specialBlurb =
+    specialSelected && revealedSpecial
+      ? t("duel.draftSpecialRevealed", {
+          name:
+            locale === "fa"
+              ? LIVE_MODE_LABELS[revealedSpecial].fa
+              : LIVE_MODE_LABELS[revealedSpecial].en,
+        })
+      : onlySpecial === "memory"
+        ? t("duel.draftMemoryPairs", {
+            n: toLocaleDigits(pairs, locale),
+          })
+        : onlySpecial === "tikiTaka"
+          ? t("duel.draftTikiBlurb")
+          : t("duel.draftSpecialBlurb");
 
   return (
     <>
@@ -167,7 +211,7 @@ export function DraftPicker({
           </motion.h1>
 
           <p className="mx-auto mt-2 max-w-[20rem] font-body text-[0.95rem] font-bold leading-snug text-white/90">
-            {hasSpecials ? t("duel.draftSubWithMemory") : t("duel.draftSub")}
+            {hasSpecials ? t("duel.draftSubCompressed") : t("duel.draftSub")}
           </p>
 
           <div className="mx-auto mt-3.5 flex max-w-sm flex-wrap items-stretch justify-center gap-2">
@@ -178,7 +222,7 @@ export function DraftPicker({
               })}
             />
             {hasSpecials && (
-              <RulePill icon="✨" label={t("duel.draftRuleMemory")} highlight />
+              <RulePill icon="✨" label={t("duel.draftRuleSpecial")} highlight />
             )}
             <RulePill icon="🔒" label={t("duel.draftRuleLock")} />
           </div>
@@ -191,95 +235,79 @@ export function DraftPicker({
               <p className="px-0.5 text-start font-display text-[11px] font-extrabold uppercase tracking-[0.14em] text-rose-200/90">
                 {t("duel.draftSectionSpecial")}
               </p>
-              {specials.map((mode) => {
-                const meta = SPECIAL_META[mode];
-                const label =
-                  locale === "fa"
-                    ? LIVE_MODE_LABELS[mode].fa
-                    : LIVE_MODE_LABELS[mode].en;
-                const selected = pickedId === meta.pickId;
-                return (
-                  <motion.div
-                    key={mode}
-                    initial={reduceMotion ? false : { y: 14, opacity: 0 }}
-                    animate={{
-                      y: 0,
-                      opacity: busy && !selected ? 0.4 : 1,
-                      scale: selected ? 1.015 : 1,
-                    }}
-                    transition={{ type: "spring", stiffness: 320, damping: 22 }}
+              <motion.div
+                initial={reduceMotion ? false : { y: 14, opacity: 0 }}
+                animate={{
+                  y: 0,
+                  opacity: busy && !specialSelected ? 0.4 : 1,
+                  scale: specialSelected ? 1.015 : 1,
+                }}
+                transition={{ type: "spring", stiffness: 320, damping: 22 }}
+              >
+                <GamePanel
+                  tone="rose"
+                  className={cn(
+                    "flex min-h-[5.25rem] items-stretch",
+                    specialSelected && "ring-2 ring-arena-amber",
+                  )}
+                >
+                  <motion.button
+                    type="button"
+                    disabled={busy}
+                    whileTap={busy ? undefined : { scale: 0.985 }}
+                    onClick={lockSpecial}
+                    className="relative flex min-h-[5.25rem] min-w-0 flex-1 items-center gap-3 p-3.5 text-start disabled:cursor-wait"
                   >
-                    <GamePanel
-                      tone="rose"
-                      className={cn(
-                        "flex min-h-[5.25rem] items-stretch",
-                        selected && "ring-2 ring-arena-amber",
-                      )}
-                    >
-                    <motion.button
-                      type="button"
-                      disabled={busy}
-                      whileTap={busy ? undefined : { scale: 0.985 }}
-                      onClick={() => {
-                        if (busy) return;
-                        setPickedId(meta.pickId);
-                        haptic(HAPTIC.tap);
-                        playSound("click");
-                        if (mode === "memory" && onPickMemory) onPickMemory();
-                        else onPickSpecial?.(mode);
-                      }}
-                      className="relative flex min-h-[5.25rem] min-w-0 flex-1 items-center gap-3 p-3.5 text-start disabled:cursor-wait"
-                    >
-                      <GameIconWell size="lg" className="text-2xl">
-                        {meta.icon}
-                      </GameIconWell>
-                      <span className="relative z-10 min-w-0 flex-1">
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span className="font-display text-lg font-black text-white">
-                            {selected ? t("duel.draftLocking") : label}
-                          </span>
-                          <GameChip tone="amber" className="uppercase tracking-wide">
-                            {t("duel.draftMemoryOnce")}
-                          </GameChip>
+                    <GameIconWell
+                      size="lg"
+                      src={shownSpecialMeta?.iconSrc ?? "/icons/target.png"}
+                      className="h-14 w-14"
+                      iconClassName="h-9 w-9"
+                    />
+                    <span className="relative z-10 min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-display text-lg font-black text-white">
+                          {specialSelected
+                            ? t("duel.draftLocking")
+                            : specialPreviewLabel ??
+                              t("duel.draftSpecialTitle")}
                         </span>
-                        {mode === "memory" && (
-                          <span className="mt-1 block font-body text-sm font-bold text-white/70">
-                            {t("duel.draftMemoryPairs", {
-                              n: toLocaleDigits(pairs, locale),
-                            })}
-                          </span>
-                        )}
-                        {mode === "tikiTaka" && (
-                          <span className="mt-1 block font-body text-sm font-bold text-white/70">
-                            {t("duel.draftTikiBlurb")}
-                          </span>
-                        )}
+                        <GameChip
+                          tone="amber"
+                          className="uppercase tracking-wide"
+                        >
+                          {t("duel.draftMemoryOnce")}
+                        </GameChip>
                       </span>
-                    </motion.button>
+                      <span className="mt-1 block font-body text-sm font-bold text-white/70">
+                        {specialBlurb}
+                      </span>
+                    </span>
+                  </motion.button>
 
-                    <button
-                      type="button"
-                      disabled={busy}
-                      aria-label={t("duel.help.howToPlay")}
-                      onClick={() => {
-                        playSound("click");
-                        haptic(HAPTIC.tap);
-                        setHelpMode(mode);
-                      }}
-                      className="relative flex w-14 shrink-0 items-center justify-center border-s border-white/15 bg-black/25 active:scale-95 disabled:opacity-40"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/icons/help.png"
-                        alt=""
-                        draggable={false}
-                        className="h-9 w-9 object-contain"
-                      />
-                    </button>
-                    </GamePanel>
-                  </motion.div>
-                );
-              })}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-label={t("duel.help.howToPlay")}
+                    onClick={() => {
+                      playSound("click");
+                      haptic(HAPTIC.tap);
+                      setHelpMode(
+                        revealedSpecial ?? onlySpecial ?? specials[0]!,
+                      );
+                    }}
+                    className="relative flex w-14 shrink-0 items-center justify-center border-s border-white/15 bg-black/25 active:scale-95 disabled:opacity-40"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/icons/help.png"
+                      alt=""
+                      draggable={false}
+                      className="h-9 w-9 object-contain"
+                    />
+                  </button>
+                </GamePanel>
+              </motion.div>
             </div>
           )}
 
