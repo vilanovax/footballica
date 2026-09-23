@@ -563,6 +563,9 @@ const en = {
     leaveBody: "The whistle hasn't blown yet. If you leave now, this match won't count and your progress is lost.",
     leaveStay: "Keep Playing",
     leaveConfirm: "Quit Match",
+    leaveLobbyTitle: "Back to Play?",
+    leaveLobbyBody: "You can come back anytime and start again.",
+    leaveLobbyConfirm: "Leave",
     helpers: {
       title: "Helpers",
       hint: "Hint",
