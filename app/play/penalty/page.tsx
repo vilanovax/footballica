@@ -1,34 +1,24 @@
 import { redirect } from "next/navigation";
 import { PenaltyMatch } from "@/components/quiz/PenaltyMatch";
-import { PenaltyCategoryPicker } from "@/components/quiz/PenaltyCategoryPicker";
 import { ExhaustedBlocker } from "@/components/quiz/ExhaustedBlocker";
 import { getClubSnapshot, getCurrentUser } from "@/lib/player/current";
 import { getMatchQuestions } from "@/actions/getMatchQuestions";
-import { listPenaltyCategories } from "@/actions/match/listPenaltyCategories";
 import { getGameConfig } from "@/lib/game/gameConfig";
-import { prisma } from "@/lib/prisma";
 
 // Reads live (regenerated) stamina before allowing a match — never prerender.
 export const dynamic = "force-dynamic";
 
+/**
+ * Solo Penalty — always a random mix from the full published bank.
+ * Category chase lives on Survival; this stays the fast one-tap shootout.
+ */
 export default async function PenaltyPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    tutorial?: string;
-    category?: string;
-    random?: string;
-  }>;
+  searchParams: Promise<{ tutorial?: string }>;
 }) {
-  const { tutorial, category: categoryRaw, random: randomRaw } =
-    await searchParams;
+  const { tutorial } = await searchParams;
   const isTutorial = tutorial === "true";
-  const wantRandom =
-    randomRaw === "1" || randomRaw === "true" || randomRaw === "all";
-  const categoryId =
-    typeof categoryRaw === "string" && categoryRaw.trim()
-      ? categoryRaw.trim()
-      : null;
 
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -50,89 +40,30 @@ export default async function PenaltyPage({
     : config.match.questionCount;
   const benchSize = isTutorial ? 0 : 3;
 
-  // Tutorial skips the lobby — short easy shootout from the full bank.
-  if (isTutorial) {
-    const drawn = await getMatchQuestions({
-      count: matchSize,
-      difficulties: ["easy"],
-    });
-    if (drawn.length === 0) return <EmptyBank />;
-    return (
-      <PenaltyMatch
-        tutorial
-        initialQuestions={drawn}
-        bench={[]}
-        matchSize={matchSize}
-        startingCoins={club.coins}
-        helpers={config.helpers}
-        stadiumLevel={club.stadiumLevel}
-        fansPerGoal={config.rewards.fansPerGoal}
-        categoryId={null}
-      />
-    );
-  }
-
-  // Lobby: pick Random or a category before spending the match feel.
-  if (!wantRandom && !categoryId) {
-    const listed = await listPenaltyCategories();
-    if (!listed.ok) redirect("/login");
-
-    const recordRows = await prisma.categoryRecord.findMany({
-      where: {
-        clubId: user.club.id,
-        categoryId: { in: listed.categories.map((c) => c.id) },
-      },
-      select: {
-        categoryId: true,
-        maxPenaltyGoals: true,
-        perfectPenaltyCount: true,
-      },
-    });
-    const records: Record<
-      string,
-      { bestGoals: number; hasPerfect: boolean }
-    > = Object.fromEntries(
-      recordRows.map((r) => [
-        r.categoryId,
-        {
-          bestGoals: r.maxPenaltyGoals,
-          hasPerfect: r.perfectPenaltyCount > 0,
-        },
-      ]),
-    );
-
-    return (
-      <PenaltyCategoryPicker
-        categories={listed.categories}
-        questionCount={listed.questionCount}
-        staminaCost={1}
-        records={records}
-      />
-    );
-  }
-
-  // Validate category still eligible (active + enough depth).
-  if (categoryId) {
-    const cat = await prisma.category.findFirst({
-      where: { id: categoryId, isActive: true, challengeOnly: false },
-      select: { id: true },
-    });
-    if (!cat) redirect("/play/penalty");
-  }
-
-  const drawn = await getMatchQuestions({
-    count: matchSize + benchSize,
-    categoryId: wantRandom ? null : categoryId,
-  });
+  const drawn = await getMatchQuestions(
+    isTutorial
+      ? { count: matchSize, difficulties: ["easy"] }
+      : { count: matchSize + benchSize },
+  );
   const initialQuestions = drawn.slice(0, matchSize);
   const bench = drawn.slice(matchSize);
 
   if (initialQuestions.length === 0) {
-    return <EmptyBank />;
+    return (
+      <section className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+        <div className="text-6xl" aria-hidden>
+          🗒️
+        </div>
+        <p className="max-w-xs font-display text-lg font-bold text-muted-foreground">
+          No questions available yet. Seed the question bank to play.
+        </p>
+      </section>
+    );
   }
 
   return (
     <PenaltyMatch
+      tutorial={isTutorial}
       initialQuestions={initialQuestions}
       bench={bench}
       matchSize={matchSize}
@@ -140,20 +71,6 @@ export default async function PenaltyPage({
       helpers={config.helpers}
       stadiumLevel={club.stadiumLevel}
       fansPerGoal={config.rewards.fansPerGoal}
-      categoryId={wantRandom ? null : categoryId}
     />
-  );
-}
-
-function EmptyBank() {
-  return (
-    <section className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-      <div className="text-6xl" aria-hidden>
-        🗒️
-      </div>
-      <p className="max-w-xs font-display text-lg font-bold text-muted-foreground">
-        No questions available yet. Seed the question bank to play.
-      </p>
-    </section>
   );
 }

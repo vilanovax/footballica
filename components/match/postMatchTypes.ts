@@ -11,6 +11,11 @@ export type PostMatchOutcome = {
   subtitle?: string;
   hint?: string;
   hintTone?: "positive" | "negative" | "neutral";
+  /**
+   * Chronological shootout spots — true = goal, false = miss.
+   * Renders under the score line when present.
+   */
+  kickResults?: boolean[];
   chips?: Array<{
     key: string;
     label: string;

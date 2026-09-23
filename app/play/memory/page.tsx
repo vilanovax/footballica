@@ -1,18 +1,9 @@
 import { redirect } from "next/navigation";
-import { hasClub } from "@/lib/player/current";
-import { getDailyMemory } from "@/actions/memorygotd/getDailyMemory";
-import { MemoryGotdArena } from "@/components/memorygotd/MemoryGotdArena";
 
-export const dynamic = "force-dynamic";
-
-export default async function MemoryGotdPage() {
-  if (!(await hasClub())) redirect("/onboarding");
-
-  const res = await getDailyMemory();
-  if (!res.ok) {
-    if (res.error === "disabled") redirect("/play");
-    redirect("/login");
-  }
-
-  return <MemoryGotdArena initial={res.memory} />;
+/**
+ * Solo GotD retired from player Play — live formats only appear as Duel specials.
+ * Old bookmarks / shares land on the online compete entry.
+ */
+export default function MemoryGotdRedirect() {
+  redirect("/play/duel");
 }

@@ -1,12 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_COOKIE, isValidAdminToken } from "@/lib/admin/auth";
 import { mergeGameConfig, type GameConfig } from "@/lib/game/economy";
-import { getGameConfig as readGameConfig, GAME_CONFIG_ID } from "@/lib/game/gameConfig";
+import {
+  getGameConfig as readGameConfig,
+  GAME_CONFIG_CACHE_TAG,
+  GAME_CONFIG_ID,
+} from "@/lib/game/gameConfig";
 
 export type ConfigResult =
   | { ok: true; config: GameConfig }
@@ -44,9 +48,11 @@ export async function updateGameConfig(raw: unknown): Promise<ConfigResult> {
     return { ok: false, error: "Could not save config." };
   }
 
+  revalidateTag(GAME_CONFIG_CACHE_TAG, "max");
   revalidatePath("/admin/config");
   revalidatePath("/admin/modes");
   revalidatePath("/admin");
   revalidatePath("/play");
+  revalidatePath("/club");
   return { ok: true, config };
 }

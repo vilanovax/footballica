@@ -5,10 +5,10 @@
 
 import type { GameConfig } from "@/lib/game/economy";
 
-/** Solo Penalty / Quick spend this much stamina (matches resolveMatch). */
+/** Solo Penalty spends this much stamina (matches resolveMatch). */
 export const SOLO_STAMINA_COST = 1;
 
-export type PlayModeId = "penalty" | "quick" | "survival" | "duel";
+export type PlayModeId = "penalty" | "survival" | "duel";
 
 export type PlayModeEconomy = {
   id: PlayModeId;
@@ -38,13 +38,10 @@ export function getPlayModeEconomy(config: GameConfig): Record<
   const r = config.rewards;
   const s = config.survival;
   const penaltyQ = config.match.questionCount;
-  const quickQ = config.match.quickQuestionCount;
 
   // Win path: coinsPerWin + modest goal coins; XP ≈ baseXp * questions + winBonus.
   const penaltyCoins = r.coinsPerWin + Math.round(penaltyQ * 0.5);
-  const quickCoins = r.coinsPerWin + Math.round(quickQ * 0.4);
   const penaltyXp = r.baseXp * penaltyQ + r.winBonus;
-  const quickXp = r.baseXp * quickQ + r.winBonus;
 
   return {
     penalty: {
@@ -53,13 +50,6 @@ export function getPlayModeEconomy(config: GameConfig): Record<
       approxCoins: penaltyCoins,
       approxXp: penaltyXp,
       questionCount: penaltyQ,
-    },
-    quick: {
-      id: "quick",
-      staminaCost: SOLO_STAMINA_COST,
-      approxCoins: quickCoins,
-      approxXp: quickXp,
-      questionCount: quickQ,
     },
     survival: {
       id: "survival",

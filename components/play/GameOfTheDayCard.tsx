@@ -118,7 +118,7 @@ function MysteryGotdCard({
               max: toLocaleDigits(mystery.maxGuesses, locale),
             })
       }
-      href="/play/mystery"
+      href="/play/duel"
       cta={cta}
       done={done}
       rotatesAt={rotatesAt}
@@ -170,7 +170,7 @@ function StarPathGotdCard({
               max: toLocaleDigits(starPath.maxClues, locale),
             })
       }
-      href="/play/star-path"
+      href="/play/duel"
       cta={cta}
       done={done}
       rotatesAt={rotatesAt}
@@ -213,7 +213,7 @@ function GridGotdCard({
       meta={`${toLocaleDigits(grid.filled, locale)}/${toLocaleDigits(grid.totalCells, locale)} · ${t("gotd.streakNow", {
         n: toLocaleDigits(grid.gridStreak, locale),
       })}`}
-      href="/play/grid"
+      href="/play/duel"
       cta={cta}
       done={done}
       rotatesAt={rotatesAt}
@@ -263,7 +263,7 @@ function MemoryGotdCard({
               n: toLocaleDigits(memory.pairCount, locale),
             })
       }
-      href="/play/memory"
+      href="/play/duel"
       cta={cta}
       done={done}
       rotatesAt={rotatesAt}

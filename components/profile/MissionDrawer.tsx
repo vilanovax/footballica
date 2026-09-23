@@ -222,7 +222,7 @@ export function MissionDrawer({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[70] mx-auto flex max-w-mobile flex-col justify-end"
+          className="fixed inset-0 z-70 mx-auto flex max-w-mobile flex-col justify-end"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -232,7 +232,7 @@ export function MissionDrawer({
             type="button"
             aria-label={t("common.close")}
             onClick={close}
-            className="absolute inset-0 bg-black/70 backdrop-blur-[8px]"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
           />
 
           <motion.div
@@ -247,12 +247,12 @@ export function MissionDrawer({
           >
             <div
               aria-hidden
-              className="pointer-events-none absolute -end-16 top-0 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl"
+              className="pointer-events-none absolute -inset-e-16 top-0 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl"
             />
             {anyRewardReady && (
               <div
                 aria-hidden
-                className="pointer-events-none absolute -start-12 top-8 h-32 w-32 rounded-full bg-amber-300/20 blur-3xl"
+                className="pointer-events-none absolute -inset-s-12 top-8 h-32 w-32 rounded-full bg-amber-300/20 blur-3xl"
               />
             )}
 
@@ -389,9 +389,9 @@ export function MissionDrawer({
               )}
 
               <AnimatePresence mode="wait">
-                {tab === "daily" && hasDaily && liveDaily && (
+                {showTabs && tab === "daily" && hasDaily && liveDaily ? (
                   <motion.div
-                    key={`daily-${liveDaily.batchId}-${dailyStats.done}-${liveDaily.missions.map((m) => `${m.progress}-${m.isClaimed}`).join(".")}`}
+                    key={`daily-${liveDaily.batchId}`}
                     initial={{ opacity: 0, x: 12 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -12 }}
@@ -409,10 +409,9 @@ export function MissionDrawer({
                       }}
                     />
                   </motion.div>
-                )}
-                {tab === "campaign" && hasCampaignPane && (
+                ) : showTabs && tab === "campaign" && hasCampaignPane ? (
                   <motion.div
-                    key={`campaign-${liveCampaign?.batchId ?? "none"}-${campaignStats.done}-${chapters.length}`}
+                    key={`campaign-${liveCampaign?.batchId ?? "none"}-${chapters.length}`}
                     initial={{ opacity: 0, x: 12 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -12 }}
@@ -513,19 +512,28 @@ export function MissionDrawer({
                       </div>
                     )}
                   </motion.div>
-                )}
-                {!showTabs && hasDaily && !hasCampaignPane && liveDaily && (
-                  <MissionBoard
-                    key={`daily-solo-${liveDaily.batchId}-${dailyStats.done}`}
-                    initialBoard={liveDaily}
-                    variant="daily"
-                    density="compact"
-                    onDripClaimed={onEconomyUpdate}
-                  />
-                )}
-                {!showTabs && hasCampaignPane && !hasDaily && (
+                ) : !showTabs && hasDaily && !hasCampaignPane && liveDaily ? (
+                  <motion.div
+                    key={`daily-solo-${liveDaily.batchId}`}
+                    initial={{ opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -12 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <MissionBoard
+                      initialBoard={liveDaily}
+                      variant="daily"
+                      density="compact"
+                      onDripClaimed={onEconomyUpdate}
+                    />
+                  </motion.div>
+                ) : !showTabs && hasCampaignPane && !hasDaily ? (
                   <motion.div
                     key={`campaign-solo-${liveCampaign?.batchId ?? "ch"}`}
+                    initial={{ opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -12 }}
+                    transition={{ duration: 0.18 }}
                     className="space-y-3"
                   >
                     {hasCampaign && liveCampaign && (
@@ -557,7 +565,7 @@ export function MissionDrawer({
                       </ul>
                     )}
                   </motion.div>
-                )}
+                ) : null}
               </AnimatePresence>
             </div>
 

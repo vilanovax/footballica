@@ -313,14 +313,6 @@ export function MatchConfigSections({
             onFieldChange={onFieldChange}
             min={1}
           />
-          <NumField
-            label="Quick questions"
-            tip="Rapid-fire Quick Match length (PRD ~5–10)."
-            path="match.quickQuestionCount"
-            draft={draft}
-            onFieldChange={onFieldChange}
-            min={1}
-          />
         </div>
       </Section>
     </div>

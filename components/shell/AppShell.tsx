@@ -73,12 +73,8 @@ export function AppShell({ children }: AppShellProps) {
 /** Active arenas where chrome would break immersion. */
 function isImmersivePlayRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
-  if (pathname.startsWith("/play/mystery")) return true;
-  if (pathname.startsWith("/play/grid")) return true;
-  if (pathname.startsWith("/play/star-path")) return true;
-  if (pathname.startsWith("/play/memory")) return true;
   if (pathname.startsWith("/play/penalty")) return true;
-  if (pathname.startsWith("/play/quick")) return true;
+  if (pathname.startsWith("/play/survival")) return true;
   // Duel detail only — lobby keeps nav.
   if (/^\/play\/duel\/[^/]+/.test(pathname)) return true;
   return false;
@@ -86,11 +82,9 @@ function isImmersivePlayRoute(pathname: string | null | undefined): boolean {
 
 /**
  * Arenas that paint edge-to-edge dark (no shell inset).
- * Mystery is excluded: content is black, but top/bottom shell margins
- * keep the player pitch.
+ * Solo GotD routes redirect to Duel — no full-bleed needed here.
  */
 function isFullBleedMoodRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
-  if (pathname.startsWith("/play/grid")) return true;
   return false;
 }

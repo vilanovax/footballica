@@ -4,33 +4,14 @@
  */
 
 export type PlayPlaylistId =
-  | "duel_turn"
   | "live_challenge"
   | "beat_record"
-  | "near_perfect"
-  | "quick_penalty"
+  | "play_penalty"
   | "new_duel";
-
-export type NearPerfectTip = {
-  categoryId: string;
-  nameEn: string;
-  nameFa: string;
-  bestGoals: number;
-  questionCount: number;
-};
 
 export type PlayPlaylistItem = {
   id: PlayPlaylistId;
   href: string;
-  /** Category tip copy for `near_perfect` (resolved by locale in the UI). */
-  meta?: {
-    nameEn: string;
-    nameFa: string;
-    goals: number;
-    total: number;
-    /** True when chip routes to Club manage (no stamina). */
-    needsEnergy?: boolean;
-  };
 };
 
 export type BuildPlayPlaylistInput = {
@@ -39,17 +20,14 @@ export type BuildPlayPlaylistInput = {
   duelHref: string;
   survivalBest: number;
   liveChallengeCount: number;
-  /** Category-locked Penalty one goal shy of Perfect (null when none). */
-  nearPerfect?: NearPerfectTip | null;
 };
 
 /**
  * Up to 3 recommended actions. Priority:
- * 1) Active duel turn
- * 2) Near-perfect Penalty bank (coin→energy→retry loop)
- * 3) Live challenge / Survival beat-record
- * 4) Quick penalty / new duel
- * GotD stays in its own Today slot — never duplicated here.
+ * 1) Live challenge / Survival beat-record
+ * 2) Penalty (when stamina allows)
+ * 3) New duel (when no inbox — your-turn is owned by DuelInboxBanner)
+ * GotD formats live inside Duel only — never listed here.
  */
 export function buildPlayPlaylist(
   input: BuildPlayPlaylistInput,
@@ -60,31 +38,8 @@ export function buildPlayPlaylist(
     duelHref,
     survivalBest,
     liveChallengeCount,
-    nearPerfect = null,
   } = input;
   const out: PlayPlaylistItem[] = [];
-
-  if (inboxCount > 0) {
-    out.push({ id: "duel_turn", href: duelHref });
-  }
-
-  if (nearPerfect) {
-    const needsEnergy = stamina <= 0;
-    const href = needsEnergy
-      ? "/club?manage=1"
-      : `/play/penalty?category=${encodeURIComponent(nearPerfect.categoryId)}`;
-    out.push({
-      id: "near_perfect",
-      href,
-      meta: {
-        nameEn: nearPerfect.nameEn,
-        nameFa: nearPerfect.nameFa,
-        goals: nearPerfect.bestGoals,
-        total: nearPerfect.questionCount,
-        needsEnergy,
-      },
-    });
-  }
 
   if (liveChallengeCount > 0) {
     out.push({ id: "live_challenge", href: "/play/survival" });
@@ -92,16 +47,15 @@ export function buildPlayPlaylist(
     out.push({ id: "beat_record", href: "/play/survival" });
   }
 
-  // Skip generic quick_penalty when we already pitched a specific bank.
-  if (out.length < 3 && stamina > 0 && !nearPerfect) {
-    out.push({ id: "quick_penalty", href: "/play/penalty" });
+  if (out.length < 3 && stamina > 0) {
+    out.push({ id: "play_penalty", href: "/play/penalty" });
   }
 
-  if (out.length < 2) {
-    out.push({ id: "new_duel", href: "/play/duel" });
+  // New duel only when nothing is waiting — banner owns your-turn CTA.
+  if (out.length < 3 && inboxCount <= 0) {
+    out.push({ id: "new_duel", href: duelHref });
   }
 
-  // Dedupe by id while preserving order
   const seen = new Set<PlayPlaylistId>();
   return out
     .filter((item) => {

@@ -6,7 +6,10 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { CountUp } from "@/components/quiz/CountUp";
 import { BadgeUnlockPopup } from "@/components/quiz/BadgeUnlockPopup";
-import { MissionProgressBanner } from "@/components/missions/MissionProgressBanner";
+import {
+  PostMatchMissionGift,
+  shouldShowPostMatchMissionGift,
+} from "@/components/missions/PostMatchMissionGift";
 import { ResourceIcon } from "@/components/common/ResourceIcon";
 import type { UnlockedBadge } from "@/actions/resolveMatch";
 import type {
@@ -95,12 +98,9 @@ export function PostMatchSummary({
   const trophies = achievements?.trophies ?? [];
   const level = achievements?.level;
   const missions = achievements?.missions;
-  const showMissions =
-    missions && (missions.updates.length > 0 || missions.chestReady);
-  const hasAchievements =
-    Boolean(level) ||
+  const showMissionGift = shouldShowPostMatchMissionGift(missions);
+  const hasExtras =
     trophies.length > 0 ||
-    Boolean(showMissions) ||
     Boolean(achievements?.milestone) ||
     Boolean(achievements?.streakNote) ||
     (badges.length > 0 && badgesDismissed);
@@ -127,16 +127,16 @@ export function PostMatchSummary({
         <div
           aria-hidden
           className={[
-            "pointer-events-none absolute -end-16 top-0 h-48 w-48 rounded-full blur-3xl",
+            "pointer-events-none absolute -inset-e-16 top-0 h-48 w-48 rounded-full blur-3xl",
             won ? "bg-emerald-400/20" : "bg-rose-400/18",
           ].join(" ")}
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -start-20 bottom-24 h-40 w-40 rounded-full bg-amber-400/12 blur-3xl"
+          className="pointer-events-none absolute -inset-s-20 bottom-24 h-40 w-40 rounded-full bg-amber-400/12 blur-3xl"
         />
 
-        <div className="relative flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto overscroll-contain pb-3 pt-1 text-center">
+        <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pb-2.5 pt-1 text-center">
           {/* ── 1. Outcome ─────────────────────────────────────────── */}
           <motion.div
             initial={
@@ -152,7 +152,7 @@ export function PostMatchSummary({
           >
             <GamePanel
               tone={won ? "emerald" : "rose"}
-              className="flex flex-col items-center gap-2.5 px-4 py-5"
+              className="flex flex-col items-center gap-2 px-4 py-4"
             >
               <motion.div
                 animate={
@@ -161,7 +161,7 @@ export function PostMatchSummary({
                     : { rotate: [0, -6, 6, 0], scale: [1, 1.08, 1] }
                 }
                 transition={{ duration: 0.55, delay: 0.05 }}
-                className="flex h-[4.75rem] w-[4.75rem] items-center justify-center"
+                className="flex h-16 w-16 items-center justify-center sm:h-18 sm:w-18"
                 aria-hidden
               >
                 {outcome.heroSrc ? (
@@ -170,7 +170,7 @@ export function PostMatchSummary({
                     src={outcome.heroSrc}
                     alt=""
                     draggable={false}
-                    className="h-[4.75rem] w-[4.75rem] object-contain drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)]"
+                    className="h-full w-full object-contain drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)]"
                   />
                 ) : (
                   <span className="text-5xl">{outcome.emoji}</span>
@@ -185,6 +185,42 @@ export function PostMatchSummary({
                   <p className="mt-1 font-display text-base font-semibold text-white/65">
                     {outcome.subtitle}
                   </p>
+                )}
+                {outcome.kickResults && outcome.kickResults.length > 0 && (
+                  <ul
+                    aria-label={t("result.kickStripAria")}
+                    className="mt-2.5 flex flex-wrap items-center justify-center gap-1.5"
+                  >
+                    {outcome.kickResults.map((scored, i) => (
+                      <li key={i}>
+                        <motion.span
+                          initial={
+                            reduceMotion
+                              ? false
+                              : { opacity: 0, scale: 0.4 }
+                          }
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 420,
+                            damping: 18,
+                            delay: 0.12 + i * 0.04,
+                          }}
+                          className={[
+                            "block h-3 w-3 rounded-full ring-1",
+                            scored
+                              ? "bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.55)] ring-emerald-200/40"
+                              : "bg-rose-400/85 shadow-[0_0_8px_rgba(251,113,133,0.35)] ring-rose-200/25",
+                          ].join(" ")}
+                          title={
+                            scored
+                              ? t("result.kickGoal")
+                              : t("result.kickMiss")
+                          }
+                        />
+                      </li>
+                    ))}
+                  </ul>
                 )}
                 {outcome.hint && (
                   <p
@@ -278,15 +314,12 @@ export function PostMatchSummary({
               delay: sectionMotion.rewards.delay,
             }}
           >
-            <GamePanel tone="amber" className="w-full p-4">
-              <p className="font-display text-[10px] font-bold uppercase tracking-[0.16em] text-amber-200/75">
+            <GamePanel tone="amber" className="w-full p-3.5">
+              <p className="font-display text-base font-black text-amber-100">
                 {t("result.rewardsSection")}
               </p>
-              <p className="mt-0.5 font-display text-base font-black text-white">
-                {t("result.rewardsApplied")}
-              </p>
 
-              <div className="mt-3.5 flex items-end justify-around gap-1">
+              <div className="mt-3 flex items-end justify-around gap-1">
                 {lootRows.length > 0 ? (
                   lootRows.map((r, i) => (
                     <motion.div
@@ -387,8 +420,78 @@ export function PostMatchSummary({
             </GamePanel>
           </motion.div>
 
-          {/* ── 3. Achievements ────────────────────────────────────── */}
-          {hasAchievements && (
+          {/* ── 3. Level (directly under loot) ─────────────────────── */}
+          {level && (
+            <motion.div
+              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 260,
+                damping: 22,
+                delay: 0.16,
+              }}
+            >
+              <GamePanel tone="emerald" className="w-full p-3.5 text-start">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-display text-sm font-bold text-emerald-300">
+                    {t("result.level", {
+                      n: toLocaleDigits(level.level, locale),
+                    })}
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-display text-xs font-semibold tabular-nums text-white/55">
+                    {t("result.xpToNext", {
+                      n: toLocaleDigits(
+                        Math.max(0, level.nextLevelXp - level.currentLevelXp),
+                        locale,
+                      ),
+                    })}
+                    <ResourceIcon kind="xp" size="sm" />
+                  </span>
+                </div>
+                <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-black/40 ring-1 ring-white/10">
+                  <motion.div
+                    className="h-full rounded-full bg-linear-to-r from-emerald-400 to-amber-400"
+                    initial={{
+                      width: `${Math.round(level.barFrom * 100)}%`,
+                    }}
+                    animate={{
+                      width: `${Math.round(level.progress * 100)}%`,
+                    }}
+                    transition={{
+                      duration: 0.85,
+                      delay: 0.35,
+                      ease: "easeOut",
+                    }}
+                  />
+                </div>
+                {level.levelUp && (
+                  <motion.p
+                    initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-2.5 text-center font-display text-sm font-bold text-amber-200"
+                  >
+                    {t("result.levelUp")}
+                    <span className="mx-1.5 text-white/35" aria-hidden>
+                      ·
+                    </span>
+                    <span className="text-white/80">
+                      {t("result.levelUpPerk", {
+                        coins: toLocaleDigits(
+                          level.levelUp.coinReward,
+                          locale,
+                        ),
+                      })}
+                    </span>
+                  </motion.p>
+                )}
+              </GamePanel>
+            </motion.div>
+          )}
+
+          {/* ── 4. Extra achievements (trophies / badges / milestone) ─ */}
+          {hasExtras && (
             <motion.div
               initial={reduceMotion ? false : { opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -400,24 +503,27 @@ export function PostMatchSummary({
               }}
               className="flex w-full flex-col gap-2.5"
             >
-              <div className="flex items-center justify-between gap-2 px-0.5">
-                <p className="font-display text-[11px] font-black text-white/55">
-                  {t("result.achievementsSection")}
-                </p>
-                {achievements?.streakNote && (
-                  <GameChip tone="amber" className="max-w-[70%] gap-1 text-[11px]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/icons/streak.png"
-                      alt=""
-                      aria-hidden
-                      draggable={false}
-                      className="h-4 w-4 object-contain"
-                    />
-                    <span className="truncate">{achievements.streakNote}</span>
-                  </GameChip>
+              {achievements?.streakNote &&
+                !outcome.chips?.some((c) => c.key === "streak") && (
+                  <div className="flex justify-center px-0.5">
+                    <GameChip
+                      tone="amber"
+                      className="max-w-[85%] gap-1 text-[11px]"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/icons/streak.png"
+                        alt=""
+                        aria-hidden
+                        draggable={false}
+                        className="h-4 w-4 object-contain"
+                      />
+                      <span className="truncate">
+                        {achievements.streakNote}
+                      </span>
+                    </GameChip>
+                  </div>
                 )}
-              </div>
 
               {trophies.length > 0 && (
                 <div className="flex flex-col gap-2">
@@ -462,70 +568,6 @@ export function PostMatchSummary({
                     </GameChip>
                   ))}
                 </div>
-              )}
-
-              {showMissions && missions && (
-                <MissionProgressBanner missions={missions} arena />
-              )}
-
-              {level && (
-                <GamePanel tone="emerald" className="w-full p-3.5 text-start">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-display text-sm font-bold text-emerald-300">
-                      {t("result.level", {
-                        n: toLocaleDigits(level.level, locale),
-                      })}
-                    </span>
-                    <span className="inline-flex items-center gap-1 font-display text-xs font-semibold tabular-nums text-white/55">
-                      {t("result.xpToNext", {
-                        n: toLocaleDigits(
-                          Math.max(0, level.nextLevelXp - level.currentLevelXp),
-                          locale,
-                        ),
-                      })}
-                      <ResourceIcon kind="xp" size="sm" />
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-black/40 ring-1 ring-white/10">
-                    <motion.div
-                      className="h-full rounded-full bg-linear-to-r from-emerald-400 to-amber-400"
-                      initial={{
-                        width: `${Math.round(level.barFrom * 100)}%`,
-                      }}
-                      animate={{
-                        width: `${Math.round(level.progress * 100)}%`,
-                      }}
-                      transition={{
-                        duration: 0.85,
-                        delay: 0.35,
-                        ease: "easeOut",
-                      }}
-                    />
-                  </div>
-                  {level.levelUp && (
-                    <motion.p
-                      initial={
-                        reduceMotion ? false : { opacity: 0, y: 6 }
-                      }
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 }}
-                      className="mt-2.5 text-center font-display text-sm font-bold text-amber-200"
-                    >
-                      {t("result.levelUp")}
-                      <span className="mx-1.5 text-white/35" aria-hidden>
-                        ·
-                      </span>
-                      <span className="text-white/80">
-                        {t("result.levelUpPerk", {
-                          coins: toLocaleDigits(
-                            level.levelUp.coinReward,
-                            locale,
-                          ),
-                        })}
-                      </span>
-                    </motion.p>
-                  )}
-                </GamePanel>
               )}
 
               {achievements?.milestone && (
@@ -586,10 +628,15 @@ export function PostMatchSummary({
             </div>
           )}
 
+          {showMissionGift && missions && (
+            <PostMatchMissionGift missions={missions} className="mb-2.5" />
+          )}
+
           {dualCtas ? (
-            <div className="flex flex-col gap-2.5">
-              <CtaButton cta={ctas.primary!} fallbackVariant="primary" />
-              <CtaButton cta={ctas.secondary!} fallbackVariant="accent" />
+            <div className="flex flex-col gap-2">
+              {/* Primary = loop hero (usually Play again / accent). */}
+              <CtaButton cta={ctas.primary!} fallbackVariant="accent" />
+              <CtaButton cta={ctas.secondary!} fallbackVariant="primary" />
             </div>
           ) : (
             <div className="flex flex-col gap-2.5">

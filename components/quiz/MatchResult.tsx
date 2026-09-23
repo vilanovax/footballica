@@ -40,6 +40,8 @@ type MatchResultProps = {
    * CategoryRecord mastery updates.
    */
   categoryId?: string | null;
+  /** Chronological goal/miss spots for the shootout strip. */
+  kickResults?: boolean[];
   onPlayAgain: () => void;
   onExit: () => void;
 };
@@ -81,6 +83,7 @@ export function MatchResult({
   helpersUsed = [],
   mode = "penalty",
   categoryId = null,
+  kickResults,
   onPlayAgain,
   onExit,
 }: MatchResultProps) {
@@ -308,14 +311,7 @@ export function MatchResult({
     }
   }
 
-  const title =
-    mode === "quick"
-      ? won
-        ? t("result.wonQuick")
-        : t("result.lostQuick")
-      : won
-        ? t("result.won")
-        : t("result.lost");
+  const title = won ? t("result.won") : t("result.lost");
 
   const chips = [
     confirmed.combo >= 2
@@ -406,10 +402,6 @@ export function MatchResult({
   }
 
   const upgradeReady = Boolean(milestone?.affordable && !tutorial);
-  const missionsReady =
-    missions.chestReady ||
-    missions.updates.some((u) => u.justCompleted) ||
-    missions.missions.some((m) => m.isCompleted && !m.isClaimed);
 
   // One goal shy of Perfect — this run or sticky PB chase.
   const nearPerfect =
@@ -421,6 +413,8 @@ export function MatchResult({
         !penaltyRecord.isPerfect &&
         penaltyRecord.bestGoals === totalKicks - 1));
 
+  // Mission rewards surface as the animated gift → MissionDrawer — no
+  // duplicate "go to club" banner competing with Play Again.
   const ctaNotice = tutorial
     ? t("result.spendCoins")
     : nearPerfect && outOfEnergy && !upgradeReady
@@ -429,33 +423,63 @@ export function MatchResult({
         ? t("result.nearPerfectNotice")
         : outOfEnergy && !upgradeReady
           ? t("result.outOfEnergy")
-          : missionsReady && !upgradeReady
-            ? t("result.missionsReadyOnClub")
-            : null;
+          : null;
 
-  const primaryCta = upgradeReady
-    ? {
-        label: nearPerfect
-          ? t("result.nearPerfectEnergyCta")
-          : t("result.goUpgrade"),
-        onClick: leaveToUpgrade,
-        variant: "primary" as const,
-      }
-    : outOfEnergy && nearPerfect
+  // Retention-first: Play Again is the yellow hero whenever the loop is open.
+  // Upgrade / energy CTAs only take the primary slot when they unblock play.
+  type Cta = {
+    label: string;
+    onClick: () => void;
+    variant: "primary" | "accent" | "secondary";
+  };
+  let primaryCta: Cta | null = null;
+  let secondaryCta: Cta | null = null;
+
+  if (!hidePlayAgain) {
+    primaryCta = {
+      label: nearPerfect
+        ? t("result.nearPerfectCta")
+        : t("result.playAgain"),
+      onClick: onPlayAgain,
+      variant: "accent",
+    };
+    secondaryCta = upgradeReady
       ? {
-          label: t("result.nearPerfectEnergyCta"),
+          label: t("result.goUpgrade"),
           onClick: leaveToUpgrade,
-          variant: "primary" as const,
+          variant: "primary",
         }
-      : hidePlayAgain
-        ? null
-        : {
-            label: nearPerfect
-              ? t("result.nearPerfectCta")
-              : t("result.playAgain"),
-            onClick: onPlayAgain,
-            variant: "primary" as const,
-          };
+      : {
+          label: t("common.backToClub"),
+          onClick: onExit,
+          variant: "secondary",
+        };
+  } else if (upgradeReady || (outOfEnergy && nearPerfect)) {
+    primaryCta = {
+      label: nearPerfect
+        ? t("result.nearPerfectEnergyCta")
+        : t("result.goUpgrade"),
+      onClick: leaveToUpgrade,
+      variant: "primary",
+    };
+    secondaryCta = {
+      label: t("common.backToClub"),
+      onClick: onExit,
+      variant: "accent",
+    };
+  } else {
+    primaryCta = {
+      label: t("common.backToClub"),
+      onClick: onExit,
+      variant: "primary",
+    };
+  }
+
+  // Prefer live kick log; fall back to a compact goals-then-misses strip.
+  const spots =
+    kickResults && kickResults.length > 0
+      ? kickResults
+      : Array.from({ length: totalKicks }, (_, i) => i < confirmed.goals);
 
   return (
     <PostMatchSummary
@@ -467,6 +491,7 @@ export function MatchResult({
           goals: toLocaleDigits(confirmed.goals, locale),
           total: toLocaleDigits(totalKicks, locale),
         }),
+        kickResults: spots,
         hint: won ? t("result.wonHint") : t("result.lostHint"),
         hintTone: won ? "positive" : "negative",
         chips,
@@ -510,23 +535,7 @@ export function MatchResult({
       ctas={{
         notice: ctaNotice,
         primary: primaryCta,
-        secondary: upgradeReady
-          ? hidePlayAgain
-            ? {
-                label: t("common.backToClub"),
-                onClick: onExit,
-                variant: "accent",
-              }
-            : {
-                label: t("result.playAgain"),
-                onClick: onPlayAgain,
-                variant: "accent",
-              }
-          : {
-              label: t("common.backToClub"),
-              onClick: onExit,
-              variant: hidePlayAgain && !nearPerfect ? "primary" : "accent",
-            },
+        secondary: secondaryCta,
       }}
     />
   );

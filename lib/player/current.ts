@@ -41,12 +41,30 @@ export async function loadActiveNewsBooster(
   };
 }
 
+export type ClubSnapshotOptions = {
+  /**
+   * When false, skip the business settle chain (facilities / bank / sponsor /
+   * staff). Hub first paint uses this; manage sheet refreshes via
+   * `refreshClubBusiness`. Default true for actions + economy paths.
+   */
+  settleBusiness?: boolean;
+};
+
 /** ClubSnapshot including Newspaper Event + business layer preview. */
 export async function toClubSnapshotWithBooster(
   club: Club,
   db: Db = prisma,
   userXp?: number,
+  opts?: ClubSnapshotOptions,
 ): Promise<ClubSnapshot> {
+  const settleBusiness = opts?.settleBusiness !== false;
+
+  // Hub fast path: news only — business settles when the manager opens Manage.
+  if (!settleBusiness) {
+    const activeNewsBooster = await loadActiveNewsBooster(club.id, db);
+    return toClubSnapshot(club, activeNewsBooster);
+  }
+
   // News booster is independent of business settles — overlap them when XP is known.
   if (userXp !== undefined) {
     const [activeNewsBooster, { club: withBusiness, business }] =
@@ -101,7 +119,9 @@ export async function hasClub(): Promise<boolean> {
  * Club snapshot for the session user with stamina regen applied.
  * Returns null when logged out or not yet onboarded.
  */
-export async function getClubSnapshot(): Promise<ClubSnapshot | null> {
+export async function getClubSnapshot(
+  opts?: ClubSnapshotOptions,
+): Promise<ClubSnapshot | null> {
   const user = await getCurrentUser();
   if (!user?.club) return null;
 
@@ -116,7 +136,7 @@ export async function getClubSnapshot(): Promise<ClubSnapshot | null> {
       })
     : user.club;
 
-  return toClubSnapshotWithBooster(club, prisma, user.xp);
+  return toClubSnapshotWithBooster(club, prisma, user.xp, opts);
 }
 
 /** Profile / trophy-room payload for the session user. */

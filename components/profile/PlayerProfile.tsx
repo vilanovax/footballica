@@ -361,7 +361,7 @@ export function PlayerProfile({
               className="h-24 w-24 rounded-full shadow-fantasy ring-2 ring-black/40"
             />
             <div
-              className="absolute -start-1 -top-1 flex h-10 min-w-10 flex-col items-center justify-center rounded-full bg-linear-to-b from-amber-200 via-yellow-400 to-amber-600 px-1 shadow-[0_0_0_2px_rgba(254,243,199,0.9),0_3px_0_0_rgba(120,70,0,0.45)]"
+              className="absolute -inset-s-1 -top-1 flex h-10 min-w-10 flex-col items-center justify-center rounded-full bg-linear-to-b from-amber-200 via-yellow-400 to-amber-600 px-1 shadow-[0_0_0_2px_rgba(254,243,199,0.9),0_3px_0_0_rgba(120,70,0,0.45)]"
               aria-label={t("profile.level", {
                 n: toLocaleDigits(level.level, locale),
               })}
@@ -377,7 +377,7 @@ export function PlayerProfile({
               type="button"
               onClick={() => setPickingFlag(true)}
               aria-label={t("profile.flag.title")}
-              className="absolute -end-1 -bottom-1 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-2xl shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.45),0_3px_0_0_rgba(0,0,0,0.4)] transition-transform active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+              className="absolute -inset-e-1 -bottom-1 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-2xl shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.45),0_3px_0_0_rgba(0,0,0,0.4)] transition-transform active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
             >
               {flag.emoji}
             </button>
@@ -389,13 +389,13 @@ export function PlayerProfile({
             </p>
             <h1
               className={[
-                "line-clamp-2 break-words font-display font-black leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]",
+                "line-clamp-2 wrap-break-word font-display font-black leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]",
                 clubNameClass,
               ].join(" ")}
             >
               {profile.clubName}
             </h1>
-            <p className="mt-0.5 line-clamp-2 break-words font-display text-sm font-bold text-white/70">
+            <p className="mt-0.5 line-clamp-2 wrap-break-word font-display text-sm font-bold text-white/70">
               {profile.stadiumName || t("profile.noStadium")}
             </p>
           </div>
@@ -504,7 +504,7 @@ export function PlayerProfile({
         <GamePanel tone="emerald" className="p-3.5">
         <div
           aria-hidden
-          className="pointer-events-none absolute -end-10 top-0 h-28 w-28 rounded-full bg-amber-300/15 blur-3xl"
+          className="pointer-events-none absolute -inset-e-10 top-0 h-28 w-28 rounded-full bg-amber-300/15 blur-3xl"
         />
 
         <div className="relative mb-3 flex items-center justify-between gap-2">
@@ -613,7 +613,7 @@ export function PlayerProfile({
       <GamePanel tone="emerald" className="p-3">
         <div
           aria-hidden
-          className="pointer-events-none absolute -start-8 top-4 h-24 w-24 rounded-full bg-amber-300/12 blur-3xl"
+          className="pointer-events-none absolute -inset-s-8 top-4 h-24 w-24 rounded-full bg-amber-300/12 blur-3xl"
         />
         <div className="relative mb-3 flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
@@ -674,11 +674,11 @@ export function PlayerProfile({
                 {t("profile.trophyHonors")}
               </p>
               {honorsUseScroll ? (
-                <div className="-mx-0.5 flex gap-2 overflow-x-auto px-0.5 pb-1 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="-mx-0.5 flex gap-2 overflow-x-auto px-0.5 pb-1 snap-x snap-mandatory scrollbar-none [&::-webkit-scrollbar]:hidden">
                   {unlockedHonors.map((a, i) => (
                     <div
                       key={a.slug}
-                      className="w-[31%] min-w-[6.75rem] shrink-0 snap-start"
+                      className="w-[31%] min-w-27 shrink-0 snap-start"
                     >
                       <BadgeTile
                         achievement={a}
@@ -996,7 +996,7 @@ function BadgeTile({
       <GamePanel
         tone={panelTone}
         className={cn(
-          "flex min-h-[8.25rem] w-full flex-col items-center gap-1.5 px-2 py-2.5 text-center",
+          "flex min-h-33 w-full flex-col items-center gap-1.5 px-2 py-2.5 text-center",
           state === "unlocked" && a.tier === "gold" && "ring-1 ring-arena-amber/50",
           state !== "unlocked" && state !== "progress" && "opacity-90",
         )}
@@ -1018,7 +1018,7 @@ function BadgeTile({
             ].join(" ")}
           />
           {state === "locked" && (
-            <span className="absolute end-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-white/30 bg-slate-900 text-[10px] shadow-sm">
+            <span className="absolute inset-e-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-white/30 bg-slate-900 text-[10px] shadow-sm">
               🔒
             </span>
           )}
@@ -1037,7 +1037,7 @@ function BadgeTile({
         >
           {a.emoji}
           {state === "locked" && (
-            <span className="absolute -end-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-white/40 bg-slate-900 text-[9px] leading-none shadow-sm">
+            <span className="absolute -inset-e-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-white/40 bg-slate-900 text-[9px] leading-none shadow-sm">
               🔒
             </span>
           )}
@@ -1170,9 +1170,9 @@ function TrophyInspectSheet({
             className={[
               "relative mx-auto flex items-center justify-center",
               imageUrl
-                ? "h-36 w-full max-w-[14rem]"
+                ? "h-36 w-full max-w-56"
                 : [
-                    "h-[5.5rem] w-[5.5rem] overflow-hidden rounded-full text-5xl",
+                    "h-22 w-22 overflow-hidden rounded-full text-5xl",
                     state === "unlocked"
                       ? `bg-linear-to-b ${TIER_RING[a.tier]} ${TIER_MEDAL_GLOW[a.tier]}`
                       : "bg-white/10 grayscale opacity-70 ring-2 ring-white/15",
@@ -1195,7 +1195,7 @@ function TrophyInspectSheet({
               a.emoji
             )}
             {state === "locked" && (
-              <span className="absolute -end-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/80 text-sm shadow-md">
+              <span className="absolute -inset-e-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/80 text-sm shadow-md">
                 🔒
               </span>
             )}

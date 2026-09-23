@@ -14,16 +14,14 @@ type PlayPlaylistProps = {
   items: PlayPlaylistItem[];
   /** Live challenge count — shown on the challenge chip. */
   liveChallengeCount?: number;
-  /** Inbox duel count — shown on the duel-turn chip. */
+  /** Kept for call-site compatibility; your-turn lives on DuelInboxBanner. */
   inboxCount?: number;
 };
 
 const ITEM_ICON: Record<PlayPlaylistItem["id"], string> = {
-  duel_turn: "/icons/target.png",
   live_challenge: "/icons/trophy.png",
   beat_record: "/icons/streak.png",
-  near_perfect: "/icons/target.png",
-  quick_penalty: "/icons/nav-ball.png",
+  play_penalty: "/icons/nav-ball.png",
   new_duel: "/icons/target.png",
 };
 
@@ -33,7 +31,6 @@ const ITEM_ICON: Record<PlayPlaylistItem["id"], string> = {
 export function PlayPlaylist({
   items,
   liveChallengeCount = 0,
-  inboxCount = 0,
 }: PlayPlaylistProps) {
   const { t, locale } = useTranslation();
   if (items.length === 0) return null;
@@ -47,33 +44,12 @@ export function PlayPlaylist({
         {items.map((item, i) => {
           const title = t(`play.playlist.${item.id}.title`);
           const blurb =
-            item.id === "duel_turn"
-              ? t("play.playlist.duel_turn.blurb", {
-                  n: toLocaleDigits(inboxCount, locale),
+            item.id === "live_challenge"
+              ? t("play.playlist.live_challenge.blurb", {
+                  n: toLocaleDigits(liveChallengeCount, locale),
                 })
-              : item.id === "live_challenge"
-                ? t("play.playlist.live_challenge.blurb", {
-                    n: toLocaleDigits(liveChallengeCount, locale),
-                  })
-                : item.id === "near_perfect" && item.meta
-                  ? t(
-                      item.meta.needsEnergy
-                        ? "play.playlist.near_perfect.blurbEnergy"
-                        : "play.playlist.near_perfect.blurb",
-                      {
-                        name:
-                          locale === "fa"
-                            ? item.meta.nameFa
-                            : item.meta.nameEn,
-                        goals: toLocaleDigits(item.meta.goals, locale),
-                        total: toLocaleDigits(item.meta.total, locale),
-                      },
-                    )
-                  : t(`play.playlist.${item.id}.blurb`);
-          const hot =
-            item.id === "duel_turn" ||
-            item.id === "live_challenge" ||
-            item.id === "near_perfect";
+              : t(`play.playlist.${item.id}.blurb`);
+          const hot = item.id === "live_challenge";
 
           return (
             <Link
@@ -81,7 +57,7 @@ export function PlayPlaylist({
               href={item.href}
               onClick={() => playSound("click")}
               className={cn(
-                "block rounded-[var(--radius-bubble-xl)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring",
+                "block rounded-(--radius-bubble-xl) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring",
               )}
             >
               <GamePanel

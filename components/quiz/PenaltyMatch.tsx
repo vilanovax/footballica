@@ -60,11 +60,6 @@ type PenaltyMatchProps = {
   stadiumLevel: number;
   /** Fans granted for each goal. Tutorial uses a flat payout instead. */
   fansPerGoal: number;
-  /**
-   * Category bank for this match (null = random across all).
-   * Play Again redraws from the same scope.
-   */
-  categoryId?: string | null;
 };
 
 export function PenaltyMatch({
@@ -76,7 +71,6 @@ export function PenaltyMatch({
   helpers,
   stadiumLevel,
   fansPerGoal,
-  categoryId = null,
 }: PenaltyMatchProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -138,7 +132,7 @@ export function PenaltyMatch({
     const draw = await getMatchDraw(
       tutorial
         ? { count: matchSize, bench: 0, difficulties: ["easy"] }
-        : { count: matchSize, bench: 3, categoryId },
+        : { count: matchSize, bench: 3 },
     );
     start(draw.questions.length > 0 ? draw.questions : initialQuestions, {
       bench: draw.bench,
@@ -146,7 +140,7 @@ export function PenaltyMatch({
       helpers: tutorial ? null : helpers,
     });
     playSound("whistle");
-  }, [tutorial, matchSize, start, initialQuestions, helpers, categoryId]);
+  }, [tutorial, matchSize, start, initialQuestions, helpers]);
 
   // Optimistic helper spend: apply the effect instantly (settled server-side in
   // resolveMatch). The dock only fires onUse when the helper is actually usable.
@@ -216,12 +210,12 @@ export function PenaltyMatch({
         totalKicks={questions.length}
         tutorial={tutorial}
         helpersUsed={helpersLog}
-        categoryId={categoryId}
         submissions={log.map((k) => ({
           questionId: k.questionId,
           selectedIndex: k.selectedIndex,
           msRemaining: k.msRemaining,
         }))}
+        kickResults={log.map((k) => k.result === "goal")}
         onPlayAgain={handlePlayAgain}
         onExit={() => {
           reset();

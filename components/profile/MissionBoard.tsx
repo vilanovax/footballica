@@ -134,6 +134,11 @@ export function playHrefForObjective(type: MissionObjective): string {
       return "/play/duel";
     case "PERFECT_PENALTY":
       return "/play/penalty";
+    case "SCORE_GOALS":
+    case "PLAY_MATCHES":
+    case "WIN_MATCHES":
+    case "PERFECT_COMBO":
+      return "/play/penalty";
     default:
       return "/play";
   }
@@ -767,7 +772,7 @@ function ChestButton({
           <span
             aria-hidden
             className={[
-              "absolute -end-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 font-display text-[9px] font-black tabular-nums",
+              "absolute -inset-e-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 font-display text-[9px] font-black tabular-nums",
               dark
                 ? "border border-white/20 bg-black/80 text-white/80"
                 : "bg-foreground text-background",

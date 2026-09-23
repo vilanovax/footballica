@@ -121,5 +121,5 @@ Also:
 - `rerender-defer-reads` on BottomNav / match store action subscriptions (`getState()` in handlers)
 - Hoist `EMPTY_*` default props (`rerender-memo-with-default-value`)
 - `content-visibility` on `LeaderboardList` rows
-- `after()` for non-blocking post-response work
-- Nested Suspense slots inside ClubHub (inbox / today rail) for finer streaming than full-hub fallback
+- ~~`after()` for non-blocking post-response work~~ → applied on `getDuelInbox` job tick
+- ~~Nested Suspense slots inside ClubHub (inbox / today rail)~~ → `ClubHubSecondary` + hub fast snapshot (`settleBusiness: false`)

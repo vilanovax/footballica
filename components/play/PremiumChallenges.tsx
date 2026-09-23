@@ -94,11 +94,11 @@ export function PremiumChallenges({
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="font-display text-xs font-black text-arena-muted">
-        {variant === "lobby"
-          ? t("survival.lobbyChallenges")
-          : t("play.groupChallenges")}
-      </h2>
+      {variant !== "lobby" ? (
+        <h2 className="font-display text-xs font-black text-arena-muted">
+          {t("play.groupChallenges")}
+        </h2>
+      ) : null}
 
       <ul className="flex flex-col gap-3">
         {challenges.map((c) => {

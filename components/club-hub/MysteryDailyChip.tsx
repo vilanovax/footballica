@@ -5,57 +5,42 @@ import { motion } from "framer-motion";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 import { useTranslation } from "@/lib/i18n/useTranslation";
-import { toLocaleDigits } from "@/lib/i18n/format";
 import { playSound } from "@/lib/audio/SoundManager";
 
 type Props = {
-  mysteryStreak: number;
+  /** @deprecated Solo GotD retired — ignored. */
+  mysteryStreak?: number;
 };
 
-/** Hub shortcut to Game of the Day — Arena panel chrome. */
-export function MysteryDailyChip({ mysteryStreak }: Props) {
-  const { t, locale } = useTranslation();
-  const hot = mysteryStreak > 0;
+/** Hub shortcut to online Duel — live formats play as specials there. */
+export function MysteryDailyChip(_props: Props) {
+  const { t } = useTranslation();
 
   return (
     <motion.div whileTap={{ scale: 0.98 }}>
-      <Link href="/play/mystery" onClick={() => playSound("click")}>
+      <Link href="/play/duel" onClick={() => playSound("click")}>
         <GamePanel
-          tone={hot ? "amber" : "emerald"}
+          tone="emerald"
           className="flex w-full items-center gap-3 px-3 py-3"
         >
-          {hot && (
-            <motion.div
-              aria-hidden
-              className="pointer-events-none absolute -end-8 top-0 h-24 w-24 rounded-full bg-amber-300/40 blur-2xl"
-              animate={{ opacity: [0.25, 0.55, 0.25] }}
-              transition={{ duration: 2.4, repeat: Infinity }}
-            />
-          )}
-
           <GameIconWell
             size="lg"
-            amber={hot}
-            src="/icons/mystery.png"
+            src="/icons/trophy.png"
             iconClassName="h-10 w-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
           />
 
           <div className="relative min-w-0 flex-1 text-start">
             <p className="font-display text-sm font-black text-white drop-shadow-sm">
-              {t("play.mysteryTitle")}
+              {t("play.duel")}
             </p>
             <p className="mt-0.5 truncate font-display text-[11px] font-bold text-white/70">
-              {hot
-                ? t("mystery.streak", {
-                    n: toLocaleDigits(mysteryStreak, locale),
-                  })
-                : t("club.mysteryChipIdle")}
+              {t("club.duelChipIdle")}
             </p>
           </div>
 
           <span className="relative inline-flex min-h-9 shrink-0 items-center gap-1 rounded-bubble bg-accent px-2.5 py-1.5 font-display text-[11px] font-black text-accent-foreground shadow-[0_3px_0_0_rgba(0,0,0,0.35)]">
             <span aria-hidden>▶</span>
-            {t("play.mysteryCta")}
+            {t("play.ctaDuel")}
           </span>
         </GamePanel>
       </Link>

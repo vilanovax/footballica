@@ -36,7 +36,7 @@ function GameIcon({
   );
 }
 
-export type MatchCardTone = "penalty" | "quick" | "survival" | "duel";
+export type MatchCardTone = "penalty" | "survival" | "duel";
 
 const TONE: Record<
   MatchCardTone,
@@ -53,12 +53,6 @@ const TONE: Record<
     enterClass: "text-emerald-200",
     iconSrc: "/icons/target.png",
     wash: "bg-emerald-400/20",
-  },
-  quick: {
-    panel: "emerald",
-    enterClass: "text-emerald-200",
-    iconSrc: "/icons/energy.png",
-    wash: "bg-lime-300/20",
   },
   survival: {
     panel: "rose",

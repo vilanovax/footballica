@@ -1,25 +1,24 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getClubSnapshot, getCurrentUser } from "@/lib/player/current";
 import { getMyDuels } from "@/actions/duel/getMyDuels";
 import { getDuelInbox } from "@/actions/duel/getInboxCount";
 import { getGameConfig } from "@/lib/game/gameConfig";
 import { getPlayModeEconomy } from "@/lib/play/modeEconomy";
-import { findNearPerfectPenalty } from "@/lib/play/nearPerfectPenalty";
 import { listRecordChallenges } from "@/actions/challenge/recordChallenge";
 import { prisma } from "@/lib/prisma";
 import { PlayModes } from "@/components/play/PlayModes";
-import { PlayGotdSection } from "@/components/play/PlayGotdSection";
-import { GotdSkeleton } from "@/components/play/GotdSkeleton";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Match Day — Penalty · Survival · Duel.
+ * Live formats (Mystery / Grid / …) surface inside Duel specials, not GotD.
+ */
 export default async function PlayPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!user.club) redirect("/onboarding");
 
-  // Shell data first — GotD streams in under Suspense after this paints.
   const [club, res, inbox, config, bestAgg, challengeRes] = await Promise.all([
     getClubSnapshot(),
     getMyDuels(),
@@ -32,11 +31,6 @@ export default async function PlayPage() {
     listRecordChallenges(),
   ]);
   if (!club) redirect("/onboarding");
-
-  const nearPerfect = await findNearPerfectPenalty({
-    clubId: user.club.id,
-    questionCount: config.match.questionCount,
-  });
 
   const recentDuels = res.ok ? res.history : [];
   const modes = getPlayModeEconomy(config);
@@ -55,12 +49,6 @@ export default async function PlayPage() {
       survivalBest={survivalBest}
       modes={modes}
       liveChallengeCount={liveChallengeCount}
-      nearPerfect={nearPerfect}
-      gotd={
-        <Suspense fallback={<GotdSkeleton />}>
-          <PlayGotdSection config={config} />
-        </Suspense>
-      }
     />
   );
 }

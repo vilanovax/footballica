@@ -319,7 +319,7 @@ export function MissionsPanel({
                 No player data yet.
               </p>
             ) : (
-              <table className="w-full min-w-[420px] text-left text-sm">
+              <table className="w-full min-w-105 text-left text-sm">
                 <thead className="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wide text-slate-700">
                   <tr>
                     <th className="py-2 pr-3">#</th>

@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/player/current";
 import { tickDuelJobs } from "@/lib/duel/jobs";
@@ -41,15 +42,22 @@ function inboxAction(status: DuelStatus): DuelInboxAction {
   return "act";
 }
 
+const INBOX_ACTIVE_WHERE = {
+  status: {
+    notIn: ["COMPLETED", "EXPIRED", "FORFEIT", "MATCHING"] as DuelStatus[],
+  },
+};
+
 /**
  * Active duels where it's the viewer's turn — badge + inbox preview.
+ * Job tick runs after the response so hub/play paint is not blocked.
  */
 export async function getDuelInbox(): Promise<GetDuelInboxResult> {
-  try {
-    await tickDuelJobs(10);
-  } catch {
-    // Non-fatal
-  }
+  after(() => {
+    void tickDuelJobs(10).catch(() => {
+      /* non-fatal opportunistic tick */
+    });
+  });
 
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "not_authenticated" };
@@ -58,9 +66,7 @@ export async function getDuelInbox(): Promise<GetDuelInboxResult> {
     const rows = await prisma.duelMatch.findMany({
       where: {
         turnUserId: user.id,
-        status: {
-          notIn: ["COMPLETED", "EXPIRED", "FORFEIT", "MATCHING"],
-        },
+        ...INBOX_ACTIVE_WHERE,
       },
       include: {
         challenger: {
@@ -103,13 +109,31 @@ export async function getDuelInbox(): Promise<GetDuelInboxResult> {
   }
 }
 
-/** Cheap badge count for Play nav / Club Hub (+ top duel id for deep links). */
+/**
+ * Cheap badge count for BottomNav — no job tick, no rival joins.
+ * Full inbox preview stays on Club / Play loaders via `getDuelInbox`.
+ */
 export async function getDuelInboxCount(): Promise<GetInboxCountResult> {
-  const res = await getDuelInbox();
-  if (!res.ok) return res;
-  return {
-    ok: true,
-    count: res.count,
-    topId: res.items[0]?.id ?? null,
-  };
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "not_authenticated" };
+
+  try {
+    const rows = await prisma.duelMatch.findMany({
+      where: {
+        turnUserId: user.id,
+        ...INBOX_ACTIVE_WHERE,
+      },
+      select: { id: true },
+      orderBy: [{ turnDeadlineAt: "asc" }, { updatedAt: "desc" }],
+      take: 8,
+    });
+    return {
+      ok: true,
+      count: rows.length,
+      topId: rows[0]?.id ?? null,
+    };
+  } catch (err) {
+    console.error("getDuelInboxCount failed", err);
+    return { ok: false, error: "server_error" };
+  }
 }

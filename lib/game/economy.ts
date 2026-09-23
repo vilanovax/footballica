@@ -432,9 +432,9 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   },
   liveModes: {
     memory: { duel: true, gotd: false },
-    mystery: { duel: false, gotd: true },
-    grid: { duel: false, gotd: true },
-    starPath: { duel: false, gotd: true },
+    mystery: { duel: true, gotd: false },
+    grid: { duel: true, gotd: false },
+    starPath: { duel: true, gotd: false },
     tikiTaka: { duel: true, gotd: false },
   },
   businessEconomy: {

@@ -122,9 +122,10 @@ export function BottomNav() {
     };
   }, [pathname, router, t]);
 
-  // Warm the ranks route after first paint — highest-latency tab (DB standings).
+  // Warm hot tabs after first paint — Club (live snapshot) + ranks (DB standings).
   useEffect(() => {
     const id = window.setTimeout(() => {
+      router.prefetch("/club");
       router.prefetch("/leaderboard");
     }, 800);
     return () => window.clearTimeout(id);

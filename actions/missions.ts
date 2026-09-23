@@ -12,17 +12,25 @@ import {
   type EvaluateMissionsResult,
 } from "@/lib/game/missionEngine";
 
-export async function getMyMissions(): Promise<
+export async function getMyMissions(opts?: {
+  /**
+   * Skip duel turn backfill — hub first paint / secondary stream.
+   * MissionDrawer still calls without this flag so sync runs on open.
+   */
+  skipDuelSync?: boolean;
+}): Promise<
   | { ok: true; board: EvaluateMissionsResult; daily: EvaluateMissionsResult }
   | { ok: false; error: "not_authenticated" | "server_error" }
 > {
   const pair = await requireUserClub();
   if (!pair) return { ok: false, error: "not_authenticated" };
   try {
-    // Apply any duel turns that finished before live turn-credit / while AFK.
-    await syncOpenDuelMissionCredits(pair.user.id, prisma);
+    const sync = opts?.skipDuelSync
+      ? Promise.resolve()
+      : syncOpenDuelMissionCredits(pair.user.id, prisma);
     // One-time UX reopen: old engine auto-stamped claim on complete.
-    await reopenLegacyAutoClaims(pair.club.id, prisma);
+    // Overlap with duel sync when both run.
+    await Promise.all([sync, reopenLegacyAutoClaims(pair.club.id, prisma)]);
     const [board, daily] = await Promise.all([
       getMissionBoardState(pair.club.id, prisma, "CAMPAIGN"),
       getMissionBoardState(pair.club.id, prisma, "DAILY"),

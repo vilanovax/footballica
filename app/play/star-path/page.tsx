@@ -1,15 +1,9 @@
 import { redirect } from "next/navigation";
-import { hasClub } from "@/lib/player/current";
-import { getDailyStarPath } from "@/actions/starpath/getDailyStarPath";
-import { StarPathArena } from "@/components/starpath/StarPathArena";
 
-export const dynamic = "force-dynamic";
-
-export default async function StarPathPage() {
-  if (!(await hasClub())) redirect("/onboarding");
-
-  const res = await getDailyStarPath();
-  if (!res.ok) redirect("/login");
-
-  return <StarPathArena initial={res.starPath} />;
+/**
+ * Solo GotD retired from player Play — live formats only appear as Duel specials.
+ * Old bookmarks / shares land on the online compete entry.
+ */
+export default function StarPathGotdRedirect() {
+  redirect("/play/duel");
 }

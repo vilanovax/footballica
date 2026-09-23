@@ -17,7 +17,8 @@ import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { cn } from "@/lib/utils";
 
 type HubTodayRailProps = {
-  mysteryStreak: number;
+  /** @deprecated Solo GotD retired — kept for ClubHub call-site compat. */
+  mysteryStreak?: number;
   campaignSeason: CampaignSeasonView | null;
   activeNews: ActiveNewsBoosterSnapshot | null;
   onOpenCampaign: () => void;
@@ -30,7 +31,6 @@ type HubTodayRailProps = {
  * stays HUD + stadium world (progressive disclosure).
  */
 export function HubTodayRail({
-  mysteryStreak,
   campaignSeason,
   activeNews,
   onOpenCampaign,
@@ -57,7 +57,6 @@ export function HubTodayRail({
           (campaignSeason.missionsDone / campaignSeason.missionsTotal) * 100,
         )
       : 0;
-  const hotMystery = mysteryStreak > 0;
 
   return (
     <section className="flex flex-col gap-1.5">
@@ -68,30 +67,25 @@ export function HubTodayRail({
       <div className="grid grid-cols-2 gap-1.5">
         <motion.div whileTap={{ scale: 0.98 }}>
           <Link
-            href="/play/mystery"
+            href="/play/duel"
             onClick={() => playSound("click")}
             className="block rounded-bubble-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
           >
             <GameTile
-              tone={hotMystery ? "amber" : "emerald"}
+              tone="emerald"
               className="flex min-h-touch w-full items-center gap-2 px-2 py-2"
             >
               <GameIconWell
                 size="sm"
-                amber={hotMystery}
-                src="/icons/mystery.png"
+                src="/icons/trophy.png"
                 className="h-9 w-9"
               />
               <span className="relative min-w-0 flex-1 text-start">
                 <span className="block font-display text-xs font-black leading-tight text-white">
-                  {t("play.mysteryTitle")}
+                  {t("play.duel")}
                 </span>
                 <span className="mt-0.5 block font-display text-[10px] font-bold leading-tight text-white/70">
-                  {hotMystery
-                    ? t("mystery.streak", {
-                        n: toLocaleDigits(mysteryStreak, locale),
-                      })
-                    : t("club.mysteryChipIdle")}
+                  {t("club.duelChipIdle")}
                 </span>
               </span>
             </GameTile>

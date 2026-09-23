@@ -1,12 +1,10 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { ClubHub } from "@/components/club-hub/ClubHub";
-import { RouteLoading } from "@/components/ui/RouteLoading";
+import { ClubHubSecondary } from "@/components/club-hub/ClubHubSecondary";
+import { ClubHubSkeleton } from "@/components/club-hub/ClubHubSkeleton";
+import { HubSecondarySkeleton } from "@/components/club-hub/HubSecondarySkeleton";
 import { getClubSnapshot, getCurrentUser } from "@/lib/player/current";
-import { getDuelInbox } from "@/actions/duel/getInboxCount";
-import { getMyMissions } from "@/actions/missions";
-import { listRecordChallenges } from "@/actions/challenge/recordChallenge";
-import { buildCampaignSeasonView } from "@/lib/game/campaignSeason";
 import { getGameConfig } from "@/lib/game/gameConfig";
 import { getPlayModeEconomy } from "@/lib/play/modeEconomy";
 import { getLastMatchLine } from "@/lib/club/lastMatch";
@@ -15,8 +13,8 @@ import { getLastMatchLine } from "@/lib/club/lastMatch";
 export const dynamic = "force-dynamic";
 
 /**
- * Auth + onboarding gate only. Hub payload streams under Suspense so AppShell
- * can paint the route fallback while snapshot / inbox / missions resolve.
+ * Auth + onboarding gate only. Critical hub (HUD + MatchDoor + stadium)
+ * streams first; missions / today rail / duel inbox nest under Suspense.
  */
 export default async function ClubPage({
   searchParams,
@@ -31,7 +29,7 @@ export default async function ClubPage({
   const openManage = sp.manage === "1";
 
   return (
-    <Suspense fallback={<RouteLoading label="Club Hub" />}>
+    <Suspense fallback={<ClubHubSkeleton />}>
       <ClubHubLoader openManage={openManage} />
     </Suspense>
   );
@@ -39,37 +37,13 @@ export default async function ClubPage({
 
 async function ClubHubLoader({ openManage }: { openManage: boolean }) {
   const user = await getCurrentUser();
-  const [club, inbox, missions, config, challenges, lastMatch] =
-    await Promise.all([
-      getClubSnapshot(),
-      getDuelInbox(),
-      getMyMissions(),
-      getGameConfig(),
-      listRecordChallenges(),
-      user?.club ? getLastMatchLine(user.club.id) : Promise.resolve(null),
-    ]);
+  // Deep-link manage needs settled business; otherwise skip settle for TTFB.
+  const [club, config, lastMatch] = await Promise.all([
+    getClubSnapshot({ settleBusiness: openManage }),
+    getGameConfig(),
+    user?.club ? getLastMatchLine(user.club.id) : Promise.resolve(null),
+  ]);
   if (!club) redirect("/onboarding");
-
-  const duelInboxCount = inbox.ok ? inbox.count : 0;
-  const duelInboxItems = inbox.ok ? inbox.items : [];
-  const missionBoard = missions.ok ? missions.board : null;
-  const dailyBoard = missions.ok ? missions.daily : null;
-  const campaignSeason = buildCampaignSeasonView({
-    board: missionBoard,
-    chapters: challenges.ok
-      ? challenges.challenges.map((c) => ({
-          id: c.id,
-          slug: c.slug,
-          titleEn: c.titleEn,
-          titleFa: c.titleFa,
-          rewardBadgeEmoji: c.rewardBadgeEmoji,
-          targetScore: c.targetScore,
-          unlocked: c.unlocked,
-          conquered: c.conquered,
-          bestScore: c.bestScore,
-        }))
-      : [],
-  });
 
   const penalty = getPlayModeEconomy(config).penalty;
 
@@ -83,13 +57,19 @@ async function ClubHubLoader({ openManage }: { openManage: boolean }) {
         approxCoins: penalty.approxCoins,
         staminaCost: penalty.staminaCost,
       }}
-      duelInboxCount={duelInboxCount}
-      duelInboxItems={duelInboxItems}
-      missionBoard={missionBoard}
-      dailyBoard={dailyBoard}
-      campaignSeason={campaignSeason}
       lastMatch={lastMatch}
       openManage={openManage}
+      needsBusinessSettle={!openManage && club.tutorialStep === 2}
+      secondary={
+        club.tutorialStep === 2 ? (
+          <Suspense fallback={<HubSecondarySkeleton />}>
+            <ClubHubSecondary
+              mysteryStreak={club.mysteryStreak}
+              activeNews={club.activeNewsBooster}
+            />
+          </Suspense>
+        ) : null
+      }
     />
   );
 }

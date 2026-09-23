@@ -1,17 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
 import type { DuelSnapshot } from "@/lib/duel/snapshot";
 import type { DuelInboxItem } from "@/actions/duel/getInboxCount";
 import type { PlayModeEconomy } from "@/lib/play/modeEconomy";
-import {
-  buildPlayPlaylist,
-  type NearPerfectTip,
-} from "@/lib/play/buildPlaylist";
+import { buildPlayPlaylist } from "@/lib/play/buildPlaylist";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { RecentDuelHistory } from "@/components/duel/RecentDuelHistory";
-import { DuelInboxBanner, formatDuelInboxDeadline } from "@/components/duel/DuelInboxBanner";
+import { DuelInboxBanner } from "@/components/duel/DuelInboxBanner";
 import { MatchCard } from "@/components/play/MatchCard";
 import { PlayPlaylist } from "@/components/play/PlayPlaylist";
 import { ResourceIcon } from "@/components/common/ResourceIcon";
@@ -26,18 +22,15 @@ type PlayModesProps = {
   stamina: number;
   maxStamina: number;
   survivalBest: number;
-  modes: Record<"penalty" | "quick" | "survival" | "duel", PlayModeEconomy>;
+  modes: Record<"penalty" | "survival" | "duel", PlayModeEconomy>;
   /** Live premium challenges — chip on Survival card only. */
   liveChallengeCount?: number;
-  /** Category Penalty one goal shy of Perfect — Recommended chip. */
-  nearPerfect?: NearPerfectTip | null;
-  /** Streamed Game of the Day slot (Suspense from the server page). */
-  gotd?: ReactNode;
 };
 
 /**
- * Match Day — Today (GotD) · Recommended playlist · Quick Play · Challenge · Compete.
- * Economy chips from GameConfig. Challenges live under Survival lobby.
+ * Match Day — three core modes only:
+ * Penalty (anytime solo) · Survival (records / hooks) · Duel (online specials).
+ * Your-turn urgency lives in DuelInboxBanner; GotD formats play inside Duel.
  */
 export function PlayModes({
   recentDuels = [],
@@ -48,25 +41,16 @@ export function PlayModes({
   survivalBest,
   modes,
   liveChallengeCount = 0,
-  nearPerfect = null,
-  gotd = null,
 }: PlayModesProps) {
   const { t, locale } = useTranslation();
   const staminaLow = stamina <= 1;
-  const hasDuelTurn = inboxCount > 0;
-  const topDuel = inboxItems[0];
-  const duelHref = topDuel ? `/play/duel/${topDuel.id}` : "/play/duel";
-  const duelDeadline = topDuel
-    ? formatDuelInboxDeadline(topDuel.turnDeadlineAt, locale, t)
-    : null;
 
   const playlist = buildPlayPlaylist({
     stamina,
     inboxCount,
-    duelHref,
+    duelHref: "/play/duel",
     survivalBest,
     liveChallengeCount,
-    nearPerfect,
   });
 
   return (
@@ -86,7 +70,8 @@ export function PlayModes({
             tone={staminaLow ? "default" : "emerald"}
             className={cn(
               "gap-1.5 px-2.5 py-1.5 text-base tabular-nums",
-              staminaLow && "text-rose-300 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.5)]",
+              staminaLow &&
+                "text-rose-300 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.5)]",
             )}
             aria-label={t("play.staminaBalance", {
               cur: toLocaleDigits(stamina, locale),
@@ -107,13 +92,12 @@ export function PlayModes({
         </div>
       </GamePanel>
 
+      {/* Your-turn pulse — only surface for duel inbox urgency. */}
       <DuelInboxBanner
         count={inboxCount}
         items={inboxItems}
         variant="play"
       />
-
-      {gotd}
 
       <PlayPlaylist
         items={playlist}
@@ -135,16 +119,6 @@ export function PlayModes({
           })}
           ctaLabel={t("play.ctaStart")}
           economy={modes.penalty}
-          stamina={stamina}
-        />
-        <MatchCard
-          modeId="quick"
-          tone="quick"
-          href="/play/quick"
-          title={t("play.quick")}
-          blurb={t("play.quickDesc")}
-          ctaLabel={t("play.ctaStart")}
-          economy={modes.quick}
           stamina={stamina}
         />
       </div>
@@ -174,27 +148,12 @@ export function PlayModes({
         <MatchCard
           modeId="duel"
           tone="duel"
-          href={duelHref}
+          href="/play/duel"
           title={t("play.duel")}
-          blurb={
-            hasDuelTurn
-              ? t("play.duelContinueBlurb", {
-                  n: toLocaleDigits(inboxCount, locale),
-                  name: topDuel?.rivalName ?? "…",
-                  action:
-                    topDuel?.action === "defend"
-                      ? t("duel.inboxActionDefend")
-                      : topDuel?.action === "attack"
-                        ? t("duel.inboxActionAttack")
-                        : t("duel.inboxActionAct"),
-                })
-              : t("play.duelDesc")
-          }
+          blurb={t("play.duelDesc")}
           ctaLabel={t("play.ctaDuel")}
           economy={modes.duel}
           stamina={stamina}
-          presentation={hasDuelTurn ? "status" : "play"}
-          deadline={hasDuelTurn ? duelDeadline : null}
         />
       </div>
 

@@ -29,7 +29,7 @@ export function PerfectedBanksShelf({ banks }: PerfectedBanksShelfProps) {
     <GamePanel tone="amber" className="p-3">
       <div
         aria-hidden
-        className="pointer-events-none absolute -end-10 top-0 h-28 w-28 rounded-full bg-emerald-300/15 blur-3xl"
+        className="pointer-events-none absolute -inset-e-10 top-0 h-28 w-28 rounded-full bg-emerald-300/15 blur-3xl"
       />
       <div className="relative mb-2.5 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
@@ -70,7 +70,7 @@ export function PerfectedBanksShelf({ banks }: PerfectedBanksShelfProps) {
           </GameCta>
         </div>
       ) : (
-        <ul className="-mx-0.5 flex gap-2 overflow-x-auto px-0.5 pb-0.5 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="-mx-0.5 flex gap-2 overflow-x-auto px-0.5 pb-0.5 snap-x snap-mandatory scrollbar-none [&::-webkit-scrollbar]:hidden">
           {banks.map((b, i) => {
             const name = locale === "fa" ? b.nameFa : b.nameEn;
             return (
@@ -84,17 +84,17 @@ export function PerfectedBanksShelf({ banks }: PerfectedBanksShelfProps) {
                   stiffness: 280,
                   damping: 22,
                 }}
-                className="w-[42%] min-w-[8.5rem] shrink-0 snap-start"
+                className="w-[42%] min-w-34 shrink-0 snap-start"
               >
                 <Link
-                  href={`/play/penalty?category=${encodeURIComponent(b.categoryId)}`}
+                  href="/play/penalty"
                   onClick={() => {
                     playSound("click");
                     haptic(HAPTIC.tap);
                   }}
                   className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
                 >
-                  <GameTile className="flex min-h-[4.5rem] flex-col items-center gap-1.5 bg-arena/90 px-2.5 py-2.5 text-center text-white shadow-arena-ring ring-1 ring-emerald-400/40">
+                  <GameTile className="flex min-h-18 flex-col items-center gap-1.5 bg-arena/90 px-2.5 py-2.5 text-center text-white shadow-arena-ring ring-1 ring-emerald-400/40">
                     <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.12)]">
                       {b.icon || "⚽"}
                     </span>

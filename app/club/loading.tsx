@@ -1,5 +1,5 @@
-import { RouteLoading } from "@/components/ui/RouteLoading";
+import { ClubHubSkeleton } from "@/components/club-hub/ClubHubSkeleton";
 
 export default function ClubLoading() {
-  return <RouteLoading label="Club Hub" />;
+  return <ClubHubSkeleton />;
 }
