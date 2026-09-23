@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import type { CampaignSeasonView } from "@/lib/game/campaignSeason";
 import { campaignSeasonActive } from "@/lib/game/campaignSeason";
 import { useTranslation } from "@/lib/i18n/useTranslation";
@@ -25,6 +24,7 @@ type Props = {
 
 /**
  * Hub Campaign pillar — quest-path panel with glanceable progress.
+ * CSS transitions only — keeps Framer off the Club secondary stream.
  */
 export function CampaignSeasonCard({
   season,
@@ -55,22 +55,17 @@ export function CampaignSeasonCard({
       : t("campaign.seasonLive");
 
   return (
-    <motion.section
-      layout
-      initial={embedded || chaptersOnly ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 280, damping: 26 }}
+    <section
+      className={cn(!(embedded || chaptersOnly) && "animate-status-sheet-rise")}
     >
       <GamePanel
         tone={rewardReady ? "amber" : "emerald"}
         className={cn(chaptersOnly && "shadow-arena-ring")}
       >
       {rewardReady && !chaptersOnly && (
-        <motion.div
+        <div
           aria-hidden
-          className="pointer-events-none absolute -end-10 top-0 h-28 w-28 rounded-full bg-amber-300/30 blur-2xl"
-          animate={{ opacity: [0.25, 0.5, 0.25] }}
-          transition={{ duration: 2.4, repeat: Infinity }}
+          className="pointer-events-none absolute -end-10 top-0 h-28 w-28 animate-pulse rounded-full bg-amber-300/30 blur-2xl"
         />
       )}
 
@@ -151,11 +146,9 @@ export function CampaignSeasonCard({
                 </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-black/45 ring-1 ring-white/12">
-                <motion.div
-                  className="relative h-full rounded-full bg-linear-to-r from-emerald-400 to-lime-300"
-                  initial={false}
-                  animate={{ width: `${missionPct}%` }}
-                  transition={{ type: "spring", stiffness: 220, damping: 28 }}
+                <div
+                  className="relative h-full rounded-full bg-linear-to-r from-emerald-400 to-lime-300 transition-[width] duration-300 ease-out"
+                  style={{ width: `${missionPct}%` }}
                 />
               </div>
             </div>
@@ -213,10 +206,9 @@ export function CampaignSeasonCard({
             </p>
             <div className="flex items-center gap-2">
               <div className="h-1.5 w-16 overflow-hidden rounded-full bg-black/45 ring-1 ring-white/10">
-                <motion.div
-                  className="h-full rounded-full bg-linear-to-r from-emerald-400 to-lime-300"
-                  initial={false}
-                  animate={{ width: `${chapterPct}%` }}
+                <div
+                  className="h-full rounded-full bg-linear-to-r from-emerald-400 to-lime-300 transition-[width] duration-300 ease-out"
+                  style={{ width: `${chapterPct}%` }}
                 />
               </div>
               <p className="font-display text-[11px] font-black tabular-nums text-white/75">
@@ -321,6 +313,6 @@ export function CampaignSeasonCard({
         </div>
       )}
       </GamePanel>
-    </motion.section>
+    </section>
   );
 }

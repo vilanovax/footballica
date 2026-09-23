@@ -1,7 +1,6 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import {
   BOOSTER_DURATION_HOURS,
   formatMultiplier,
@@ -14,6 +13,7 @@ import { GamePanel } from "@/components/ui/game/GamePanel";
 import { GameTile } from "@/components/ui/game/GameTile";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
+import { cn } from "@/lib/utils";
 
 type ActiveNewsChipProps = {
   booster: ActiveNewsBoosterSnapshot;
@@ -34,6 +34,28 @@ function formatRemaining(ms: number): string {
     return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function BoosterBar({
+  remainPct,
+  urgent,
+}: {
+  remainPct: number;
+  urgent: boolean;
+}) {
+  return (
+    <div className="relative h-1 bg-black/45" aria-hidden>
+      <div
+        className={cn(
+          "h-full transition-[width] duration-300 ease-out",
+          urgent
+            ? "bg-linear-to-r from-rose-400 to-orange-300"
+            : "bg-linear-to-r from-emerald-400 to-lime-300",
+        )}
+        style={{ width: `${remainPct}%` }}
+      />
+    </div>
+  );
 }
 
 /** Live Newspaper Event timer — cooldown-style booster HUD chip. */
@@ -79,120 +101,89 @@ export function ActiveNewsChip({
     : booster.headline;
 
   return (
-    <motion.button
+    <button
       type="button"
-      initial={{ opacity: 0, y: -6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
-      whileTap={{ scale: 0.97 }}
       onClick={onOpen}
       aria-label={t("club.dailyNews")}
-      className="w-full rounded-bubble-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+      className="w-full rounded-bubble-xl animate-status-sheet-rise transition-transform active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
     >
       {compact ? (
-      <GameTile
-        tone={isCoin ? "amber" : "sky"}
-        className="min-h-11 overflow-hidden"
-      >
-        <div className="relative flex items-center justify-between gap-2 px-2.5 py-2">
-          <span className="flex min-w-0 items-center gap-2 font-display text-xs font-black text-white">
-            <GameIconWell
-              size="sm"
-              amber={isCoin}
-              src={isCoin ? "/icons/coin.png" : "/icons/fans.png"}
-              className="h-8 w-8"
-            />
-            <span className="min-w-0 truncate">
-              {t(labelKey, { mult: formatMultiplier(booster.multiplier) })}
-            </span>
-          </span>
-          <GameChip
-            tone={urgent ? "default" : "amber"}
-            className={[
-              "shrink-0 min-w-14 px-2 py-1 text-center text-[10px] tabular-nums",
-              urgent ? "bg-rose-500/30 text-rose-100" : "",
-            ].join(" ")}
-          >
-            {remainingMs === null
-              ? "\u2014"
-              : toLocaleDigits(formatRemaining(liveMs), locale)}
-          </GameChip>
-        </div>
-        <div className="relative h-1 bg-black/45" aria-hidden>
-          <motion.div
-            className={[
-              "h-full",
-              urgent
-                ? "bg-linear-to-r from-rose-400 to-orange-300"
-                : "bg-linear-to-r from-emerald-400 to-lime-300",
-            ].join(" ")}
-            initial={false}
-            animate={{ width: `${remainPct}%` }}
-            transition={{ duration: 0.4 }}
-          />
-        </div>
-      </GameTile>
-      ) : (
-      <GamePanel
-        tone={isCoin ? "amber" : "sky"}
-        className="min-h-12"
-      >
-        <div
-          className={[
-            "relative flex items-center justify-between gap-2",
-            compact ? "px-2.5 py-2" : "px-3 py-2.5",
-          ].join(" ")}
+        <GameTile
+          tone={isCoin ? "amber" : "sky"}
+          className="min-h-11 overflow-hidden"
         >
-          <span className="flex min-w-0 items-center gap-2 font-display font-black text-white">
-            <GameIconWell
-              size="sm"
-              amber={isCoin}
-              src={isCoin ? "/icons/coin.png" : "/icons/fans.png"}
-              className={compact ? "h-8 w-8" : "h-9 w-9"}
-            />
-            <span
-              className={[
-                "min-w-0 truncate",
-                compact ? "text-xs" : "text-sm",
-              ].join(" ")}
-            >
-              {t(labelKey, { mult: formatMultiplier(booster.multiplier) })}
-              {!compact && (
-                <span className="mt-0.5 block truncate font-display text-[10px] font-bold text-white/55">
-                  {eventTitle}
-                </span>
-              )}
+          <div className="relative flex items-center justify-between gap-2 px-2.5 py-2">
+            <span className="flex min-w-0 items-center gap-2 font-display text-xs font-black text-white">
+              <GameIconWell
+                size="sm"
+                amber={isCoin}
+                src={isCoin ? "/icons/coin.png" : "/icons/fans.png"}
+                className="h-8 w-8"
+              />
+              <span className="min-w-0 truncate">
+                {t(labelKey, { mult: formatMultiplier(booster.multiplier) })}
+              </span>
             </span>
-          </span>
-          <GameChip
-            tone={urgent ? "default" : "amber"}
-            className={[
-              "shrink-0 min-w-14 text-center tabular-nums",
-              compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1.5 text-xs",
-              urgent ? "bg-rose-500/30 text-rose-100" : "",
-            ].join(" ")}
+            <GameChip
+              tone={urgent ? "default" : "amber"}
+              className={cn(
+                "shrink-0 min-w-14 px-2 py-1 text-center text-[10px] tabular-nums",
+                urgent && "bg-rose-500/30 text-rose-100",
+              )}
+            >
+              {remainingMs === null
+                ? "\u2014"
+                : toLocaleDigits(formatRemaining(liveMs), locale)}
+            </GameChip>
+          </div>
+          <BoosterBar remainPct={remainPct} urgent={urgent} />
+        </GameTile>
+      ) : (
+        <GamePanel tone={isCoin ? "amber" : "sky"} className="min-h-12">
+          <div
+            className={cn(
+              "relative flex items-center justify-between gap-2",
+              compact ? "px-2.5 py-2" : "px-3 py-2.5",
+            )}
           >
-            {remainingMs === null
-              ? "\u2014"
-              : toLocaleDigits(formatRemaining(liveMs), locale)}
-          </GameChip>
-        </div>
+            <span className="flex min-w-0 items-center gap-2 font-display font-black text-white">
+              <GameIconWell
+                size="sm"
+                amber={isCoin}
+                src={isCoin ? "/icons/coin.png" : "/icons/fans.png"}
+                className={compact ? "h-8 w-8" : "h-9 w-9"}
+              />
+              <span
+                className={cn(
+                  "min-w-0 truncate",
+                  compact ? "text-xs" : "text-sm",
+                )}
+              >
+                {t(labelKey, { mult: formatMultiplier(booster.multiplier) })}
+                {!compact && (
+                  <span className="mt-0.5 block truncate font-display text-[10px] font-bold text-white/55">
+                    {eventTitle}
+                  </span>
+                )}
+              </span>
+            </span>
+            <GameChip
+              tone={urgent ? "default" : "amber"}
+              className={cn(
+                "shrink-0 min-w-14 text-center tabular-nums",
+                compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1.5 text-xs",
+                urgent && "bg-rose-500/30 text-rose-100",
+              )}
+            >
+              {remainingMs === null
+                ? "\u2014"
+                : toLocaleDigits(formatRemaining(liveMs), locale)}
+            </GameChip>
+          </div>
 
-        <div className="relative h-1 bg-black/45" aria-hidden>
-          <motion.div
-            className={[
-              "h-full",
-              urgent
-                ? "bg-linear-to-r from-rose-400 to-orange-300"
-                : "bg-linear-to-r from-emerald-400 to-lime-300",
-            ].join(" ")}
-            initial={false}
-            animate={{ width: `${remainPct}%` }}
-            transition={{ duration: 0.4 }}
-          />
-        </div>
-      </GamePanel>
+          <BoosterBar remainPct={remainPct} urgent={urgent} />
+        </GamePanel>
       )}
-    </motion.button>
+    </button>
   );
 }

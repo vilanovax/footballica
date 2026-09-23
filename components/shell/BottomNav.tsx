@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { useTranslation } from "@/lib/i18n/useTranslation";
@@ -263,12 +262,11 @@ export function BottomNav() {
                     : "text-nav-foreground hover:text-foreground",
                 ].join(" ")}
               >
-                {/* Sliding glowing indicator behind the active tab. */}
+                {/* Active tab glow — CSS only (no Framer layoutId on the shell). */}
                 {active && (
-                  <motion.span
-                    layoutId="nav-active-glow"
-                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                    className="absolute inset-0 rounded-bubble bg-nav-active/10 shadow-[0_0_16px_hsl(var(--accent)/0.55)] ring-1 ring-accent/40"
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 rounded-bubble bg-nav-active/10 shadow-[0_0_16px_hsl(var(--accent)/0.55)] ring-1 ring-accent/40 animate-status-sheet-fade"
                   />
                 )}
                 {/* eslint-disable-next-line @next/next/no-img-element */}

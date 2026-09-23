@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import type { DuelInboxItem } from "@/actions/duel/getInboxCount";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
@@ -66,11 +65,7 @@ export function DuelInboxBanner({
   const isClub = variant === "club";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: "spring", stiffness: 380, damping: 28 }}
-    >
+    <div className="animate-status-sheet-rise">
       <GamePanel
         tone="amber"
         className={cn(isClub ? undefined : "ring-1 ring-arena-amber/40")}
@@ -209,6 +204,6 @@ export function DuelInboxBanner({
           </div>
         ) : null}
       </GamePanel>
-    </motion.div>
+    </div>
   );
 }

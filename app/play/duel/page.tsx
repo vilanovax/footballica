@@ -14,8 +14,16 @@ export default async function DuelLobbyPage() {
   if (!user.club) redirect("/onboarding");
 
   return (
-    <Suspense fallback={<RouteLoading label="Duel" />}>
-      <DuelLobbyLoader />
+    <Suspense
+      fallback={
+        <div className="flex flex-1 flex-col">
+          <RouteLoading label="Duel" />
+        </div>
+      }
+    >
+      <div className="flex min-h-0 flex-1 flex-col">
+        <DuelLobbyLoader />
+      </div>
     </Suspense>
   );
 }

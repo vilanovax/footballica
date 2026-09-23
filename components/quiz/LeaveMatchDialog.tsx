@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { GameCta } from "@/components/ui/game/GameCta";
@@ -15,7 +17,11 @@ type LeaveMatchDialogProps = {
   tone?: LeaveCopyTone;
 };
 
-/** Confirm before abandoning an immersive quiz surface. */
+/**
+ * Confirm before abandoning an immersive surface.
+ * Portaled to document.body so arena overflow / z-index stacks
+ * (Tiki-Taka header/board/footer) cannot clip or steal taps.
+ */
 export function LeaveMatchDialog({
   open,
   onStay,
@@ -24,13 +30,29 @@ export function LeaveMatchDialog({
 }: LeaveMatchDialogProps) {
   const { t } = useTranslation();
   const isLobby = tone === "lobby";
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
           key="leave-match-dialog"
-          className="fixed inset-0 z-70 flex items-center justify-center px-5"
+          className="fixed inset-0 z-[90] flex items-center justify-center px-5"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -40,14 +62,14 @@ export function LeaveMatchDialog({
             type="button"
             aria-label={t("quiz.leaveStay")}
             onClick={onStay}
-            className="absolute inset-0 bg-black/75 backdrop-blur-[6px]"
+            className="absolute inset-0 bg-black/80 backdrop-blur-[6px]"
           />
           <motion.div
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="leave-match-title"
             aria-describedby="leave-match-desc"
-            className="relative w-full max-w-[22rem]"
+            className="relative z-10 w-full max-w-[22rem]"
             initial={{ scale: 0.92, y: 18, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.96, y: 10, opacity: 0 }}
@@ -98,6 +120,7 @@ export function LeaveMatchDialog({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

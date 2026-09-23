@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useState } from "react";
 import type { CampaignSeasonView } from "@/lib/game/campaignSeason";
 import { campaignSeasonActive } from "@/lib/game/campaignSeason";
@@ -28,7 +27,8 @@ type HubTodayRailProps = {
 
 /**
  * Secondary hub activities — tucked under the stadium so the first viewport
- * stays HUD + stadium world (progressive disclosure).
+ * stays HUD + stadium world (progressive disclosure). CSS tap scale only —
+ * no Framer on the Club secondary stream.
  */
 export function HubTodayRail({
   campaignSeason,
@@ -65,7 +65,7 @@ export function HubTodayRail({
       </p>
 
       <div className="grid grid-cols-2 gap-1.5">
-        <motion.div whileTap={{ scale: 0.98 }}>
+        <div className="transition-transform active:scale-[0.98]">
           <Link
             href="/play/duel"
             onClick={() => playSound("click")}
@@ -90,12 +90,11 @@ export function HubTodayRail({
               </span>
             </GameTile>
           </Link>
-        </motion.div>
+        </div>
 
         {seasonOn && campaignSeason ? (
-          <motion.button
+          <button
             type="button"
-            whileTap={{ scale: 0.98 }}
             aria-expanded={hasCampaignBody ? campaignOpen : undefined}
             onClick={() => {
               playSound("click");
@@ -106,7 +105,7 @@ export function HubTodayRail({
               }
               setCampaignOpen((v) => !v);
             }}
-            className="w-full rounded-bubble-xl text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+            className="w-full rounded-bubble-xl text-start transition-transform active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
           >
             <GameTile
               tone={rewardReady ? "amber" : "emerald"}
@@ -125,7 +124,7 @@ export function HubTodayRail({
                 <span className="mt-1 flex items-center gap-1.5">
                   <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]">
                     <span
-                      className="block h-full rounded-full bg-linear-to-r from-emerald-400 to-lime-300"
+                      className="block h-full rounded-full bg-linear-to-r from-emerald-400 to-lime-300 transition-[width] duration-300 ease-out"
                       style={{ width: `${missionPct}%` }}
                     />
                   </span>
@@ -148,7 +147,7 @@ export function HubTodayRail({
                 />
               ) : null}
             </GameTile>
-          </motion.button>
+          </button>
         ) : (
           <button
             type="button"
@@ -157,7 +156,7 @@ export function HubTodayRail({
               haptic(HAPTIC.light);
               onOpenCampaign();
             }}
-            className="w-full rounded-bubble-xl text-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+            className="w-full rounded-bubble-xl text-start transition-transform active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
           >
             <GameTile
               tone="emerald"
@@ -187,18 +186,14 @@ export function HubTodayRail({
       )}
 
       {campaignOpen && seasonOn && campaignSeason && hasCampaignBody && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="overflow-hidden"
-        >
+        <div className="overflow-hidden animate-status-sheet-rise">
           <CampaignSeasonCard
             season={campaignSeason}
             onOpenMissions={onOpenCampaign}
             embedded
             chaptersOnly
           />
-        </motion.div>
+        </div>
       )}
     </section>
   );

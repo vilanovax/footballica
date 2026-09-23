@@ -123,6 +123,7 @@ Also:
 - ~~`content-visibility` on `LeaderboardList` rows~~ → applied (`auto` + intrinsic ~3.25rem; animate cap 6)
 - ~~`after()` for non-blocking post-response work~~ → applied on `getDuelInbox` job tick
 - ~~Nested Suspense slots inside ClubHub (inbox / today rail)~~ → `ClubHubSecondary` + hub fast snapshot (`settleBusiness: false`)
+- ~~Drop Framer from Club shell + secondary rails~~ → ClubHub, BottomNav, HubTodayRail, ActiveNewsChip, CampaignSeasonCard, DuelInboxBanner (CSS); deferred `dynamic()` sheets/hero retain Framer
 
 ### Local baseline (dev, warm, 2026-09-23)
 
@@ -139,7 +140,15 @@ Also:
 | `/club` | **109ms** | 404ms | 582ms | ~20 KB |
 | `/leaderboard` | **100ms** | 175ms | 624ms | ~13 KB |
 
-Paint/LCP entries were unavailable in this embedded browser (FCP/LCP null). Re-check on Chrome mobile / Vercel preview for real LCP.
-StatusBar Framer removed (CSS coin pulse + sheet) — Club above-fold no longer pulls motion for HUD.
+### Club LCP probe (localhost, Cursor browser, hard nav, 2026-09-23 later)
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| TTFB | ~10–77ms | Warm prod `next start` |
+| FCP | ~2060ms | Embedded browser paint delay — treat as relative only |
+| LCP | **~2060ms** (PO buffered, size ~4.6KB) | Same quirk; re-check Chrome mobile / Vercel |
+| DCL / Load | ~45–110ms / ~50–110ms | Navigation Timing |
+
+StatusBar + **ClubHub** + **BottomNav** + Club secondary rails (`HubTodayRail`, `ActiveNewsChip`, `CampaignSeasonCard`, `DuelInboxBanner`) no longer import Framer — CSS fade/rise/tap-scale instead. Deferred sheets/hero (`StadiumHero`, manage, newspaper, confetti, FTUE) still use Framer via `dynamic()`.
 
 Prod / CrUX still needed for field LCP + TBT.

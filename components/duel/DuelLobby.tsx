@@ -16,6 +16,7 @@ import { AvatarImage } from "@/components/common/AvatarImage";
 import { duelViewerOutcome } from "@/lib/duel/history";
 import { viewerMatchScore } from "@/lib/duel/matchScore";
 import { isDuelTerminal } from "@/lib/duel/types";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
@@ -94,7 +95,8 @@ function deadlineLabel(
 
 /**
  * Draft Duel lobby — Arena panels for fixtures (readable on light Play shell).
- * Priority: your turn → find rival → waiting → finished.
+ * Compact hero + in-flow kickoff when live; full kickoff when empty.
+ * Kickoff is never fixed — BottomNav owns the bottom chrome.
  */
 export function DuelLobby({
   initialDuels,
@@ -109,6 +111,7 @@ export function DuelLobby({
   const [history] = useState(initialHistory);
   const [pending, startTransition] = useTransition();
   const [now, setNow] = useState(() => Date.now());
+  const [howToOpen, setHowToOpen] = useState(false);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -152,7 +155,12 @@ export function DuelLobby({
     yourTurnList.length > 0 ||
     waitingList.length > 0 ||
     finishedList.length > 0;
+  /** Compact kickoff in-flow when live fixtures exist (never fixed — avoids BottomNav overlap). */
   const compactKickoff = activeCount > 0;
+  const fixtureCount =
+    yourTurnList.length + waitingList.length + finishedList.length;
+  /** Few fixtures → center the stack so leftover pitch isn't a dead floor. */
+  const centerSparse = fixtureCount > 0 && fixtureCount <= 3;
 
   const fixtureProps = (d: DuelSnapshot) => ({
     duel: d,
@@ -164,63 +172,44 @@ export function DuelLobby({
   });
 
   return (
-    <section className="flex flex-1 flex-col gap-2 pb-4">
-      <GamePanel tone="amber" className="p-3.5">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -end-10 -top-8 h-28 w-28 rounded-full bg-amber-300/20 blur-3xl"
+    <section
+      className={cn(
+        "relative flex flex-col gap-2.5 pb-2",
+        centerSparse &&
+          "min-h-[calc(100dvh-8.25rem-env(safe-area-inset-bottom,0px))] justify-center",
+      )}
+    >
+      {compactKickoff ? (
+        <LobbyHeroWithKickoff
+          turnCount={turnCount}
+          activeCount={activeCount}
+          locale={locale}
+          pending={pending}
+          yourAvatar={yourAvatar}
+          onStart={handleStart}
+          onHowTo={() => setHowToOpen(true)}
+          startLabel={t("duel.start")}
+          startingLabel={t("duel.starting")}
+          anotherLabel={t("duel.lobbyFindAnother")}
+          hint={t("duel.lobbyKickoffHint")}
         />
-        <div className="relative flex items-start gap-3">
-          <GameIconWell
-            size="md"
-            amber
-            src="/icons/trophy.png"
-            className="h-12 w-12"
-            iconClassName="h-7 w-7"
+      ) : (
+        <>
+          <LobbyHeroFull onHowTo={() => setHowToOpen(true)} />
+          <KickoffBlock
+            compact={false}
+            pending={pending}
+            yourAvatar={yourAvatar}
+            onStart={handleStart}
+            title={t("duel.lobbyKickoff")}
+            hint={t("duel.lobbyKickoffHint")}
+            startLabel={t("duel.start")}
+            startingLabel={t("duel.starting")}
+            anotherLabel={t("duel.lobbyFindAnother")}
           />
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-[11px] font-black text-amber-100/80">
-              {t("duel.eyebrow")}
-            </p>
-            <h1 className="mt-0.5 font-display text-2xl font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
-              {t("duel.lobbyTitle")}
-            </h1>
-            <p className="mt-1 font-display text-xs font-bold leading-snug text-white/65">
-              {t("duel.lobbySub")}
-            </p>
-          </div>
-        </div>
+        </>
+      )}
 
-        {activeCount > 0 ? (
-          <div className="relative mt-3 flex flex-wrap gap-1.5">
-            {turnCount > 0 ? (
-              <GameChip tone="amber" className="gap-1.5 tracking-normal">
-                <motion.span
-                  className="h-1.5 w-1.5 rounded-full bg-accent"
-                  animate={{ opacity: [1, 0.35, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.1 }}
-                />
-                {t("duel.lobbyNeedsYou", {
-                  n: toLocaleDigits(turnCount, locale),
-                })}
-              </GameChip>
-            ) : (
-              <GameChip tone="emerald">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300/70 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
-                </span>
-                {t("duel.lobbyAllWaiting")}
-              </GameChip>
-            )}
-            <GameChip className="tabular-nums">
-              {toLocaleDigits(activeCount, locale)} {t("duel.lobbyActive")}
-            </GameChip>
-          </div>
-        ) : null}
-      </GamePanel>
-
-      {/* 1) Act now */}
       {turnCount > 0 ? (
         <InboxSection
           title={t("duel.inboxYourTurn")}
@@ -239,35 +228,6 @@ export function DuelLobby({
         </InboxSection>
       ) : null}
 
-      {/* 2) Primary CTA — before passive waiting list */}
-      <KickoffBlock
-        compact={compactKickoff}
-        pending={pending}
-        yourAvatar={yourAvatar}
-        onStart={handleStart}
-        title={t("duel.lobbyKickoff")}
-        hint={t("duel.lobbyKickoffHint")}
-        startLabel={t("duel.start")}
-        startingLabel={t("duel.starting")}
-        anotherLabel={t("duel.lobbyFindAnother")}
-      />
-
-      {!hasAny && (
-        <GameTile className="bg-arena/90 px-4 py-8 text-center text-white shadow-arena-ring">
-          <GameIconWell
-            size="lg"
-            src="/icons/target.png"
-            className="mx-auto h-14 w-14"
-            iconClassName="h-8 w-8"
-          />
-          <p className="mt-3 font-display text-sm font-bold text-white/70">
-            {t("duel.empty")}
-          </p>
-        </GameTile>
-      )}
-
-      {waitingList.length > 0 || finishedList.length > 0 ? (
-        <div className="hub-deck flex flex-col gap-2">
       {waitingList.length > 0 ? (
         <InboxSection
           title={t("duel.inboxWaiting")}
@@ -302,9 +262,220 @@ export function DuelLobby({
           ))}
         </InboxSection>
       ) : null}
-        </div>
-      ) : null}
+
+      {!hasAny ? (
+        <GameTile className="bg-arena/90 px-4 py-6 text-center text-white shadow-arena-ring">
+          <GameIconWell
+            size="lg"
+            src="/icons/target.png"
+            className="mx-auto h-14 w-14"
+            iconClassName="h-8 w-8"
+          />
+          <p className="mt-3 font-display text-sm font-bold text-white/70">
+            {t("duel.empty")}
+          </p>
+        </GameTile>
+      ) : (
+        <LobbyTipStrip onHowTo={() => setHowToOpen(true)} />
+      )}
+
+      <BottomSheet
+        open={howToOpen}
+        onClose={() => setHowToOpen(false)}
+        title={t("duel.lobbyHowToTitle")}
+        tone="dark"
+        closeLabel={t("common.close")}
+      >
+        <p className="font-display text-sm font-bold leading-relaxed text-white/85">
+          {t("play.info.duel.rules")}
+        </p>
+        <p className="mt-3 font-display text-xs font-bold leading-relaxed text-white/60">
+          {t("play.info.duel.tip")}
+        </p>
+      </BottomSheet>
     </section>
+  );
+}
+
+/** One chrome block: status + find-rival — denser than stacked panels. */
+function LobbyHeroWithKickoff({
+  turnCount,
+  activeCount,
+  locale,
+  pending,
+  yourAvatar,
+  onStart,
+  onHowTo,
+  startLabel,
+  startingLabel,
+  anotherLabel,
+  hint,
+}: {
+  turnCount: number;
+  activeCount: number;
+  locale: Locale;
+  pending: boolean;
+  yourAvatar?: string | null;
+  onStart: () => void;
+  onHowTo: () => void;
+  startLabel: string;
+  startingLabel: string;
+  anotherLabel: string;
+  hint: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <GamePanel tone="amber" className="p-3">
+      <div className="relative flex items-center gap-2.5">
+        <GameIconWell
+          size="md"
+          amber
+          src="/icons/trophy.png"
+          className="h-11 w-11"
+          iconClassName="h-6 w-6"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className="truncate font-display text-base font-black text-white">
+              {t("duel.lobbyTitle")}
+            </h1>
+            <button
+              type="button"
+              onClick={() => {
+                playSound("click");
+                onHowTo();
+              }}
+              aria-label={t("duel.lobbyHowTo")}
+              className="shrink-0 font-display text-[10px] font-black text-amber-100/75 underline-offset-2 hover:underline"
+            >
+              ؟
+            </button>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {turnCount > 0 ? (
+              <GameChip tone="amber" className="gap-1.5 tracking-normal">
+                <motion.span
+                  className="h-1.5 w-1.5 rounded-full bg-accent"
+                  animate={{ opacity: [1, 0.35, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.1 }}
+                />
+                {t("duel.lobbyNeedsYou", {
+                  n: toLocaleDigits(turnCount, locale),
+                })}
+              </GameChip>
+            ) : (
+              <GameChip tone="emerald">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300/70 opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
+                </span>
+                {t("duel.lobbyAllWaiting")}
+              </GameChip>
+            )}
+            <GameChip className="tabular-nums">
+              {toLocaleDigits(activeCount, locale)} {t("duel.lobbyActive")}
+            </GameChip>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative mt-3 flex items-center gap-2.5 border-t border-white/10 pt-3">
+        <div className="flex shrink-0 items-center -space-x-2.5 rtl:space-x-reverse">
+          <AvatarRing size="sm" avatarKey={yourAvatar} />
+          <AvatarRing size="sm" mystery />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-sm font-black text-white">
+            {anotherLabel}
+          </p>
+          <p className="truncate font-display text-[11px] font-bold text-amber-100/70">
+            {hint}
+          </p>
+        </div>
+        <GameCta
+          variant="accent"
+          disabled={pending}
+          onClick={onStart}
+          className="shrink-0 px-3.5 text-sm"
+        >
+          {pending ? startingLabel : startLabel}
+        </GameCta>
+      </div>
+    </GamePanel>
+  );
+}
+
+function LobbyTipStrip({ onHowTo }: { onHowTo: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        playSound("click");
+        onHowTo();
+      }}
+      className="flex w-full items-start gap-2.5 rounded-2xl bg-black/25 px-3 py-2.5 text-start shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] transition-transform active:scale-[0.99]"
+    >
+      <GameIconWell
+        size="sm"
+        src="/icons/target.png"
+        className="mt-0.5 h-9 w-9"
+        iconClassName="h-5 w-5"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-xs font-black text-white/90">
+          {t("duel.lobbyTipTitle")}
+          <span className="ms-2 font-bold text-sky-200/90">
+            {t("duel.lobbyHowTo")}
+          </span>
+        </p>
+        <p className="mt-0.5 line-clamp-2 font-display text-[11px] font-bold leading-snug text-white/55">
+          {t("play.info.duel.rules")}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function LobbyHeroFull({ onHowTo }: { onHowTo: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <GamePanel tone="amber" className="p-3.5">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -end-10 -top-8 h-28 w-28 rounded-full bg-amber-300/20 blur-3xl"
+      />
+      <div className="relative flex items-start gap-3">
+        <GameIconWell
+          size="md"
+          amber
+          src="/icons/trophy.png"
+          className="h-12 w-12"
+          iconClassName="h-7 w-7"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-[11px] font-black text-amber-100/80">
+            {t("duel.eyebrow")}
+          </p>
+          <h1 className="mt-0.5 font-display text-2xl font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
+            {t("duel.lobbyTitle")}
+          </h1>
+          <p className="mt-1 font-display text-xs font-bold leading-snug text-white/65">
+            {t("duel.lobbySub")}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              playSound("click");
+              onHowTo();
+            }}
+            className="mt-2 font-display text-[11px] font-black text-sky-200 underline-offset-2 hover:underline"
+          >
+            {t("duel.lobbyHowTo")}
+          </button>
+        </div>
+      </div>
+    </GamePanel>
   );
 }
 
@@ -396,9 +567,7 @@ function KickoffBlock({
       <div className="relative flex flex-col items-center gap-4">
         <div className="flex items-center gap-4">
           <AvatarRing pulse avatarKey={yourAvatar} />
-          <motion.span
-            className="rounded-full bg-accent px-3 py-1 font-display text-sm font-black text-accent-foreground shadow-[0_3px_0_0_hsl(var(--accent-deep))]"
-          >
+          <motion.span className="rounded-full bg-accent px-3 py-1 font-display text-sm font-black text-accent-foreground shadow-[0_3px_0_0_hsl(var(--accent-deep))]">
             VS
           </motion.span>
           <AvatarRing mystery />
@@ -485,7 +654,7 @@ function InboxSection({
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2 px-0.5">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -635,7 +804,7 @@ function FixtureCard({
         <GamePanel
           tone={panelTone}
           className={cn(
-            "flex min-h-[4.5rem] items-center gap-3 p-3 transition-transform active:scale-[0.985]",
+            "flex min-h-[4.5rem] items-center gap-3 bg-black/35 p-3 transition-transform active:scale-[0.985]",
             urgent && "ring-2 ring-arena-amber",
             isFinished && "opacity-90",
           )}

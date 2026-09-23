@@ -10,7 +10,6 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
 import { upgradeClub } from "@/actions/upgradeClub";
 import {
   claimDailyNews,
@@ -444,16 +443,14 @@ export function ClubHub({
             }
           />
         )}
-        <AnimatePresence>
-          {news && (
-            <NewspaperModal
-              key="newspaper"
-              news={news.payload}
-              state={news.state}
-              onClaim={() => setNews(null)}
-            />
-          )}
-        </AnimatePresence>
+        {news ? (
+          <NewspaperModal
+            key="newspaper"
+            news={news.payload}
+            state={news.state}
+            onClaim={() => setNews(null)}
+          />
+        ) : null}
 
         {ftueComplete && missionsMounted && (
           <HubMissionDrawer
@@ -468,54 +465,40 @@ export function ClubHub({
           />
         )}
 
-        <AnimatePresence>
-          {step === 0 && (
-            <motion.div
-              key="ftue-gate"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 pb-[calc(var(--spacing-nav)+1rem)] backdrop-blur-sm sm:pb-4"
-            >
-              <FtueCoach
-                avatarKey={avatarKey}
-                name={avatarName}
-                line={t("ftue.step0Line")}
-                cta={{
-                  href: "/play/penalty?tutorial=true",
-                  label: t("ftue.step0Cta"),
-                }}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {step === 0 ? (
+          <div
+            key="ftue-gate"
+            className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 pb-[calc(var(--spacing-nav)+1rem)] backdrop-blur-sm animate-status-sheet-fade sm:pb-4"
+          >
+            <FtueCoach
+              avatarKey={avatarKey}
+              name={avatarName}
+              line={t("ftue.step0Line")}
+              cta={{
+                href: "/play/penalty?tutorial=true",
+                label: t("ftue.step0Cta"),
+              }}
+            />
+          </div>
+        ) : null}
 
-        <AnimatePresence>
-          {justGraduated && (
-            <motion.div
-              key="ftue-graduated"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="pointer-events-none fixed inset-0 z-60 flex items-center justify-center px-4 pb-[calc(var(--spacing-nav)+1rem)] sm:items-start sm:pt-3 sm:pb-0"
-            >
-              <div className="relative w-full max-w-mobile">
-                <Confetti />
-                <motion.div
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: [0.9, 1.04, 1] }}
-                  transition={{ duration: 0.45 }}
-                >
-                  <FtueCoach
-                    avatarKey={avatarKey}
-                    name={avatarName}
-                    line={t("ftue.gradLine")}
-                  />
-                </motion.div>
+        {justGraduated ? (
+          <div
+            key="ftue-graduated"
+            className="pointer-events-none fixed inset-0 z-60 flex items-center justify-center px-4 pb-[calc(var(--spacing-nav)+1rem)] animate-status-sheet-fade sm:items-start sm:pt-3 sm:pb-0"
+          >
+            <div className="relative w-full max-w-mobile">
+              <Confetti />
+              <div className="animate-status-sheet-rise">
+                <FtueCoach
+                  avatarKey={avatarKey}
+                  name={avatarName}
+                  line={t("ftue.gradLine")}
+                />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
+        ) : null}
       </section>
     </ClubHubDataProvider>
   );

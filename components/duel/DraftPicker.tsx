@@ -173,24 +173,23 @@ export function DraftPicker({
   return (
     <>
     <section className="game-sheet relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-bubble-xl">
-      {/* Arena atmosphere */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-        <div className="game-sheet-wash absolute inset-x-0 top-0 h-40" />
-        <div className="absolute inset-x-0 top-0 h-40 bg-linear-to-b from-orange-500/20 to-transparent" />
-        <div className="absolute -inset-s-16 top-1/3 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
-        <div className="absolute -inset-e-12 bottom-1/4 h-44 w-44 rounded-full bg-emerald-400/12 blur-3xl" />
+        <div className="game-sheet-wash absolute inset-x-0 top-0 h-32" />
+        <div className="absolute inset-x-0 top-0 h-28 bg-linear-to-b from-orange-500/18 to-transparent" />
+        <div className="absolute -inset-s-16 top-1/3 h-44 w-44 rounded-full bg-amber-400/12 blur-3xl" />
+        <div className="absolute -inset-e-12 bottom-1/4 h-40 w-40 rounded-full bg-emerald-400/10 blur-3xl" />
       </div>
 
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-4 px-3 pb-4 pt-4">
-        {/* ── Header: readable step + rules ───────────────────────── */}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-2.5 px-3 pb-3 pt-3">
+        {/* Compact header — denser so weapons own the viewport */}
         <header className="shrink-0 text-center">
           <motion.p
             initial={reduceMotion ? false : { opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-auto inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1.5 font-display text-xs font-extrabold text-accent-foreground shadow-[0_3px_0_0_rgba(0,0,0,0.35)]"
+            className="mx-auto inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 font-display text-[11px] font-extrabold text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]"
           >
             <motion.span
-              className="h-2 w-2 rounded-full bg-accent-foreground"
+              className="h-1.5 w-1.5 rounded-full bg-accent-foreground"
               animate={
                 reduceMotion
                   ? undefined
@@ -205,16 +204,16 @@ export function DraftPicker({
             initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.04 }}
-            className="mt-3 font-display text-[1.65rem] font-black leading-tight text-white drop-shadow-md"
+            className="mt-2 font-display text-xl font-black leading-tight text-white drop-shadow-md"
           >
             {t("duel.draftTitle")}
           </motion.h1>
 
-          <p className="mx-auto mt-2 max-w-[20rem] font-body text-[0.95rem] font-bold leading-snug text-white/90">
+          <p className="mx-auto mt-1 max-w-[20rem] font-display text-xs font-bold leading-snug text-white/75">
             {hasSpecials ? t("duel.draftSubCompressed") : t("duel.draftSub")}
           </p>
 
-          <div className="mx-auto mt-3.5 flex max-w-sm flex-wrap items-stretch justify-center gap-2">
+          <div className="mx-auto mt-2 flex max-w-sm flex-wrap items-center justify-center gap-1.5">
             <RulePill
               icon="🎯"
               label={t("duel.draftRuleQuiz", {
@@ -228,26 +227,25 @@ export function DraftPicker({
           </div>
         </header>
 
-        {/* ── Options ─────────────────────────────────────────────── */}
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pb-1">
+        {/* Options grow to fill leftover pitch — no dead floor */}
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
           {hasSpecials && (
-            <div className="flex flex-col gap-2">
-              <p className="px-0.5 text-start font-display text-[11px] font-extrabold uppercase tracking-[0.14em] text-rose-200/90">
+            <div className="flex min-h-0 flex-[1.15] flex-col gap-1.5">
+              <p className="shrink-0 px-0.5 text-start font-display text-[10px] font-extrabold uppercase tracking-[0.14em] text-rose-200/90">
                 {t("duel.draftSectionSpecial")}
               </p>
               <motion.div
-                initial={reduceMotion ? false : { y: 14, opacity: 0 }}
+                className="flex min-h-0 flex-1"
                 animate={{
-                  y: 0,
                   opacity: busy && !specialSelected ? 0.4 : 1,
-                  scale: specialSelected ? 1.015 : 1,
+                  scale: specialSelected ? 1.01 : 1,
                 }}
                 transition={{ type: "spring", stiffness: 320, damping: 22 }}
               >
                 <GamePanel
                   tone="rose"
                   className={cn(
-                    "flex min-h-21 items-stretch",
+                    "flex min-h-[4.25rem] flex-1 items-stretch",
                     specialSelected && "ring-2 ring-arena-amber",
                   )}
                 >
@@ -256,17 +254,17 @@ export function DraftPicker({
                     disabled={busy}
                     whileTap={busy ? undefined : { scale: 0.985 }}
                     onClick={lockSpecial}
-                    className="relative flex min-h-21 min-w-0 flex-1 items-center gap-3 p-3.5 text-start disabled:cursor-wait"
+                    className="relative flex min-h-0 min-w-0 flex-1 items-center gap-3 p-3 text-start disabled:cursor-wait"
                   >
                     <GameIconWell
-                      size="lg"
+                      size="md"
                       src={shownSpecialMeta?.iconSrc ?? "/icons/target.png"}
-                      className="h-14 w-14"
-                      iconClassName="h-9 w-9"
+                      className="h-12 w-12"
+                      iconClassName="h-7 w-7"
                     />
                     <span className="relative z-10 min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="font-display text-lg font-black text-white">
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-display text-base font-black text-white">
                           {specialSelected
                             ? t("duel.draftLocking")
                             : specialPreviewLabel ??
@@ -279,7 +277,7 @@ export function DraftPicker({
                           {t("duel.draftMemoryOnce")}
                         </GameChip>
                       </span>
-                      <span className="mt-1 block font-body text-sm font-bold text-white/70">
+                      <span className="mt-0.5 block font-display text-xs font-bold text-white/70">
                         {specialBlurb}
                       </span>
                     </span>
@@ -296,14 +294,14 @@ export function DraftPicker({
                         revealedSpecial ?? onlySpecial ?? specials[0]!,
                       );
                     }}
-                    className="relative flex w-14 shrink-0 items-center justify-center border-s border-white/15 bg-black/25 active:scale-95 disabled:opacity-40"
+                    className="relative flex w-12 shrink-0 items-center justify-center border-s border-white/15 bg-black/25 active:scale-95 disabled:opacity-40"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="/icons/help.png"
                       alt=""
                       draggable={false}
-                      className="h-9 w-9 object-contain"
+                      className="h-8 w-8 object-contain"
                     />
                   </button>
                 </GamePanel>
@@ -311,14 +309,14 @@ export function DraftPicker({
             </div>
           )}
 
-          <div className="flex flex-col gap-2">
+          <div className="flex min-h-0 flex-[3] flex-col gap-1.5">
             {(hasSpecials || options.length > 0) && (
-              <p className="px-0.5 text-start font-display text-[11px] font-extrabold uppercase tracking-[0.14em] text-white/70">
+              <p className="shrink-0 px-0.5 text-start font-display text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/70">
                 {t("duel.draftSectionQuiz")}
               </p>
             )}
 
-            <div className="flex flex-col gap-2.5">
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
               {options.map((c, i) => {
                 const name = locale === "fa" ? c.nameFa : c.nameEn;
                 const theme = WEAPON_THEMES[i % WEAPON_THEMES.length]!;
@@ -330,18 +328,11 @@ export function DraftPicker({
                     key={c.id}
                     type="button"
                     disabled={busy}
-                    initial={reduceMotion ? false : { y: 14, opacity: 0 }}
                     animate={{
-                      y: 0,
                       opacity: dimmed ? 0.4 : 1,
-                      scale: selected ? 1.015 : 1,
+                      scale: selected ? 1.01 : 1,
                     }}
-                    transition={{
-                      delay: reduceMotion ? 0 : 0.04 + i * 0.05,
-                      type: "spring",
-                      stiffness: 320,
-                      damping: 22,
-                    }}
+                    transition={{ type: "spring", stiffness: 320, damping: 22 }}
                     whileTap={busy ? undefined : { scale: 0.98 }}
                     onClick={() => {
                       if (busy) return;
@@ -350,12 +341,12 @@ export function DraftPicker({
                       playSound("click");
                       onPick(c.id);
                     }}
-                    className="group w-full text-start disabled:cursor-wait"
+                    className="group flex min-h-0 w-full flex-1 text-start disabled:cursor-wait"
                   >
                     <GamePanel
                       tone={theme.panel}
                       className={cn(
-                        "flex min-h-21 items-center gap-3 p-3.5",
+                        "flex min-h-[4.25rem] w-full flex-1 items-center gap-2.5 bg-black/30 p-3",
                         selected && `ring-2 ${theme.ring}`,
                       )}
                     >
@@ -376,7 +367,7 @@ export function DraftPicker({
 
                     <span
                       className={[
-                        "relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-display text-sm font-black shadow-md",
+                        "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-sm font-black shadow-md",
                         theme.badge,
                       ].join(" ")}
                     >
@@ -385,7 +376,7 @@ export function DraftPicker({
 
                     <span
                       className={[
-                        "relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-3xl ring-2 shadow-inner",
+                        "relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl ring-2 shadow-inner",
                         theme.iconBg,
                       ].join(" ")}
                     >
@@ -393,17 +384,17 @@ export function DraftPicker({
                     </span>
 
                     <span className="relative z-10 min-w-0 flex-1">
-                      <span className="block truncate font-display text-lg font-black text-white">
+                      <span className="block truncate font-display text-base font-black text-white">
                         {selected ? t("duel.draftLocking") : name}
                       </span>
-                      <span className="mt-1 block font-body text-sm font-bold text-white/65">
+                      <span className="mt-0.5 block font-display text-xs font-bold text-white/65">
                         {t("duel.questions", {
                           n: toLocaleDigits(c.questionCount, locale),
                         })}
                       </span>
                       <span
                         className={[
-                          "mt-1.5 inline-flex rounded-full px-2.5 py-0.5 font-display text-xs font-extrabold",
+                          "mt-1 inline-flex rounded-full px-2 py-0.5 font-display text-[11px] font-extrabold",
                           theme.cta,
                         ].join(" ")}
                       >
@@ -414,7 +405,7 @@ export function DraftPicker({
                     <motion.span
                       aria-hidden
                       className={[
-                        "relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-display text-xl font-black shadow-md",
+                        "relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-lg font-black shadow-md",
                         selected
                           ? "bg-amber-400 text-amber-950"
                           : "bg-black/50 text-white ring-1 ring-white/20",
@@ -445,7 +436,7 @@ export function DraftPicker({
           </div>
         </div>
 
-        <p className="shrink-0 text-center font-body text-xs font-bold leading-snug text-white/75">
+        <p className="shrink-0 text-center font-display text-[11px] font-bold leading-snug text-white/65">
           {t("duel.draftFooter")}
         </p>
       </div>
@@ -473,9 +464,9 @@ function RulePill({
   return (
     <GameChip
       tone={highlight ? "amber" : "default"}
-      className="min-h-9 px-3 py-1.5 text-xs font-extrabold"
+      className="min-h-8 px-2.5 py-1 text-[11px] font-extrabold"
     >
-      <span aria-hidden className="text-sm leading-none">
+      <span aria-hidden className="text-xs leading-none">
         {icon}
       </span>
       {label}
