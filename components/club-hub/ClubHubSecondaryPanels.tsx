@@ -26,6 +26,9 @@ type ClubHubSecondaryPanelsProps = {
 /**
  * Client rails for streamed Club secondary data. Publishes boards into
  * ClubHub context so the header mission badge + MissionDrawer stay in sync.
+ *
+ * Order: play urgency (duel) → daily progress → discovery rail.
+ * MatchDoor (Penalty) sits above this stack in ClubHub.
  */
 export function ClubHubSecondaryPanels({
   duelInboxCount,
@@ -64,28 +67,26 @@ export function ClubHubSecondaryPanels({
 
   return (
     <div className="flex flex-col gap-2">
+      <DuelInboxBanner
+        count={duelInboxCount}
+        items={duelInboxItems}
+        variant="club"
+      />
+
       <HubDailyMissions
         board={dailyBoard}
         onOpen={() => openMissions("daily")}
         onBalances={onBalances}
       />
 
-      <div className="flex flex-col gap-2">
-        <HubTodayRail
-          mysteryStreak={mysteryStreak}
-          campaignSeason={campaignSeason}
-          activeNews={activeNews}
-          onOpenCampaign={() => openMissions("campaign")}
-          onOpenNews={onOpenNews}
-          onNewsExpired={onNewsExpired}
-        />
-
-        <DuelInboxBanner
-          count={duelInboxCount}
-          items={duelInboxItems}
-          variant="club"
-        />
-      </div>
+      <HubTodayRail
+        mysteryStreak={mysteryStreak}
+        campaignSeason={campaignSeason}
+        activeNews={activeNews}
+        onOpenCampaign={() => openMissions("campaign")}
+        onOpenNews={onOpenNews}
+        onNewsExpired={onNewsExpired}
+      />
     </div>
   );
 }

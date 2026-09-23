@@ -8,11 +8,12 @@ import { toLocaleDigits } from "@/lib/i18n/format";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
+import { cn } from "@/lib/utils";
 
 type DuelInboxBannerProps = {
   count: number;
   items?: DuelInboxItem[];
-  /** Compact strip for Match Day vs fuller club card. */
+  /** Compact strip for Match Day vs quieter club urgency card. */
   variant?: "play" | "club";
 };
 
@@ -42,7 +43,8 @@ function actionLine(
 }
 
 /**
- * "Your turn" inbox — Arena amber panel matching Club Hub chrome.
+ * "Your turn" inbox — Play keeps the loud amber CTA; Club sits under
+ * MatchDoor as a quieter urgency strip so Penalty stays the hero kickoff.
  */
 export function DuelInboxBanner({
   count,
@@ -67,31 +69,50 @@ export function DuelInboxBanner({
       transition={{ type: "spring", stiffness: 380, damping: 28 }}
     >
       <GamePanel
-        tone={isClub ? "rose" : "amber"}
-        className="ring-1 ring-arena-amber/40"
+        tone="amber"
+        className={cn(isClub ? undefined : "ring-1 ring-arena-amber/40")}
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -inset-e-10 top-0 h-28 w-28 rounded-full bg-amber-300/30 blur-2xl"
-        />
+        {!isClub ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-e-10 top-0 h-28 w-28 rounded-full bg-amber-300/30 blur-2xl"
+          />
+        ) : null}
 
-        <div className="relative flex items-center gap-3 px-3 pt-3">
+        <div
+          className={cn(
+            "relative flex items-center gap-2.5",
+            isClub ? "px-3 py-2.5" : "px-3 pt-3",
+          )}
+        >
           <span className="relative shrink-0">
             <GameIconWell
-              size="lg"
+              size={isClub ? "md" : "lg"}
               amber
               src="/icons/target.png"
-              className="h-14 w-14"
-              iconClassName="h-7 w-7"
+              className={isClub ? "h-11 w-11" : "h-14 w-14"}
+              iconClassName={isClub ? "h-6 w-6" : "h-7 w-7"}
             />
-            <span className="absolute -inset-e-1.5 -top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-accent px-1 font-display text-[11px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)] ring-2 ring-arena">
+            <span
+              className={cn(
+                "absolute flex items-center justify-center rounded-full bg-accent px-1 font-display font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)] ring-2 ring-arena",
+                isClub
+                  ? "-inset-e-1 -top-1 h-5 min-w-5 text-[10px]"
+                  : "-inset-e-1.5 -top-1.5 h-6 min-w-6 text-[11px]",
+              )}
+            >
               {toLocaleDigits(Math.min(count, 9), locale)}
               {count > 9 ? "+" : ""}
             </span>
           </span>
 
           <div className="min-w-0 flex-1">
-            <p className="font-display text-sm font-black leading-tight text-white drop-shadow-sm">
+            <p
+              className={cn(
+                "font-display font-black leading-tight text-white drop-shadow-sm",
+                isClub ? "text-[13px]" : "text-sm",
+              )}
+            >
               {count === 1
                 ? t("duel.inboxRivalWaiting")
                 : t("duel.inboxRivalWaitingMany", {
@@ -110,7 +131,7 @@ export function DuelInboxBanner({
                 {actionLine(top, t)}
               </p>
             ) : null}
-            {deadline ? (
+            {deadline && !isClub ? (
               <GameChip tone="amber" className="mt-1 gap-1 px-2 py-0.5 text-[10px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -122,34 +143,68 @@ export function DuelInboxBanner({
                 {deadline}
               </GameChip>
             ) : null}
+            {deadline && isClub ? (
+              <p className="mt-0.5 flex items-center gap-1 font-display text-[10px] font-bold text-amber-100/80">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/timer.png"
+                  alt=""
+                  aria-hidden
+                  className="h-3 w-3 object-contain opacity-80"
+                />
+                {deadline}
+              </p>
+            ) : null}
           </div>
+
+          {isClub ? (
+            <Link
+              href={href}
+              className="game-cta game-cta-ghost shrink-0 px-3 py-2 font-display text-xs font-black text-amber-50 shadow-[inset_0_0_0_1px_hsl(var(--arena-ring-amber)/0.45)]"
+            >
+              {t("duel.inboxPlayNow")}
+            </Link>
+          ) : null}
         </div>
 
-        <div className="relative flex flex-col gap-2 px-3 pb-3 pt-3">
-          <Link
-            href={href}
-            className="game-cta game-cta-accent w-full font-display text-base font-black"
-          >
-            {t("duel.inboxPlayNow")}
-          </Link>
-          {more > 0 ? (
+        {!isClub ? (
+          <div className="relative flex flex-col gap-2 px-3 pb-3 pt-3">
+            <Link
+              href={href}
+              className="game-cta game-cta-accent w-full font-display text-base font-black"
+            >
+              {t("duel.inboxPlayNow")}
+            </Link>
+            {more > 0 ? (
+              <Link
+                href="/play/duel"
+                className="flex min-h-10 w-full items-center justify-center font-display text-xs font-black text-amber-100/85 underline-offset-2 hover:underline"
+              >
+                {t("duel.inboxSeeAll", {
+                  n: toLocaleDigits(more, locale),
+                })}
+              </Link>
+            ) : (
+              <Link
+                href="/play/duel"
+                className="flex min-h-10 w-full items-center justify-center font-display text-[11px] font-bold text-white/50"
+              >
+                {t("duel.inboxOpenLobby")}
+              </Link>
+            )}
+          </div>
+        ) : more > 0 ? (
+          <div className="relative border-t border-white/8 px-3 py-1.5">
             <Link
               href="/play/duel"
-              className="flex min-h-10 w-full items-center justify-center font-display text-xs font-black text-amber-100/85 underline-offset-2 hover:underline"
+              className="flex min-h-9 w-full items-center justify-center font-display text-[11px] font-bold text-white/55 underline-offset-2 hover:underline"
             >
               {t("duel.inboxSeeAll", {
                 n: toLocaleDigits(more, locale),
               })}
             </Link>
-          ) : (
-            <Link
-              href="/play/duel"
-              className="flex min-h-10 w-full items-center justify-center font-display text-[11px] font-bold text-white/50"
-            >
-              {t("duel.inboxOpenLobby")}
-            </Link>
-          )}
-        </div>
+          </div>
+        ) : null}
       </GamePanel>
     </motion.div>
   );
