@@ -36,7 +36,10 @@ type LeaderboardListProps = {
 type TabKey = "weekly" | "hof";
 
 /** Only animate the first N rows — rest paint instantly to cut hydration TBT. */
-const ANIMATED_ROW_CAP = 12;
+const ANIMATED_ROW_CAP = 6;
+
+/** Approximate row height for content-visibility intrinsic size (avoids scroll jump). */
+const ROW_INTRINSIC = "auto 3.25rem";
 
 const containerVariants = {
   hidden: {},
@@ -112,8 +115,9 @@ export function LeaderboardList({
 
   useEffect(() => {
     if (tab !== "weekly" || !stickyId || !youAnchor) {
-      setYouInView(true);
-      return;
+      // Reset sticky chrome when the YOU row is unmounted / tab changes.
+      const id = window.requestAnimationFrame(() => setYouInView(true));
+      return () => window.cancelAnimationFrame(id);
     }
     const io = new IntersectionObserver(
       ([entry]) => setYouInView(entry.isIntersecting),
@@ -305,6 +309,11 @@ export function LeaderboardList({
                   <li
                     key={row.userId}
                     className="list-none"
+                    style={{
+                      // Skip layout/paint for off-screen rows (Top-N can be ~50).
+                      contentVisibility: "auto",
+                      containIntrinsicSize: ROW_INTRINSIC,
+                    }}
                     ref={isYou && youInList ? setYouAnchor : undefined}
                   >
                     <LeaderboardRowItem

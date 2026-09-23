@@ -563,6 +563,9 @@ const fa: Dictionary = {
     leaveBody: "هنوز سوت پایان زده نشده! اگر الان خارج شوی، این مسابقه ثبت نمی‌شود و پیشرفتت از بین می‌رود.",
     leaveStay: "ادامه بده",
     leaveConfirm: "خروج از مسابقه",
+    leaveLobbyTitle: "برگردی به پلی؟",
+    leaveLobbyBody: "هر وقت خواستی می‌تونی دوباره برگردی و شروع کنی.",
+    leaveLobbyConfirm: "خروج",
     helpers: {
       title: "کمک‌ها",
       hint: "کارشناس",

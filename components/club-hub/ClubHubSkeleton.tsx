@@ -30,7 +30,7 @@ export function ClubHubSkeleton() {
               <div className={`h-5 w-28 ${bone}`} aria-hidden />
             </div>
             <div
-              className="flex h-11 w-[7.5rem] shrink-0 animate-pulse rounded-2xl bg-black/30 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_3px_0_0_rgba(0,0,0,0.28)]"
+              className="flex h-11 w-30 shrink-0 animate-pulse rounded-2xl bg-black/30 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_3px_0_0_rgba(0,0,0,0.28)]"
               aria-hidden
             />
           </header>

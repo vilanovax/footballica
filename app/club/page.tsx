@@ -60,16 +60,15 @@ async function ClubHubLoader({ openManage }: { openManage: boolean }) {
       lastMatch={lastMatch}
       openManage={openManage}
       needsBusinessSettle={!openManage && club.tutorialStep === 2}
-      secondary={
-        club.tutorialStep === 2 ? (
-          <Suspense fallback={<HubSecondarySkeleton />}>
-            <ClubHubSecondary
-              mysteryStreak={club.mysteryStreak}
-              activeNews={club.activeNewsBooster}
-            />
-          </Suspense>
-        ) : null
-      }
-    />
+    >
+      {club.tutorialStep === 2 ? (
+        <Suspense key="hub-secondary" fallback={<HubSecondarySkeleton />}>
+          <ClubHubSecondary
+            mysteryStreak={club.mysteryStreak}
+            activeNews={club.activeNewsBooster}
+          />
+        </Suspense>
+      ) : null}
+    </ClubHub>
   );
 }

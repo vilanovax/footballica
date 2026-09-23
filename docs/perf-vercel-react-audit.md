@@ -118,8 +118,18 @@ Also:
 
 ## Follow-ups (not in this pass)
 
-- `rerender-defer-reads` on BottomNav / match store action subscriptions (`getState()` in handlers)
+- ~~`rerender-defer-reads` on BottomNav / match store action subscriptions (`getState()` in handlers)~~ → BottomNav actions via `getState()`; phase-only subscriptions
 - Hoist `EMPTY_*` default props (`rerender-memo-with-default-value`)
-- `content-visibility` on `LeaderboardList` rows
+- ~~`content-visibility` on `LeaderboardList` rows~~ → applied (`auto` + intrinsic ~3.25rem; animate cap 6)
 - ~~`after()` for non-blocking post-response work~~ → applied on `getDuelInbox` job tick
 - ~~Nested Suspense slots inside ClubHub (inbox / today rail)~~ → `ClubHubSecondary` + hub fast snapshot (`settleBusiness: false`)
+
+### Local baseline (dev, warm, 2026-09-23)
+
+| Route | TTFB | Notes |
+|-------|------|-------|
+| `/club` | ~20–80ms | HTML ~40KB streamed; framer still in page graph |
+| `/leaderboard` | ~20ms (307) | Unauthed redirect — measure standings TTFB while logged in |
+| `/play` | ~25ms | |
+
+Prod / CrUX still needed for real LCP + TBT.

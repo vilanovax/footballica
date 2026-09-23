@@ -38,23 +38,20 @@ const tabs = [
   },
 ] as const;
 
+function isMatchPhase(phase: string): boolean {
+  return phase === "playing" || phase === "reveal";
+}
+
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { t, locale } = useTranslation();
 
-  // A match is "in flight" while a kick is live or its result is showing.
-  const penaltyActive = usePenaltyStore(
-    (s) => s.phase === "playing" || s.phase === "reveal",
-  );
-  const survivalActive = useSurvivalStore(
-    (s) => s.phase === "playing" || s.phase === "reveal",
-  );
+  // Subscribe only to phase bits — actions read via getState() in handlers
+  // so store action identity changes never re-render the nav chrome.
+  const penaltyActive = usePenaltyStore((s) => isMatchPhase(s.phase));
+  const survivalActive = useSurvivalStore((s) => isMatchPhase(s.phase));
   const matchActive = penaltyActive || survivalActive;
-  const resetMatch = usePenaltyStore((s) => s.reset);
-  const resetSurvival = useSurvivalStore((s) => s.reset);
-  const setPaused = usePenaltyStore((s) => s.setPaused);
-  const setSurvivalPaused = useSurvivalStore((s) => s.setPaused);
 
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [duelInbox, setDuelInbox] = useState(0);
@@ -156,8 +153,8 @@ export function BottomNav() {
       // Intercept: don't lose match progress on a stray tap.
       e.preventDefault();
       haptic(HAPTIC.tap);
-      setPaused(true);
-      setSurvivalPaused(true);
+      usePenaltyStore.getState().setPaused(true);
+      useSurvivalStore.getState().setPaused(true);
       setPendingHref(href);
       return;
     }
@@ -167,16 +164,16 @@ export function BottomNav() {
   function confirmLeave() {
     const href = pendingHref;
     setPendingHref(null);
-    resetMatch();
-    resetSurvival();
+    usePenaltyStore.getState().reset();
+    useSurvivalStore.getState().reset();
     playSound("click");
     if (href) router.push(href);
   }
 
   function cancelLeave() {
     playSound("click");
-    setPaused(false);
-    setSurvivalPaused(false);
+    usePenaltyStore.getState().setPaused(false);
+    useSurvivalStore.getState().setPaused(false);
     setPendingHref(null);
   }
 
@@ -236,7 +233,7 @@ export function BottomNav() {
                     />
                   </span>
                   {duelInbox > 0 && (
-                    <span className="absolute end-1 top-0 z-10 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[11px] font-bold text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
+                    <span className="absolute inset-e-1 top-0 z-10 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[11px] font-bold text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
                       {toLocaleDigits(Math.min(duelInbox, 9), locale)}
                       {duelInbox > 9 ? "+" : ""}
                     </span>

@@ -37,17 +37,15 @@ import { toLocaleDigits } from "@/lib/i18n/format";
 import { countMissionRewardsReady } from "@/lib/game/missionRewards";
 import { nextMilestone } from "@/lib/club/milestones";
 import { StatusBar } from "./StatusBar";
-import { StadiumHero } from "./StadiumHero";
-import { FtueCoach } from "./FtueCoach";
 import type { LastMatchLine } from "@/lib/club/lastMatch";
 import { MatchDoor } from "@/components/club-hub/MatchDoor";
-import { ClubManageSheet } from "@/components/club-hub/ClubManageSheet";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 import {
   ClubHubDataProvider,
   useClubHubData,
 } from "@/components/club-hub/clubHubData";
 
+// Heavy / deferred hub panels — keep first Club paint lean (MatchDoor + HUD).
 const MissionDrawer = dynamic(() =>
   import("@/components/profile/MissionDrawer").then((m) => m.MissionDrawer),
 );
@@ -57,6 +55,25 @@ const Confetti = dynamic(() =>
 const NewspaperModal = dynamic(() =>
   import("./NewspaperModal").then((m) => m.NewspaperModal),
 );
+const StadiumHero = dynamic(
+  () => import("./StadiumHero").then((m) => m.StadiumHero),
+  { loading: () => <StadiumHeroFallback /> },
+);
+const ClubManageSheet = dynamic(() =>
+  import("./ClubManageSheet").then((m) => m.ClubManageSheet),
+);
+const FtueCoach = dynamic(() =>
+  import("./FtueCoach").then((m) => m.FtueCoach),
+);
+
+function StadiumHeroFallback() {
+  return (
+    <div
+      className="aspect-2/1 w-full animate-pulse rounded-bubble-xl bg-[hsl(var(--arena-mid)/0.55)] shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.12)]"
+      aria-hidden
+    />
+  );
+}
 
 type ClubHubProps = {
   initialClub: ClubSnapshot;
@@ -70,7 +87,8 @@ type ClubHubProps = {
   lastMatch?: LastMatchLine | null;
   openManage?: boolean;
   needsBusinessSettle?: boolean;
-  secondary?: ReactNode;
+  /** Streamed rails (missions / today / duel) — pass Suspense as children. */
+  children?: ReactNode;
 };
 
 export function ClubHub({
@@ -81,7 +99,7 @@ export function ClubHub({
   lastMatch = null,
   openManage = false,
   needsBusinessSettle = false,
-  secondary = null,
+  children = null,
 }: ClubHubProps) {
   const { t, locale } = useTranslation();
   const [club, setClub] = useState(initialClub);
@@ -91,6 +109,10 @@ export function ClubHub({
   const [error, setError] = useState<string | null>(null);
   const [justGraduated, setJustGraduated] = useState(false);
   const [manageOpen, setManageOpen] = useState(
+    initialClub.tutorialStep === 1 || openManage,
+  );
+  // Keep sheet chunk unloaded until first open (except FTUE step 1 / deep link).
+  const [manageMounted, setManageMounted] = useState(
     initialClub.tutorialStep === 1 || openManage,
   );
   const [, startTransition] = useTransition();
@@ -103,6 +125,11 @@ export function ClubHub({
   const ftueComplete = step === 2;
   // FTUE step 1 locks the manage sheet open until the first stadium buy.
   const sheetOpen = step === 1 || manageOpen;
+
+  function openManageSheet() {
+    setManageMounted(true);
+    setManageOpen(true);
+  }
 
   useEffect(() => {
     if (!openManage) return;
@@ -179,7 +206,7 @@ export function ClubHub({
   }, [newsPending]);
 
   function focusUpgrade(key: UpgradeKey) {
-    setManageOpen(true);
+    openManageSheet();
     setGoalSpotlightKey(key);
     const jump = () => {
       document
@@ -305,19 +332,18 @@ export function ClubHub({
                     />
 
                     {canClaimNews && (
-                      <motion.button
+                      <button
                         type="button"
                         onClick={handleDailyNews}
                         disabled={newsPending}
                         aria-label={t("club.dailyNews")}
-                        className="game-icon-btn relative"
-                        whileTap={{ scale: 0.9 }}
+                        className="game-icon-btn relative active:scale-90"
                       >
                         <HubIcon kind="news" size="md" />
                         <span className="absolute -inset-e-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
                           {toLocaleDigits(1, locale)}
                         </span>
-                      </motion.button>
+                      </button>
                     )}
                   </>
                 )}
@@ -364,9 +390,12 @@ export function ClubHub({
             />
           )}
 
-          {ftueComplete && secondary}
+          {ftueComplete ? children : null}
 
-          <div className="relative">
+          <div
+            className="relative"
+            style={{ contentVisibility: "auto", containIntrinsicSize: "0 180px" }}
+          >
             <p className="mb-1 px-1 font-display text-xs font-black text-arena-muted">
               {t("club.yourStadium")}
             </p>
@@ -378,36 +407,37 @@ export function ClubHub({
               celebrateKey={celebrateKey}
               celebrating={celebrating}
               upgradeReady={upgradeReady}
-              onOpenManage={() => setManageOpen(true)}
+              onOpenManage={openManageSheet}
             />
           </div>
         </div>
 
-        <ClubManageSheet
-          open={sheetOpen}
-          onClose={() => setManageOpen(false)}
-          dismissible={step !== 1}
-          club={club}
-          coinsPerWin={coinsPerWin}
-          pendingKey={pendingKey}
-          goalSpotlightKey={goalSpotlightKey}
-          error={error}
-          showBusiness={ftueComplete}
-          tutorialStep={step}
-          onUpgrade={handleUpgrade}
-          onFocusUpgrade={focusUpgrade}
-          onClubUpdate={setClub}
-          coach={
-            step === 1 ? (
-              <FtueCoach
-                avatarKey={avatarKey}
-                name={avatarName}
-                line={t("ftue.step1Line")}
-              />
-            ) : undefined
-          }
-        />
-
+        {manageMounted && (
+          <ClubManageSheet
+            open={sheetOpen}
+            onClose={() => setManageOpen(false)}
+            dismissible={step !== 1}
+            club={club}
+            coinsPerWin={coinsPerWin}
+            pendingKey={pendingKey}
+            goalSpotlightKey={goalSpotlightKey}
+            error={error}
+            showBusiness={ftueComplete}
+            tutorialStep={step}
+            onUpgrade={handleUpgrade}
+            onFocusUpgrade={focusUpgrade}
+            onClubUpdate={setClub}
+            coach={
+              step === 1 ? (
+                <FtueCoach
+                  avatarKey={avatarKey}
+                  name={avatarName}
+                  line={t("ftue.step1Line")}
+                />
+              ) : undefined
+            }
+          />
+        )}
         <AnimatePresence>
           {news && (
             <NewspaperModal
@@ -500,12 +530,11 @@ function MissionBadgeButton({
     boards.missionBoard,
   );
   return (
-    <motion.button
+    <button
       type="button"
       onClick={onOpen}
       aria-label={label}
-      className="game-icon-btn relative"
-      whileTap={{ scale: 0.9 }}
+      className="game-icon-btn relative active:scale-90"
     >
       <HubIcon kind="mission" size="md" priority />
       {missionReadyCount > 0 && (
@@ -514,7 +543,7 @@ function MissionBadgeButton({
           {missionReadyCount > 9 ? "+" : ""}
         </span>
       )}
-    </motion.button>
+    </button>
   );
 }
 

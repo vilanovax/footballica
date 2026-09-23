@@ -5,20 +5,24 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
+import type { LeaveCopyTone } from "./MatchLeaveControl";
 
 type LeaveMatchDialogProps = {
   open: boolean;
   onStay: () => void;
   onLeave: () => void;
+  tone?: LeaveCopyTone;
 };
 
-/** Confirm before abandoning an in-flight quiz match. */
+/** Confirm before abandoning an immersive quiz surface. */
 export function LeaveMatchDialog({
   open,
   onStay,
   onLeave,
+  tone = "match",
 }: LeaveMatchDialogProps) {
   const { t } = useTranslation();
+  const isLobby = tone === "lobby";
 
   return (
     <AnimatePresence>
@@ -65,13 +69,13 @@ export function LeaveMatchDialog({
                 id="leave-match-title"
                 className="relative mt-4 font-display text-xl font-black text-white"
               >
-                {t("quiz.leaveTitle")}
+                {isLobby ? t("quiz.leaveLobbyTitle") : t("quiz.leaveTitle")}
               </h2>
               <p
                 id="leave-match-desc"
                 className="relative mt-2.5 font-display text-sm font-bold leading-relaxed text-white/70"
               >
-                {t("quiz.leaveBody")}
+                {isLobby ? t("quiz.leaveLobbyBody") : t("quiz.leaveBody")}
               </p>
 
               <div className="relative mt-7 flex flex-col gap-2.5">
@@ -84,7 +88,9 @@ export function LeaveMatchDialog({
                   onClick={onLeave}
                   className="bg-rose-500/15 text-rose-100 shadow-[inset_0_0_0_1px_hsl(var(--arena-ring-rose)/0.45)]"
                 >
-                  {t("quiz.leaveConfirm")}
+                  {isLobby
+                    ? t("quiz.leaveLobbyConfirm")
+                    : t("quiz.leaveConfirm")}
                 </GameCta>
               </div>
             </GamePanel>
