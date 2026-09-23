@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { buyStaminaRefill, type ShopErrorCode } from "@/actions/shop";
 import type { ClubSnapshot } from "@/lib/club/upgrades";
@@ -15,6 +14,7 @@ import { ResourceIcon } from "@/components/common/ResourceIcon";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 import { GameTile } from "@/components/ui/game/GameTile";
+import { cn } from "@/lib/utils";
 
 type StatusBarProps = {
   coins: number;
@@ -54,9 +54,9 @@ export function StatusBar({
   useEffect(() => {
     if (coins > prevCoins.current) {
       setPulse(true);
-      const timer = setTimeout(() => setPulse(false), 700);
+      const timer = window.setTimeout(() => setPulse(false), 700);
       prevCoins.current = coins;
-      return () => clearTimeout(timer);
+      return () => window.clearTimeout(timer);
     }
     prevCoins.current = coins;
   }, [coins]);
@@ -66,14 +66,17 @@ export function StatusBar({
   const remainingRef = useRef(msUntilNext);
 
   useEffect(() => {
-    setLocalStamina(stamina);
-    setRemainingMs(msUntilNext);
-    remainingRef.current = msUntilNext;
+    const id = window.requestAnimationFrame(() => {
+      setLocalStamina(stamina);
+      setRemainingMs(msUntilNext);
+      remainingRef.current = msUntilNext;
+    });
+    return () => window.cancelAnimationFrame(id);
   }, [stamina, maxStamina, msUntilNext, medicalLevel]);
 
   useEffect(() => {
     if (localStamina >= maxStamina) return;
-    const id = setInterval(() => {
+    const id = window.setInterval(() => {
       remainingRef.current -= 1000;
       if (remainingRef.current <= 0) {
         setLocalStamina((s) => Math.min(maxStamina, s + 1));
@@ -81,7 +84,7 @@ export function StatusBar({
       }
       setRemainingMs(remainingRef.current);
     }, 1000);
-    return () => clearInterval(id);
+    return () => window.clearInterval(id);
   }, [localStamina, maxStamina, regenIntervalMs]);
 
   const regenerating = localStamina < maxStamina;
@@ -140,10 +143,9 @@ export function StatusBar({
   return (
     <>
       <div className="grid grid-cols-2 gap-2">
-        <motion.div
+        <div
           id="coin-balance-target"
-          animate={pulse ? { scale: [1, 1.06, 1] } : { scale: 1 }}
-          transition={{ duration: 0.5 }}
+          className={cn(pulse && "animate-status-coin-pulse")}
         >
           <Link
             href="/shop?tab=coins"
@@ -166,7 +168,7 @@ export function StatusBar({
               </span>
             </GameTile>
           </Link>
-        </motion.div>
+        </div>
 
         <div className="flex flex-col gap-0.5">
           <button
@@ -211,27 +213,19 @@ export function StatusBar({
         </div>
       </div>
 
-      <AnimatePresence>
-        {confirmOpen && (
-          <motion.div
-            className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 p-4 sm:items-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => !pending && setConfirmOpen(false)}
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 z-70 flex items-end justify-center bg-black/60 p-4 animate-status-sheet-fade sm:items-center"
+          onClick={() => !pending && setConfirmOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="stamina-refill-title"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm animate-status-sheet-rise"
           >
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="stamina-refill-title"
-              initial={{ y: 40, opacity: 0, scale: 0.96 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 24, opacity: 0, scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 380, damping: 28 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm"
-            >
-              <GamePanel tone="sky" className="p-5">
+            <GamePanel tone="sky" className="p-5">
               <div className="relative mb-3 flex justify-center" aria-hidden>
                 <ResourceIcon kind="energy" size="lg" className="h-12 w-12" />
               </div>
@@ -273,11 +267,10 @@ export function StatusBar({
                   )}
                 </GameCta>
               </div>
-              </GamePanel>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </GamePanel>
+          </div>
+        </div>
+      )}
     </>
   );
 }

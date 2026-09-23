@@ -985,3 +985,55 @@ html.player-pitch[data-theme="dark"] .hub-ground {
     transform: scaleX(1);
   }
 }
+
+/* Club StatusBar — CSS instead of Framer on the above-fold HUD. */
+@keyframes status-coin-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes status-sheet-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes status-sheet-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-status-coin-pulse {
+  animation: status-coin-pulse 0.5s ease-out;
+}
+
+.animate-status-sheet-fade {
+  animation: status-sheet-fade 0.16s ease-out;
+}
+
+.animate-status-sheet-rise {
+  animation: status-sheet-rise 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-status-coin-pulse,
+  .animate-status-sheet-fade,
+  .animate-status-sheet-rise {
+    animation: none !important;
+  }
+}
+

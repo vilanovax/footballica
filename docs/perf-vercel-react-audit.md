@@ -132,4 +132,14 @@ Also:
 | `/leaderboard` | ~20ms (307) | Unauthed redirect — measure standings TTFB while logged in |
 | `/play` | ~25ms | |
 
-Prod / CrUX still needed for real LCP + TBT.
+### Logged-in hard navigate (localhost, Cursor browser, 2026-09-23)
+
+| Route | TTFB | DCL | Load | Transfer |
+|-------|------|-----|------|----------|
+| `/club` | **109ms** | 404ms | 582ms | ~20 KB |
+| `/leaderboard` | **100ms** | 175ms | 624ms | ~13 KB |
+
+Paint/LCP entries were unavailable in this embedded browser (FCP/LCP null). Re-check on Chrome mobile / Vercel preview for real LCP.
+StatusBar Framer removed (CSS coin pulse + sheet) — Club above-fold no longer pulls motion for HUD.
+
+Prod / CrUX still needed for field LCP + TBT.
