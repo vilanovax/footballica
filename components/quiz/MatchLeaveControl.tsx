@@ -6,9 +6,9 @@ import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { cn } from "@/lib/utils";
-import { LeaveMatchDialog } from "./LeaveMatchDialog";
+import { LeaveMatchDialog, type LeaveCopyTone } from "./LeaveMatchDialog";
 
-export type LeaveCopyTone = "match" | "lobby";
+export type { LeaveCopyTone };
 
 type MatchLeaveControlProps = {
   /** Freeze the fuse while the confirm sheet is open (in-match only). */
@@ -60,9 +60,7 @@ export function MatchLeaveControl({
       <button
         type="button"
         onClick={requestLeave}
-        aria-label={
-          tone === "lobby" ? t("quiz.leaveLobbyConfirm") : t("quiz.leaveConfirm")
-        }
+        aria-label={t("common.close")}
         className={cn(
           "shrink-0 transition-transform active:scale-90",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring",

@@ -5,7 +5,8 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
-import type { LeaveCopyTone } from "./MatchLeaveControl";
+
+export type LeaveCopyTone = "match" | "lobby";
 
 type LeaveMatchDialogProps = {
   open: boolean;
