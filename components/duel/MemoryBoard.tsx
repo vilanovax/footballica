@@ -16,6 +16,7 @@ import { GameChip } from "@/components/ui/game/GameChip";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
+import { MatchPitch } from "@/components/quiz/MatchPitch";
 import { cn } from "@/lib/utils";
 
 type MemoryBoardProps = {
@@ -249,39 +250,19 @@ export function MemoryBoard({
   }
 
   return (
-    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-      {/* Pitch night arena */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-arena" />
-        <div
-          className={cn(
-            "absolute inset-x-0 top-0 h-52 bg-linear-to-b to-transparent",
-            theme.flood,
-          )}
-        />
-        <div
-          className="absolute inset-0 opacity-[0.1]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(-16deg, transparent, transparent 11px, #fff 11px, #fff 12px)",
-          }}
-        />
-        {/* Pitch markings under the grid */}
-        <div className="absolute inset-x-[10%] top-[42%] h-px bg-white/12" />
-        <div className="absolute inset-s-1/2 top-[32%] h-[40%] w-px -translate-x-1/2 bg-white/10" />
-        <div className="absolute inset-s-1/2 top-[52%] h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_0_1px_rgba(255,255,255,0.1)]" />
-        <div
-          className={cn(
-            "absolute -inset-e-10 top-16 h-36 w-36 rounded-full blur-3xl",
-            isAttack ? "bg-amber-400/20" : "bg-sky-400/18",
-          )}
-        />
-        <div className="absolute inset-x-0 bottom-0 h-44 bg-linear-to-t from-black/70 to-transparent" />
-      </div>
+    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-arena text-arena-fg">
+      <MatchPitch stadiumLevel={0} />
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 z-[1] h-44 bg-linear-to-b to-transparent",
+          theme.flood,
+        )}
+      />
 
       {/* HUD */}
       <header className="relative z-10 mx-3 mt-[max(0.5rem,env(safe-area-inset-top))]">
-        <GamePanel tone={theme.panelTone} className="px-3 py-2.5">
+        <GamePanel tone={theme.panelTone} className="bg-black/25 px-3 py-2.5">
           <div className="relative flex items-center gap-3">
             {/* Pair progress ring */}
             <div className="relative h-17 w-17 shrink-0">

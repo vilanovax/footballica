@@ -36,6 +36,9 @@ import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { GRID_SIZE, cellKey } from "@/lib/grid/types";
 import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
+import { MatchPitch } from "@/components/quiz/MatchPitch";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 
 type Props = {
   duelId: string;
@@ -58,6 +61,7 @@ type AttackTheme = {
   accent: string;
   cta: string;
   dockRing: string;
+  panelTone: "amber" | "sky";
 };
 
 function useAttackTheme(isAttack: boolean): AttackTheme {
@@ -73,6 +77,7 @@ function useAttackTheme(isAttack: boolean): AttackTheme {
             accent: "text-orange-300",
             cta: "game-cta-accent",
             dockRing: "focus:ring-orange-400/50",
+            panelTone: "amber",
           }
         : {
             flood: "from-sky-400/30 via-teal-400/10",
@@ -83,6 +88,7 @@ function useAttackTheme(isAttack: boolean): AttackTheme {
             accent: "text-sky-300",
             cta: "game-cta-primary",
             dockRing: "focus:ring-sky-400/50",
+            panelTone: "sky",
           },
     [isAttack],
   );
@@ -729,87 +735,85 @@ function SpecialArena({
   const ringOffset = ringC * (1 - pct);
 
   return (
-    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-arena" />
-        <div
-          className={`absolute inset-x-0 top-0 h-48 bg-linear-to-b ${theme.flood} to-transparent`}
-        />
-        <div
-          className="absolute inset-0 opacity-[0.12]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(90deg, transparent 0 28px, rgba(255,255,255,0.09) 28px 29px), repeating-linear-gradient(0deg, transparent 0 36px, rgba(255,255,255,0.05) 36px 37px)",
-          }}
-        />
-        <div className="absolute inset-x-[12%] top-[38%] h-px bg-white/12" />
-        <div className="absolute inset-s-1/2 top-[28%] h-[44%] w-px -translate-x-1/2 bg-white/10" />
-        <div className="absolute inset-s-1/2 top-[48%] h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-black/55 to-transparent" />
-      </div>
+    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-arena text-arena-fg">
+      <MatchPitch stadiumLevel={0} />
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-x-0 top-0 z-[1] h-44 bg-linear-to-b ${theme.flood} to-transparent`}
+      />
 
-      <header className="relative z-10 flex items-center gap-3 px-3 pt-3">
-        <div className="relative h-18 w-18 shrink-0">
-          <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
-            <circle
-              cx="40"
-              cy="40"
-              r={ringR}
-              fill="none"
-              strokeWidth="6"
-              className={theme.ringTrack}
-            />
-            <motion.circle
-              cx="40"
-              cy="40"
-              r={ringR}
-              fill="none"
-              strokeWidth="6"
-              strokeLinecap="round"
-              className={theme.ring}
-              strokeDasharray={ringC}
-              initial={{ strokeDashoffset: ringOffset }}
-              animate={{ strokeDashoffset: ringOffset }}
-              transition={{ type: "spring", stiffness: 120, damping: 20 }}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span
-              className={`font-display text-xl font-black tabular-nums leading-none ${theme.score}`}
-            >
-              {toLocaleDigits(hudValue, locale)}
-            </span>
-            <span className="font-display text-[10px] font-bold text-white/45">
-              /{toLocaleDigits(hudMax, locale)}
-            </span>
+      <header className="relative z-10 mx-3 mt-[max(0.5rem,env(safe-area-inset-top))]">
+        <GamePanel
+          tone={theme.panelTone}
+          className="bg-black/25 px-3 py-2.5"
+        >
+          <div className="relative flex items-center gap-3">
+            <div className="relative h-17 w-17 shrink-0">
+              <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
+                <circle
+                  cx="40"
+                  cy="40"
+                  r={ringR}
+                  fill="none"
+                  strokeWidth="6"
+                  className={theme.ringTrack}
+                />
+                <motion.circle
+                  cx="40"
+                  cy="40"
+                  r={ringR}
+                  fill="none"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  className={theme.ring}
+                  strokeDasharray={ringC}
+                  initial={{ strokeDashoffset: ringOffset }}
+                  animate={{ strokeDashoffset: ringOffset }}
+                  transition={{ type: "spring", stiffness: 120, damping: 20 }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-black/35">
+                <span
+                  className={`font-display text-xl font-black tabular-nums leading-none ${theme.score}`}
+                >
+                  {toLocaleDigits(hudValue, locale)}
+                </span>
+                <span className="font-display text-[10px] font-bold text-white/45">
+                  /{toLocaleDigits(hudMax, locale)}
+                </span>
+              </div>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <GameChip
+                tone={theme.panelTone === "amber" ? "amber" : "default"}
+                className="gap-1.5 uppercase tracking-wide"
+              >
+                <motion.span
+                  className="h-1.5 w-1.5 rounded-full bg-current"
+                  animate={
+                    reduceMotion
+                      ? undefined
+                      : { opacity: [1, 0.35, 1], scale: [1, 1.3, 1] }
+                  }
+                  transition={{ repeat: Infinity, duration: 1.1 }}
+                />
+                {badge}
+              </GameChip>
+              <h2 className="mt-1.5 font-display text-lg font-black leading-tight text-white">
+                {title}
+              </h2>
+              <p className="mt-0.5 font-body text-xs font-semibold text-white/55">
+                {subtitle}
+              </p>
+              <p
+                className={`mt-0.5 font-display text-[11px] font-bold ${theme.accent}`}
+              >
+                {hudHint}
+              </p>
+            </div>
           </div>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-display text-[11px] font-extrabold uppercase tracking-wide shadow-lg ${theme.badge}`}
-          >
-            <motion.span
-              className="h-1.5 w-1.5 rounded-full bg-white"
-              animate={
-                reduceMotion
-                  ? undefined
-                  : { opacity: [1, 0.35, 1], scale: [1, 1.3, 1] }
-              }
-              transition={{ repeat: Infinity, duration: 1.1 }}
-            />
-            {badge}
-          </span>
-          <h2 className="mt-1.5 font-display text-xl font-black text-white drop-shadow-md">
-            {title}
-          </h2>
-          <p className="mt-0.5 font-body text-xs font-semibold text-white/55">
-            {subtitle}
-          </p>
-          <p className={`mt-0.5 font-display text-[11px] font-bold ${theme.accent}`}>
-            {hudHint}
-          </p>
-        </div>
+        </GamePanel>
       </header>
 
       <div className="relative z-10 mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-2">

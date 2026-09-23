@@ -22,6 +22,7 @@ import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { DuelSpecialHelpSheet } from "@/components/duel/DuelSpecialHelpSheet";
 import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
+import { MatchPitch } from "@/components/quiz/MatchPitch";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
@@ -297,21 +298,12 @@ export function TikiTakaBoard({
   const circumference = 2 * Math.PI * 28;
 
   return (
-    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-arena" />
-        <div className="absolute inset-x-0 top-0 h-52 bg-linear-to-b from-emerald-500/25 via-sky-500/10 to-transparent" />
-        <div
-          className="absolute inset-0 opacity-[0.08]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(-16deg, transparent, transparent 11px, #fff 11px, #fff 12px)",
-          }}
-        />
-        <div className="absolute -inset-s-16 top-24 h-44 w-44 rounded-full bg-sky-400/15 blur-3xl" />
-        <div className="absolute -inset-e-12 bottom-32 h-40 w-40 rounded-full bg-rose-400/10 blur-3xl" />
-        <div className="absolute inset-x-0 bottom-0 h-36 bg-linear-to-t from-black/60 to-transparent" />
-      </div>
+    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-arena text-arena-fg">
+      <MatchPitch stadiumLevel={0} />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-44 bg-linear-to-b from-emerald-500/20 via-sky-500/8 to-transparent"
+      />
 
       {/* Header — Arena chrome + close */}
       <motion.header
@@ -319,7 +311,7 @@ export function TikiTakaBoard({
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 mx-3 mt-[max(0.5rem,env(safe-area-inset-top))]"
       >
-        <GamePanel tone="emerald" className="px-2.5 py-2">
+        <GamePanel tone="emerald" className="bg-black/25 px-2.5 py-2">
         <div className="relative flex items-center gap-2">
           <MatchLeaveControl
             setPaused={setLeavePaused}
