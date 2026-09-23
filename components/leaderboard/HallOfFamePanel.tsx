@@ -69,7 +69,7 @@ export function HallOfFamePanel({ weeks }: HallOfFamePanelProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-28 pt-2">
+    <div className="flex flex-col gap-4 pb-4 pt-2">
       {weeks.map((week, wi) => (
         <motion.section
           key={week.tehranWeekKey}

@@ -13,13 +13,14 @@ import { displayClubName } from "@/lib/leaderboard/displayName";
 import {
   LEADERBOARD_CACHE_TAG,
   LEADERBOARD_REVALIDATE_SECONDS,
+  LEADERBOARD_TOP_N,
 } from "@/lib/leaderboard/cacheTags";
 import {
   ensureMockLeaderboardIfSparse,
   MIN_USERS_FOR_UI,
 } from "@/lib/leaderboard/seedMocks";
 
-const TOP_N = 50;
+const TOP_N = LEADERBOARD_TOP_N;
 
 export type LeaderboardPlayState = "scored" | "playedZero" | "unplayed";
 
@@ -230,6 +231,28 @@ export async function getLeaderboard(): Promise<LeaderboardPayload> {
     }
   }
 
+  return assembleLeaderboard(standings, currentUserId);
+}
+
+/**
+ * Bust Top-N cache and return a live board (bypasses unstable_cache for this hit).
+ */
+export async function refreshLeaderboard(): Promise<LeaderboardPayload> {
+  revalidateTag(LEADERBOARD_CACHE_TAG, "max");
+  try {
+    await ensureWeeklyLeagueReset();
+  } catch (err) {
+    console.error("ensureWeeklyLeagueReset in refreshLeaderboard", err);
+  }
+  const currentUserId = await getSessionUserId();
+  const standings = await loadTopStandings();
+  return assembleLeaderboard(standings, currentUserId);
+}
+
+async function assembleLeaderboard(
+  standings: CachedStandings,
+  currentUserId: string | null,
+): Promise<LeaderboardPayload> {
   const rows = standings.rows.map((r) => stampViewer(r, currentUserId));
 
   let currentUserRow: LeaderboardRow | null =

@@ -12,6 +12,7 @@ import { GamePanel } from "@/components/ui/game/GamePanel";
 
 type LeaderboardPodiumProps = {
   rows: LeaderboardRow[];
+  onInspect?: (row: LeaderboardRow) => void;
 };
 
 const PLACES: Record<
@@ -58,7 +59,10 @@ const PLACES: Record<
 const RENDER_ORDER = [2, 1, 3] as const;
 
 /** Top-3 podium — staged dark chrome with dimensional steps. */
-export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
+export function LeaderboardPodium({
+  rows,
+  onInspect,
+}: LeaderboardPodiumProps) {
   const { t, locale } = useTranslation();
   const reduceMotion = useReducedMotion();
   const byRank = new Map(rows.map((r) => [r.rank, r] as const));
@@ -84,26 +88,8 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
           const place = PLACES[rank]!;
           const isChampion = rank === 1;
 
-          return (
-            <motion.div
-              key={row.userId}
-              initial={reduceMotion ? false : { opacity: 0, y: 28 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={
-                reduceMotion
-                  ? { duration: 0 }
-                  : {
-                      type: "spring",
-                      stiffness: 280,
-                      damping: 20,
-                      delay: rank === 1 ? 0.06 : rank === 2 ? 0.14 : 0.22,
-                    }
-              }
-              className={[
-                "flex min-w-0 flex-1 flex-col items-center",
-                isChampion ? "z-10" : "z-0",
-              ].join(" ")}
-            >
+          const column = (
+            <>
               {isChampion && (
                 <div
                   className="mb-0.5 motion-safe:animate-[podium-crown_2.4s_ease-in-out_infinite]"
@@ -121,7 +107,7 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
                     place.glow,
                     place.avatarSize,
                     row.isCurrentUser
-                      ? "outline outline-2 outline-offset-2 outline-accent"
+                      ? "outline-2 outline-offset-2 outline-accent"
                       : "",
                   ].join(" ")}
                 >
@@ -143,7 +129,7 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
                   />
                 </span>
                 {row.isCurrentUser && (
-                  <span className="absolute -top-1 start-1/2 -translate-x-1/2 rounded-full bg-accent px-1.5 py-0.5 font-display text-[8px] font-black uppercase text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
+                  <span className="absolute -top-1 inset-s-1/2 -translate-x-1/2 rounded-full bg-accent px-1.5 py-0.5 font-display text-[8px] font-black uppercase text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
                     {t("leaderboard.you")}
                   </span>
                 )}
@@ -154,7 +140,6 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
                   "mt-1.5 w-full truncate px-0.5 text-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]",
                   isChampion ? "text-xs" : "text-[11px]",
                 ].join(" ")}
-                title={row.clubName}
               >
                 {shortClubName(row.clubName, isChampion ? 18 : 14)}
               </p>
@@ -176,11 +161,11 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
                 />
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-y-0 start-0 w-2 bg-white/15"
+                  className="pointer-events-none absolute inset-y-0 inset-s-0 w-2 bg-white/15"
                 />
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-y-0 end-0 w-2 bg-black/20"
+                  className="pointer-events-none absolute inset-y-0 inset-e-0 w-2 bg-black/20"
                 />
                 <span
                   className={[
@@ -191,6 +176,43 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
                   {toLocaleDigits(rank, locale)}
                 </span>
               </div>
+            </>
+          );
+
+          return (
+            <motion.div
+              key={row.userId}
+              initial={reduceMotion ? false : { opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={
+                reduceMotion
+                  ? { duration: 0 }
+                  : {
+                      type: "spring",
+                      stiffness: 280,
+                      damping: 20,
+                      delay: rank === 1 ? 0.06 : rank === 2 ? 0.14 : 0.22,
+                    }
+              }
+              className={[
+                "flex min-w-0 flex-1 flex-col items-center",
+                isChampion ? "z-10" : "z-0",
+              ].join(" ")}
+            >
+              {onInspect ? (
+                <button
+                  type="button"
+                  onClick={() => onInspect(row)}
+                  aria-label={t("leaderboard.inspectOpen", {
+                    name: row.clubName,
+                  })}
+                  className="flex w-full flex-col items-center rounded-xl transition-transform active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+                >
+                  {column}
+                </button>
+              ) : (
+                column
+              )}
             </motion.div>
           );
         })}
