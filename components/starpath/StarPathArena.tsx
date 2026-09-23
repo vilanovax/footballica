@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import type { DailyStarPathSnapshot } from "@/actions/starpath/getDailyStarPath";
@@ -18,6 +19,7 @@ import { GameChip } from "@/components/ui/game/GameChip";
 const GotdResultModal = dynamic(() =>
   import("@/components/play/GotdResultModal").then((m) => m.GotdResultModal),
 );
+import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
@@ -33,6 +35,7 @@ type Props = {
  */
 export function StarPathArena({ initial }: Props) {
   const { t, locale } = useTranslation();
+  const router = useRouter();
   const [starPath, setStarPath] = useState(initial);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -148,15 +151,21 @@ export function StarPathArena({ initial }: Props) {
                 {t("starPath.hint")}
               </p>
             </div>
-            <div className="shrink-0 rounded-2xl bg-black/35 px-3 py-2 text-center shadow-[0_0_0_1px_rgba(251,191,36,0.35)]">
-              <p className="font-display text-lg font-black tabular-nums text-amber-300">
-                {done
-                  ? toLocaleDigits(starPath.score, locale)
-                  : toLocaleDigits(nextScore, locale)}
-              </p>
-              <p className="font-display text-[10px] font-bold text-white/50">
-                {done ? t("starPath.scoreLabel") : t("starPath.nextScore")}
-              </p>
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              <MatchLeaveControl
+                tone="lobby"
+                onConfirmLeave={() => router.push("/play")}
+              />
+              <div className="rounded-2xl bg-black/35 px-3 py-2 text-center shadow-[0_0_0_1px_rgba(251,191,36,0.35)]">
+                <p className="font-display text-lg font-black tabular-nums text-amber-300">
+                  {done
+                    ? toLocaleDigits(starPath.score, locale)
+                    : toLocaleDigits(nextScore, locale)}
+                </p>
+                <p className="font-display text-[10px] font-bold text-white/50">
+                  {done ? t("starPath.scoreLabel") : t("starPath.nextScore")}
+                </p>
+              </div>
             </div>
           </div>
         </GamePanel>

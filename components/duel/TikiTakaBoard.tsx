@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { beginTikiTakaTurn } from "@/actions/duel/tikitaka/beginTikiTakaTurn";
@@ -21,6 +21,7 @@ import { toLocaleDigits } from "@/lib/i18n/format";
 import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { DuelSpecialHelpSheet } from "@/components/duel/DuelSpecialHelpSheet";
+import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
@@ -58,10 +59,12 @@ export function TikiTakaBoard({
   onBoardChange,
 }: TikiTakaBoardProps) {
   const { t, locale } = useTranslation();
+  const router = useRouter();
   const reduceMotion = useReducedMotion();
   const [localDuel, setLocalDuel] = useState(duel);
   const [pending, startTransition] = useTransition();
   const busy = Boolean(pending || parentPending);
+  const [leavePaused, setLeavePaused] = useState(false);
 
   const round = useMemo(() => {
     const n = localDuel.turn.roundNumber;
@@ -136,6 +139,7 @@ export function TikiTakaBoard({
   useEffect(() => {
     if (!endsAt || !yourTurn) return;
     const tick = () => {
+      if (leavePaused) return;
       const left = Math.max(
         0,
         Math.ceil((new Date(endsAt).getTime() - Date.now()) / 1000),
@@ -176,6 +180,7 @@ export function TikiTakaBoard({
   }, [
     endsAt,
     yourTurn,
+    leavePaused,
     busy,
     selectedCell,
     selectedId,
@@ -316,20 +321,10 @@ export function TikiTakaBoard({
       >
         <GamePanel tone="emerald" className="px-2.5 py-2">
         <div className="relative flex items-center gap-2">
-          <Link
-            href="/play/duel"
-            onClick={() => playSound("click")}
-            aria-label={t("common.close")}
-            className="game-cta game-cta-ghost h-11 w-11 shrink-0 p-0"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/close.png"
-              alt=""
-              draggable={false}
-              className="h-5 w-5 object-contain opacity-90"
-            />
-          </Link>
+          <MatchLeaveControl
+            setPaused={setLeavePaused}
+            onConfirmLeave={() => router.push("/play/duel")}
+          />
 
           <GameIconWell
             size="md"

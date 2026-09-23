@@ -193,9 +193,14 @@ function BottomSheetFrame({
                     type="button"
                     aria-label={closeLabel}
                     onClick={onClose}
-                    className="relative z-20 flex min-h-11 min-w-11 shrink-0 items-center justify-center transition-transform active:scale-90"
+                    className="relative z-20 shrink-0 transition-transform active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
                   >
-                    <GameIconWell size="md" src="/icons/close.png" />
+                    <GameIconWell
+                      size="md"
+                      src="/icons/close-arena.png"
+                      className="h-11 w-11 shadow-[0_0_0_1px_hsl(var(--arena-ring-rose)/0.55),0_3px_0_0_rgba(0,0,0,0.4)]"
+                      iconClassName="h-7 w-7 drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]"
+                    />
                   </button>
                 ) : (
                   <button
@@ -206,10 +211,10 @@ function BottomSheetFrame({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/icons/close.png"
+                      src="/icons/close-arena.png"
                       alt=""
                       aria-hidden
-                      className="h-4 w-4 object-contain opacity-70"
+                      className="h-5 w-5 object-contain opacity-80"
                     />
                   </button>
                 ))}

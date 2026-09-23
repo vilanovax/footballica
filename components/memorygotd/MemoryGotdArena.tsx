@@ -1,14 +1,16 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { DailyMemorySnapshot } from "@/actions/memorygotd/getDailyMemory";
 import { submitMemoryGotd } from "@/actions/memorygotd/submitMemoryGotd";
 import type { MemoryAttemptSubmission } from "@/lib/duel/memoryTypes";
 import type { GotdRewardsPayload } from "@/lib/game/gotdRewards";
 import { MemoryBoard } from "@/components/duel/MemoryBoard";
+import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 
 const GotdResultModal = dynamic(() =>
@@ -32,19 +34,16 @@ type Props = {
  */
 export function MemoryGotdArena({ initial }: Props) {
   const { t, locale } = useTranslation();
+  const router = useRouter();
   const [memory, setMemory] = useState(initial);
   const [pending, startTransition] = useTransition();
   const [rewards, setRewards] = useState<GotdRewardsPayload | null>(null);
   const [previousStreak, setPreviousStreak] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [started, setStarted] = useState(false);
+  const [endsAt, setEndsAt] = useState("");
 
   const done = memory.status === "SOLVED" || memory.status === "FAILED";
-
-  const endsAt = useMemo(() => {
-    if (!started || done) return "";
-    return new Date(Date.now() + memory.turnMs).toISOString();
-  }, [started, done, memory.turnMs]);
 
   function handleComplete(attempt: MemoryAttemptSubmission) {
     if (pending || done) return;
@@ -207,6 +206,10 @@ export function MemoryGotdArena({ initial }: Props) {
                   })}
                 </p>
               </div>
+              <MatchLeaveControl
+                tone="lobby"
+                onConfirmLeave={() => router.push("/play")}
+              />
             </div>
           </GamePanel>
         </header>
@@ -239,31 +242,33 @@ export function MemoryGotdArena({ initial }: Props) {
             onClick={() => {
               playSound("click");
               haptic(HAPTIC.tap);
+              setEndsAt(new Date(Date.now() + memory.turnMs).toISOString());
               setStarted(true);
             }}
             className="mt-2 max-w-sm text-base"
           >
             {t("memoryGotd.startCta")}
           </GameCta>
-          <Link
-            href="/play"
-            className="font-display text-sm font-bold text-white/45 underline-offset-2 hover:underline"
-          >
-            {t("common.back")}
-          </Link>
         </div>
       </section>
     );
   }
 
   return (
-    <MemoryBoard
-      mode="attack"
-      board={memory.board}
-      endsAt={endsAt}
-      revealMs={memory.revealMs}
-      pending={pending}
-      onComplete={handleComplete}
-    />
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div className="absolute start-3 top-[max(0.5rem,env(safe-area-inset-top))] z-30">
+        <MatchLeaveControl
+          onConfirmLeave={() => router.push("/play")}
+        />
+      </div>
+      <MemoryBoard
+        mode="attack"
+        board={memory.board}
+        endsAt={endsAt}
+        revealMs={memory.revealMs}
+        pending={pending}
+        onComplete={handleComplete}
+      />
+    </div>
   );
 }

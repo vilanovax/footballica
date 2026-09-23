@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   PremiumChallenges,
   type PlayChallengeCard,
 } from "@/components/play/PremiumChallenges";
 import { TrophyShowcase } from "@/components/survival/TrophyShowcase";
+import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { toLocaleDigits } from "@/lib/i18n/format";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
@@ -30,6 +32,7 @@ export function SurvivalLobby({
   survivalBest,
 }: SurvivalLobbyProps) {
   const { t, locale } = useTranslation();
+  const router = useRouter();
   const reduceMotion = useReducedMotion();
   const liveCount = challenges.length;
   const hasRecord = survivalBest > 0;
@@ -48,17 +51,11 @@ export function SurvivalLobby({
         />
 
         <div className="relative flex items-start gap-3">
-          <Link
-            href="/play"
-            aria-label={t("survival.backPlay")}
-            onClick={() => {
-              playSound("click");
-              haptic(HAPTIC.tap);
-            }}
-            className="order-last shrink-0 transition-transform active:scale-90"
-          >
-            <GameIconWell size="md" src="/icons/close.png" />
-          </Link>
+          <MatchLeaveControl
+            tone="lobby"
+            className="order-last"
+            onConfirmLeave={() => router.push("/play")}
+          />
           <GameIconWell
             size="lg"
             src="/icons/heart.png"

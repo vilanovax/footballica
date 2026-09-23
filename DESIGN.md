@@ -142,7 +142,7 @@ Shared sheets: `BottomSheet` with `tone="dark"` → arena shell.
 **Do**
 - Use arena tokens / `Game*` primitives for new immersive UI
 - Amber CTA for spend / upgrade; emerald CTA for collect / withdraw
-- Close controls: `/icons/close.png` in a `GameIconWell` / well button
+- Close controls: `/icons/close-arena.png` in a `GameIconWell` / `MatchLeaveControl` (confirm on immersive exits)
 
 **Don't**
 - Hardcode `#052e16` / `#0f172a` / `#071410` in new components — use tokens

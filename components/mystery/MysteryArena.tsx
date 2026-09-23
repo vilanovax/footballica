@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import type { DailyMysterySnapshot } from "@/actions/mystery/getDailyMystery";
@@ -26,6 +27,7 @@ const BadgeUnlockPopup = dynamic(() =>
 const GotdResultModal = dynamic(() =>
   import("@/components/play/GotdResultModal").then((m) => m.GotdResultModal),
 );
+import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
@@ -81,6 +83,7 @@ function verdictLabel(
 
 export function MysteryArena({ initial }: Props) {
   const { t, locale } = useTranslation();
+  const router = useRouter();
   const [mystery, setMystery] = useState(initial);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -206,20 +209,10 @@ export function MysteryArena({ initial }: Props) {
       >
         <GamePanel tone="emerald" className="px-2.5 py-2">
         <div className="relative flex items-center gap-2">
-          <Link
-            href="/play"
-            onClick={() => playSound("click")}
-            aria-label={t("common.back")}
-            className="game-cta game-cta-ghost h-11 w-11 shrink-0 p-0"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/close.png"
-              alt=""
-              draggable={false}
-              className="h-5 w-5 object-contain opacity-90"
-            />
-          </Link>
+          <MatchLeaveControl
+            tone="lobby"
+            onConfirmLeave={() => router.push("/play")}
+          />
 
           <GameIconWell
             size="md"

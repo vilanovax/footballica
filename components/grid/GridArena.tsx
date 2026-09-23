@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import type { DailyGridSnapshot } from "@/actions/grid/getDailyGrid";
@@ -24,6 +24,7 @@ import { toLocaleDigits } from "@/lib/i18n/format";
 import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playerPhotoSrc } from "@/lib/players/photos";
+import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
@@ -38,6 +39,7 @@ const GRID_MOOD = ARENA.bg;
 
 export function GridArena({ initial }: Props) {
   const { t, locale } = useTranslation();
+  const router = useRouter();
   const [grid, setGrid] = useState(initial);
   const [selected, setSelected] = useState<{ row: number; col: number } | null>(
     null,
@@ -248,20 +250,10 @@ export function GridArena({ initial }: Props) {
       <header className="relative z-10 shrink-0 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <GamePanel tone="emerald" className="px-2.5 py-2">
         <div className="relative flex items-center gap-2">
-          <Link
-            href="/play"
-            onClick={() => playSound("click")}
-            aria-label={t("common.back")}
-            className="game-cta game-cta-ghost game-icon-btn h-11 min-h-touch w-11 min-w-touch shrink-0 p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/close.png"
-              alt=""
-              draggable={false}
-              className="h-5 w-5 object-contain opacity-90"
-            />
-          </Link>
+          <MatchLeaveControl
+            tone="lobby"
+            onConfirmLeave={() => router.push("/play")}
+          />
 
           <GameIconWell
             size="md"
