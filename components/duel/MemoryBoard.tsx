@@ -16,8 +16,10 @@ import { GameChip } from "@/components/ui/game/GameChip";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
+import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { MatchPitch } from "@/components/quiz/MatchPitch";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 type MemoryBoardProps = {
   mode: "attack" | "defend";
@@ -48,6 +50,7 @@ export function MemoryBoard({
   pending,
   onComplete,
 }: MemoryBoardProps) {
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const lang = useLanguageStore((s) => s.locale);
   const reduceMotion = useReducedMotion();
@@ -255,7 +258,7 @@ export function MemoryBoard({
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 z-[1] h-44 bg-linear-to-b to-transparent",
+          "pointer-events-none absolute inset-x-0 top-0 z-1 h-44 bg-linear-to-b to-transparent",
           theme.flood,
         )}
       />
@@ -264,6 +267,9 @@ export function MemoryBoard({
       <header className="relative z-10 mx-3 mt-[max(0.5rem,env(safe-area-inset-top))]">
         <GamePanel tone={theme.panelTone} className="bg-black/25 px-3 py-2.5">
           <div className="relative flex items-center gap-3">
+            <MatchLeaveControl
+              onConfirmLeave={() => router.push("/play/duel")}
+            />
             {/* Pair progress ring */}
             <div className="relative h-17 w-17 shrink-0">
               <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">

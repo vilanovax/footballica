@@ -36,9 +36,11 @@ import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { GRID_SIZE, cellKey } from "@/lib/grid/types";
 import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
+import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { MatchPitch } from "@/components/quiz/MatchPitch";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GamePanel } from "@/components/ui/game/GamePanel";
+import { useRouter } from "next/navigation";
 
 type Props = {
   duelId: string;
@@ -729,6 +731,7 @@ function SpecialArena({
   children: React.ReactNode;
 }) {
   const { locale } = useTranslation();
+  const router = useRouter();
   const ringR = 30;
   const ringC = 2 * Math.PI * ringR;
   const pct = Math.min(1, hudValue / Math.max(1, hudMax));
@@ -739,7 +742,7 @@ function SpecialArena({
       <MatchPitch stadiumLevel={0} />
       <div
         aria-hidden
-        className={`pointer-events-none absolute inset-x-0 top-0 z-[1] h-44 bg-linear-to-b ${theme.flood} to-transparent`}
+        className={`pointer-events-none absolute inset-x-0 top-0 z-1 h-44 bg-linear-to-b ${theme.flood} to-transparent`}
       />
 
       <header className="relative z-10 mx-3 mt-[max(0.5rem,env(safe-area-inset-top))]">
@@ -748,6 +751,9 @@ function SpecialArena({
           className="bg-black/25 px-3 py-2.5"
         >
           <div className="relative flex items-center gap-3">
+            <MatchLeaveControl
+              onConfirmLeave={() => router.push("/play/duel")}
+            />
             <div className="relative h-17 w-17 shrink-0">
               <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
                 <circle

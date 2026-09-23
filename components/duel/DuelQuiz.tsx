@@ -11,15 +11,16 @@ import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { AnswerButton } from "@/components/quiz/AnswerButton";
 import { ExplanationFact } from "@/components/quiz/ExplanationFact";
 import { GoalBurst } from "@/components/quiz/GoalBurst";
+import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { MatchPitch } from "@/components/quiz/MatchPitch";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { ReportModal } from "@/components/quiz/ReportModal";
 import { Scoreboard } from "@/components/quiz/Scoreboard";
-import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 import type { DuelAnswerSubmission } from "@/lib/duel/types";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 type DuelQuizProps = {
   title: string;
@@ -46,6 +47,7 @@ export function DuelQuiz({
   stadiumLevel = 0,
   onComplete,
 }: DuelQuizProps) {
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const lang = useLanguageStore((s) => s.locale);
   const [index, setIndex] = useState(0);
@@ -118,46 +120,53 @@ export function DuelQuiz({
 
       <div
         className={cn(
-          "relative z-10 flex flex-1 flex-col gap-4 pb-3 pt-1",
+          "relative z-10 flex flex-1 flex-col gap-3 pb-3 pt-1",
           shake && "animate-screen-shake",
         )}
         onAnimationEnd={() => setShake(false)}
       >
-        <GamePanel tone={panelTone} className="bg-black/25 px-3 py-2.5">
+        <GamePanel tone={panelTone} className="px-3 py-2.5">
           <div className="relative flex items-center gap-2">
+            <MatchLeaveControl
+              onConfirmLeave={() => router.push("/play/duel")}
+            />
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <GameChip
-                  tone={isAttack ? "amber" : "default"}
-                  className="uppercase tracking-wide"
-                >
-                  <motion.span
-                    className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      isAttack ? "bg-amber-300" : "bg-sky-300",
-                    )}
-                    animate={{ opacity: [1, 0.4, 1], scale: [1, 1.25, 1] }}
-                    transition={{ repeat: Infinity, duration: 1 }}
-                  />
-                  {title}
-                </GameChip>
-              </div>
-              {subtitle && (
-                <p className="mt-1 truncate font-display text-[11px] font-bold text-white/70">
-                  {subtitle}
-                </p>
-              )}
-              <p className="mt-0.5 truncate font-display text-[11px] font-bold text-white/55">
+              <p
+                className={cn(
+                  "truncate font-display text-sm font-black",
+                  isAttack ? "text-amber-200" : "text-sky-200",
+                )}
+              >
+                {title}
+              </p>
+              <p className="truncate font-display text-[11px] font-bold text-white/70">
                 {t("duel.qOf", {
                   n: toLocaleDigits(index + 1, locale),
                   total: toLocaleDigits(total, locale),
                 })}
-                {" · "}
-                {t("duel.quizScore", {
-                  n: toLocaleDigits(goals, locale),
-                  total: toLocaleDigits(total, locale),
-                })}
               </p>
+              {subtitle ? (
+                <p
+                  className={cn(
+                    "truncate font-display text-[11px] font-bold",
+                    isAttack ? "text-amber-100/90" : "text-sky-100/90",
+                  )}
+                >
+                  {subtitle}
+                </p>
+              ) : (
+                <p
+                  className={cn(
+                    "truncate font-display text-[11px] font-bold",
+                    isAttack ? "text-amber-100/90" : "text-sky-100/90",
+                  )}
+                >
+                  {t("duel.quizScore", {
+                    n: toLocaleDigits(goals, locale),
+                    total: toLocaleDigits(total, locale),
+                  })}
+                </p>
+              )}
             </div>
             <GameIconWell
               size="md"
@@ -232,7 +241,7 @@ export function DuelQuiz({
 
         <motion.div
           key={`opts-${q.id}`}
-          className="flex flex-col gap-3"
+          className="mt-auto flex flex-col gap-3"
           initial="hidden"
           animate="visible"
           variants={{
