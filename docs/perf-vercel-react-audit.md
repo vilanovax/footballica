@@ -119,7 +119,7 @@ Also:
 ## Follow-ups (not in this pass)
 
 - ~~`rerender-defer-reads` on BottomNav / match store action subscriptions (`getState()` in handlers)~~ → BottomNav actions via `getState()`; phase-only subscriptions
-- Hoist `EMPTY_*` default props (`rerender-memo-with-default-value`)
+- ~~Hoist `EMPTY_*` default props (`rerender-memo-with-default-value`)~~ → MatchResult, DuelInboxBanner, MissionDrawer, PlayModes, PlayerProfile, DuelLobby, GotdResultModal, SurvivalCategoryPicker
 - ~~`content-visibility` on `LeaderboardList` rows~~ → applied (`auto` + intrinsic ~3.25rem; animate cap 6)
 - ~~`after()` for non-blocking post-response work~~ → applied on `getDuelInbox` job tick
 - ~~Nested Suspense slots inside ClubHub (inbox / today rail)~~ → `ClubHubSecondary` + hub fast snapshot (`settleBusiness: false`)

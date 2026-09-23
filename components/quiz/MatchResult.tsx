@@ -19,6 +19,9 @@ import { PostMatchSummary } from "@/components/match/PostMatchSummary";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 
+/** Stable default — avoid `= []` recreating referential identity each render. */
+const EMPTY_HELPERS: HelperKey[] = [];
+
 type MatchResultProps = {
   totalKicks: number;
   submissions: KickSubmission[];
@@ -80,7 +83,7 @@ export function MatchResult({
   sessionId = null,
   tutorial = false,
   usedHelp = false,
-  helpersUsed = [],
+  helpersUsed = EMPTY_HELPERS,
   mode = "penalty",
   categoryId = null,
   kickResults,

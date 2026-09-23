@@ -24,6 +24,9 @@ import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
 import { GameTile } from "@/components/ui/game/GameTile";
 import { cn } from "@/lib/utils";
 
+/** Stable default — avoid `= []` recreating referential identity each render. */
+const EMPTY_HISTORY: DuelSnapshot[] = [];
+
 type DuelLobbyProps = {
   initialDuels: DuelSnapshot[];
   initialYourTurn: DuelSnapshot[];
@@ -96,7 +99,7 @@ function deadlineLabel(
 export function DuelLobby({
   initialDuels,
   initialYourTurn,
-  initialHistory = [],
+  initialHistory = EMPTY_HISTORY,
   yourAvatar,
 }: DuelLobbyProps) {
   const { t, locale } = useTranslation();

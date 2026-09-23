@@ -14,6 +14,9 @@ import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 import { GameTile } from "@/components/ui/game/GameTile";
 
+/** Stable default — avoid `= {}` recreating referential identity each render. */
+const EMPTY_RECORDS: Record<string, number> = {};
+
 type SurvivalCategoryPickerProps = {
   categories: DuelCategoryOption[];
   /** Optional personal bests keyed by categoryId. */
@@ -24,7 +27,7 @@ type SurvivalCategoryPickerProps = {
 
 export function SurvivalCategoryPicker({
   categories,
-  records = {},
+  records = EMPTY_RECORDS,
   challengeId = null,
 }: SurvivalCategoryPickerProps) {
   const { t, locale } = useTranslation();

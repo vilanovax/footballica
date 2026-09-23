@@ -10,6 +10,9 @@ import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 import { cn } from "@/lib/utils";
 
+/** Stable default — avoid `= []` recreating referential identity each render. */
+const EMPTY_ITEMS: DuelInboxItem[] = [];
+
 type DuelInboxBannerProps = {
   count: number;
   items?: DuelInboxItem[];
@@ -48,7 +51,7 @@ function actionLine(
  */
 export function DuelInboxBanner({
   count,
-  items = [],
+  items = EMPTY_ITEMS,
   variant = "play",
 }: DuelInboxBannerProps) {
   const { t, locale } = useTranslation();

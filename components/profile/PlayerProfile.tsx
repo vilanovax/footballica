@@ -114,9 +114,12 @@ function FractionText({
   );
 }
 
+/** Stable default — avoid `= []` recreating referential identity each render. */
+const EMPTY_BADGE_CATALOG: BadgePresentation[] = [];
+
 export function PlayerProfile({
   profile,
-  badgeCatalog = [],
+  badgeCatalog = EMPTY_BADGE_CATALOG,
   missionBoard = null,
   dailyBoard = null,
 }: {

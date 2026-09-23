@@ -15,6 +15,10 @@ import { GameChip } from "@/components/ui/game/GameChip";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 import { cn } from "@/lib/utils";
 
+/** Stable defaults — avoid `= []` recreating referential identity each render. */
+const EMPTY_DUELS: DuelSnapshot[] = [];
+const EMPTY_INBOX: DuelInboxItem[] = [];
+
 type PlayModesProps = {
   recentDuels?: DuelSnapshot[];
   inboxCount?: number;
@@ -33,9 +37,9 @@ type PlayModesProps = {
  * Your-turn urgency lives in DuelInboxBanner; GotD formats play inside Duel.
  */
 export function PlayModes({
-  recentDuels = [],
+  recentDuels = EMPTY_DUELS,
   inboxCount = 0,
-  inboxItems = [],
+  inboxItems = EMPTY_INBOX,
   stamina,
   maxStamina,
   survivalBest,

@@ -30,6 +30,9 @@ export { countMissionRewardsReady, hasMissionRewardReady };
 
 type TabKey = "daily" | "campaign";
 
+/** Stable default — avoid `= []` recreating referential identity each render. */
+const EMPTY_CHAPTERS: CampaignChapterView[] = [];
+
 type MissionDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -82,7 +85,7 @@ export function MissionDrawer({
   preferredTab,
   dailyBoard = null,
   missionBoard = null,
-  chapters = [],
+  chapters = EMPTY_CHAPTERS,
   onEconomyUpdate,
 }: MissionDrawerProps) {
   const { t, locale } = useTranslation();

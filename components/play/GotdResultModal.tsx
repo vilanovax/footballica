@@ -13,6 +13,9 @@ import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
 import { GameTile } from "@/components/ui/game/GameTile";
 
+/** Stable default — avoid `= []` recreating referential identity each render. */
+const EMPTY_BADGES: UnlockedBadge[] = [];
+
 type Props = {
   open: boolean;
   outcome: "SOLVED" | "FAILED";
@@ -39,7 +42,7 @@ export function GotdResultModal({
   previousStreak = 0,
   currentStreak = 0,
   shareCode,
-  unlockedBadges = [],
+  unlockedBadges = EMPTY_BADGES,
   onShare,
   onClose,
   playHref = "/play",
