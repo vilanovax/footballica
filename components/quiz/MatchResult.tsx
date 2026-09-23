@@ -425,8 +425,8 @@ export function MatchResult({
           ? t("result.outOfEnergy")
           : null;
 
-  // Retention-first: Play Again is the yellow hero whenever the loop is open.
-  // Upgrade / energy CTAs only take the primary slot when they unblock play.
+  // Metagame-first when an upgrade is buyable; otherwise keep the loop open.
+  // Out-of-energy near-perfect lands on Club MatchDoor (refill), not manage.
   type Cta = {
     label: string;
     onClick: () => void;
@@ -435,18 +435,18 @@ export function MatchResult({
   let primaryCta: Cta | null = null;
   let secondaryCta: Cta | null = null;
 
-  if (!hidePlayAgain) {
+  if (upgradeReady) {
     primaryCta = {
-      label: nearPerfect
-        ? t("result.nearPerfectCta")
-        : t("result.playAgain"),
-      onClick: onPlayAgain,
+      label: t("result.goUpgrade"),
+      onClick: leaveToUpgrade,
       variant: "accent",
     };
-    secondaryCta = upgradeReady
+    secondaryCta = !hidePlayAgain
       ? {
-          label: t("result.goUpgrade"),
-          onClick: leaveToUpgrade,
+          label: nearPerfect
+            ? t("result.nearPerfectCta")
+            : t("result.playAgain"),
+          onClick: onPlayAgain,
           variant: "primary",
         }
       : {
@@ -454,16 +454,22 @@ export function MatchResult({
           onClick: onExit,
           variant: "secondary",
         };
-  } else if (upgradeReady || (outOfEnergy && nearPerfect)) {
+  } else if (!hidePlayAgain) {
     primaryCta = {
       label: nearPerfect
-        ? t("result.nearPerfectEnergyCta")
-        : t("result.goUpgrade"),
-      onClick: leaveToUpgrade,
-      variant: "primary",
+        ? t("result.nearPerfectCta")
+        : t("result.playAgain"),
+      onClick: onPlayAgain,
+      variant: "accent",
     };
     secondaryCta = {
       label: t("common.backToClub"),
+      onClick: onExit,
+      variant: "secondary",
+    };
+  } else if (outOfEnergy && nearPerfect) {
+    primaryCta = {
+      label: t("result.nearPerfectEnergyCta"),
       onClick: onExit,
       variant: "accent",
     };

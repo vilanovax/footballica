@@ -634,7 +634,7 @@ export function PostMatchSummary({
 
           {dualCtas ? (
             <div className="flex flex-col gap-2">
-              {/* Primary = loop hero (usually Play again / accent). */}
+              {/* Primary = hero action (upgrade when ready, else play again). */}
               <CtaButton cta={ctas.primary!} fallbackVariant="accent" />
               <CtaButton cta={ctas.secondary!} fallbackVariant="primary" />
             </div>

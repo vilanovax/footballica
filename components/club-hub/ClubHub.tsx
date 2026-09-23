@@ -138,6 +138,12 @@ export function ClubHub({
     window.history.replaceState(null, "", "/club");
   }, [openManage]);
 
+  // Land at the top after match whistle / manage deep-link so MatchDoor is first.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo(0, 0);
+  }, []);
+
   const [news, setNews] = useState<{
     payload: NewsPayload | null;
     state: NewsState;
