@@ -233,18 +233,11 @@ export function PlayerProfile({
 
   const secondaryStats = [
     {
-      key: "matches",
-      label: t("profile.matches"),
-      value: toLocaleDigits(profile.matchesPlayed, locale),
-      iconSrc: "/icons/stadium.png",
-      hint: matchesHint,
-    },
-    {
-      key: "combo",
-      label: t("profile.bestCombo"),
-      value: `${toLocaleDigits(profile.highestCombo, locale)}×`,
-      iconSrc: "/icons/energy.png",
-      hint: comboHint,
+      key: "win",
+      label: t("profile.winRateShort"),
+      value: `${toLocaleDigits(winRate, locale)}${locale === "fa" ? "٪" : "%"}`,
+      iconSrc: "/icons/medal-gold.png",
+      hint: t(`profile.scoreHint.${winHintKey}`),
     },
     {
       key: "streak",
@@ -252,6 +245,13 @@ export function PlayerProfile({
       value: toLocaleDigits(profile.longestDailyStreak, locale),
       iconSrc: "/icons/streak.png",
       hint: streakHint,
+    },
+    {
+      key: "combo",
+      label: t("profile.bestCombo"),
+      value: `${toLocaleDigits(profile.highestCombo, locale)}×`,
+      iconSrc: "/icons/energy.png",
+      hint: comboHint,
     },
   ];
 
@@ -262,12 +262,12 @@ export function PlayerProfile({
   const hasMatches = profile.matchesPlayed > 0;
   const clubNameClass =
     profile.clubName.length > 22
-      ? "text-base"
+      ? "text-sm"
       : profile.clubName.length > 14
-        ? "text-xl"
-        : "text-2xl";
+        ? "text-base"
+        : "text-lg";
 
-  const { nearUnlock, unlockedHonors, otherByCategory } = useMemo(() => {
+  const { nextGoal, unlockedHonors, otherByCategory } = useMemo(() => {
     type Row = (typeof displayAchievements)[number];
     const unlocked: Row[] = [];
     const inProgress: { row: Row; ratio: number; stepsLeft: number }[] = [];
@@ -292,15 +292,15 @@ export function PlayerProfile({
     }
 
     inProgress.sort((a, b) => b.ratio - a.ratio);
-    const near = inProgress
-      .filter((x) => x.ratio >= 0.4 || x.stepsLeft <= 3)
-      .slice(0, 3)
-      .map((x) => x.row);
-    const nearSlugs = new Set(near.map((x) => x.slug));
-    const remainderProgress = inProgress
-      .filter((x) => !nearSlugs.has(x.row.slug))
-      .map((x) => x.row);
-    const otherPool = [...remainderProgress, ...locked];
+    const chase = inProgress.filter(
+      (x) => x.ratio >= 0.4 || x.stepsLeft <= 3,
+    );
+    const next = chase[0]?.row ?? null;
+    const nextSlug = next?.slug;
+    const otherPool = [
+      ...inProgress.filter((x) => x.row.slug !== nextSlug).map((x) => x.row),
+      ...locked,
+    ];
 
     const byCat = CATEGORY_ORDER.map((cat) => ({
       cat,
@@ -308,7 +308,7 @@ export function PlayerProfile({
     })).filter((g) => g.items.length > 0);
 
     return {
-      nearUnlock: near,
+      nextGoal: next,
       unlockedHonors: unlocked,
       otherByCategory: byCat,
     };
@@ -370,7 +370,7 @@ export function PlayerProfile({
               })}
             >
               <span className="font-display text-[8px] font-black leading-none tracking-wide text-amber-950/80">
-                LV
+                {t("profile.levelBadge")}
               </span>
               <span className="font-display text-sm font-black leading-none text-amber-950">
                 {toLocaleDigits(level.level, locale)}
@@ -390,17 +390,64 @@ export function PlayerProfile({
             <p className="font-display text-xs font-black text-emerald-300/90">
               {t(`profile.title.${titleBand}`)}
             </p>
-            <h1
+            <h1 className="mt-0.5 line-clamp-1 wrap-break-word font-display text-xl font-black leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]">
+              {profile.managerName}
+            </h1>
+            <p
               className={[
-                "line-clamp-2 wrap-break-word font-display font-black leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]",
+                "mt-0.5 line-clamp-1 wrap-break-word font-display font-bold text-white/70",
                 clubNameClass,
               ].join(" ")}
             >
+              <span className="text-white/45">{t("profile.clubByline")} · </span>
               {profile.clubName}
-            </h1>
-            <p className="mt-0.5 line-clamp-2 wrap-break-word font-display text-sm font-bold text-white/70">
-              {profile.stadiumName || t("profile.noStadium")}
             </p>
+            {profile.stadiumName ? (
+              <p className="mt-1 line-clamp-1 font-display text-xs font-bold text-emerald-200/80">
+                {profile.stadiumName}
+                <span className="text-white/40">
+                  {" "}
+                  ·{" "}
+                  {t("profile.stadiumLevelLabel", {
+                    n: toLocaleDigits(profile.stadiumLevel, locale),
+                  })}
+                </span>
+              </p>
+            ) : (
+              <div className="mt-1.5 flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      haptic(HAPTIC.light);
+                      setEditing(true);
+                    }}
+                    className="inline-flex min-h-8 items-center gap-1 rounded-full border border-amber-300/35 bg-amber-500/15 px-2.5 py-1 font-display text-[11px] font-black text-amber-100 transition-transform active:scale-95"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/icons/stadium.png"
+                      alt=""
+                      aria-hidden
+                      draggable={false}
+                      className="h-3.5 w-3.5 object-contain"
+                    />
+                    {t("profile.stadiumNameGoal")}
+                  </button>
+                  <Link
+                    href="/club"
+                    className="inline-flex min-h-8 items-center rounded-full border border-white/15 bg-black/35 px-2.5 py-1 font-display text-[11px] font-bold text-white/70 transition-transform active:scale-95"
+                  >
+                    {t("profile.stadiumViewClub")}
+                  </Link>
+                </div>
+                <p className="font-display text-[10px] font-bold text-white/45">
+                  {t("profile.stadiumLevelLabel", {
+                    n: toLocaleDigits(profile.stadiumLevel, locale),
+                  })}
+                </p>
+              </div>
+            )}
           </div>
 
           <button
@@ -514,7 +561,7 @@ export function PlayerProfile({
           <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/icons/trophy.png"
+              src="/icons/stadium.png"
               alt=""
               aria-hidden
               draggable={false}
@@ -551,27 +598,24 @@ export function PlayerProfile({
           </div>
         ) : (
           <>
-            <div className="relative mb-2.5 flex items-center gap-3 rounded-2xl border border-amber-300/30 bg-black/40 px-3 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
+            <div className="relative mb-2.5 flex items-center gap-3 rounded-2xl border border-emerald-300/25 bg-black/40 px-3 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/icons/medal-gold.png"
+                src="/icons/stadium.png"
                 alt=""
                 aria-hidden
                 draggable={false}
                 className="h-11 w-11 shrink-0 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)]"
               />
               <div className="min-w-0 flex-1 text-start">
-                <p className="font-display text-[10px] font-black uppercase tracking-wider text-amber-200/80">
-                  {t("profile.winRate")}
+                <p className="font-display text-[10px] font-black uppercase tracking-wider text-emerald-200/80">
+                  {t("profile.matchesHero")}
                 </p>
-                <p className="font-display text-4xl font-black tabular-nums leading-none text-amber-300">
-                  {toLocaleDigits(winRate, locale)}
-                  <span className="text-2xl">
-                    {locale === "fa" ? "٪" : "%"}
-                  </span>
+                <p className="font-display text-4xl font-black tabular-nums leading-none text-white">
+                  {toLocaleDigits(profile.matchesPlayed, locale)}
                 </p>
                 <p className="mt-1 line-clamp-1 font-display text-[11px] font-bold text-white/50">
-                  {t(`profile.scoreHint.${winHintKey}`)}
+                  {matchesHint}
                 </p>
               </div>
             </div>
@@ -599,7 +643,7 @@ export function PlayerProfile({
                   <p className="mt-0.5 font-display text-xl font-black tabular-nums text-white">
                     {s.value}
                   </p>
-                  <p className="mt-0.5 line-clamp-2 px-0.5 font-display text-[9px] font-bold leading-tight text-white/40">
+                  <p className="mt-0.5 line-clamp-2 px-0.5 font-display text-[10px] font-bold leading-tight text-white/45">
                     {s.hint}
                   </p>
                 </motion.div>
@@ -610,7 +654,15 @@ export function PlayerProfile({
         </GamePanel>
       </motion.div>
 
-      <PerfectedBanksShelf banks={profile.perfectedBanks} />
+      {nextGoal && (
+        <NextHonorCard
+          achievement={nextGoal}
+          imageUrl={nextGoal.imageUrl}
+          player={playerStats}
+          locale={locale}
+          onInspect={() => openInspect(nextGoal.slug)}
+        />
+      )}
 
       {/* ── Trophy cabinet ───────────────────────────────────────────────── */}
       <GamePanel tone="emerald" className="p-3">
@@ -650,27 +702,6 @@ export function PlayerProfile({
         </div>
 
         <div className="relative flex flex-col gap-3.5">
-          {nearUnlock.length > 0 && (
-            <div>
-              <p className="mb-2 font-display text-[10px] font-black text-amber-200/90">
-                {t("profile.trophyNear")}
-              </p>
-              <ul className="flex flex-col gap-1.5">
-                {nearUnlock.map((a, i) => (
-                  <NearUnlockRow
-                    key={a.slug}
-                    achievement={a}
-                    imageUrl={a.imageUrl}
-                    player={playerStats}
-                    locale={locale}
-                    delay={0.04 + i * 0.04}
-                    onInspect={() => openInspect(a.slug)}
-                  />
-                ))}
-              </ul>
-            </div>
-          )}
-
           {unlockedHonors.length > 0 && (
             <div>
               <p className="mb-2 font-display text-[10px] font-black text-emerald-200/90">
@@ -783,6 +814,8 @@ export function PlayerProfile({
         </div>
       </GamePanel>
 
+      <PerfectedBanksShelf banks={profile.perfectedBanks} />
+
       {hasMissionBoards && (
         <MissionDrawer
           open={missionsOpen}
@@ -840,6 +873,106 @@ export function PlayerProfile({
   );
 }
 
+type NextHonorCardProps = {
+  achievement: Achievement & { imageUrl?: string | null };
+  imageUrl?: string | null;
+  player: PlayerStats;
+  locale: Locale;
+  onInspect: () => void;
+};
+
+/** Star chase card — the single next honor, bigger than collection tiles. */
+function NextHonorCard({
+  achievement: a,
+  imageUrl,
+  player,
+  locale,
+  onInspect,
+}: NextHonorCardProps) {
+  const { t } = useTranslation();
+  const name = locale === "fa" ? a.nameFa : a.nameEn;
+  const prog = a.progress?.(player);
+  const pct = prog
+    ? Math.min(100, Math.round((prog.current / prog.target) * 100))
+    : 0;
+  const stepsLeft = prog ? Math.max(0, prog.target - prog.current) : 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 240, damping: 22, delay: 0.1 }}
+    >
+      <GamePanel tone="amber" className="p-3.5">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-s-6 top-0 h-24 w-24 rounded-full bg-amber-300/20 blur-3xl"
+        />
+        <div className="relative mb-2.5 flex items-center justify-between gap-2">
+          <p className="font-display text-[11px] font-black uppercase tracking-wider text-amber-200">
+            {t("profile.nextHonorTitle")}
+          </p>
+          {prog && (
+            <span className="font-display text-xs font-black tabular-nums text-amber-100/90">
+              <FractionText
+                cur={prog.current}
+                next={prog.target}
+                locale={locale}
+              />
+            </span>
+          )}
+        </div>
+
+        <motion.button
+          type="button"
+          onClick={onInspect}
+          whileTap={{ scale: 0.98 }}
+          className="relative flex w-full items-center gap-3 rounded-2xl border border-amber-300/40 bg-black/45 px-3 py-3 text-start shadow-[0_3px_0_0_rgba(0,0,0,0.3)]"
+          aria-label={name}
+        >
+          <span
+            className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-black/40"
+            aria-hidden
+          >
+            {imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={imageUrl}
+                alt=""
+                className="h-12 w-12 object-contain drop-shadow-[0_3px_8px_rgba(0,0,0,0.4)]"
+              />
+            ) : (
+              <span className="text-3xl">{a.emoji}</span>
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-base font-black text-white">
+              {name}
+            </p>
+            <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-black/50 ring-1 ring-white/10">
+              <motion.div
+                className="h-full rounded-full bg-linear-to-r from-amber-300 via-yellow-300 to-accent"
+                initial={{ width: 0 }}
+                animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+              />
+            </div>
+            <p className="mt-1.5 font-display text-[11px] font-bold text-lime-300">
+              {stepsLeft > 0
+                ? stepsLeft <= 3
+                  ? t("profile.trophyStepsLeft", {
+                      n: toLocaleDigits(stepsLeft, locale),
+                    })
+                  : t("profile.nextHonorAlmost", { name })
+                : t("profile.nextHonorAlmost", { name })}
+            </p>
+          </div>
+        </motion.button>
+      </GamePanel>
+    </motion.div>
+  );
+}
+
 type TrophyState = "unlocked" | "progress" | "locked";
 
 function resolveTrophyState(
@@ -850,91 +983,6 @@ function resolveTrophyState(
   if (prog && prog.current > 0 && prog.current < prog.target) return "progress";
   if (prog && prog.current >= prog.target) return "progress";
   return "locked";
-}
-
-type NearUnlockRowProps = {
-  achievement: Achievement & { imageUrl?: string | null };
-  imageUrl?: string | null;
-  player: PlayerStats;
-  locale: Locale;
-  delay: number;
-  onInspect: () => void;
-};
-
-/** Compact chase row — progress at a glance without tall tile clutter. */
-function NearUnlockRow({
-  achievement: a,
-  imageUrl,
-  player,
-  locale,
-  delay,
-  onInspect,
-}: NearUnlockRowProps) {
-  const { t } = useTranslation();
-  const name = locale === "fa" ? a.nameFa : a.nameEn;
-  const prog = a.progress?.(player);
-  const pct = prog
-    ? Math.min(100, Math.round((prog.current / prog.target) * 100))
-    : 0;
-  const stepsLeft = prog ? Math.max(0, prog.target - prog.current) : 0;
-
-  return (
-    <motion.button
-      type="button"
-      onClick={onInspect}
-      initial={{ opacity: 0, x: 10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay, type: "spring", stiffness: 280, damping: 22 }}
-      whileTap={{ scale: 0.98 }}
-      className="flex min-h-14 w-full items-center gap-2.5 rounded-2xl border border-amber-400/35 bg-linear-to-r from-[#431407]/90 via-[#7c2d12]/70 to-black/40 px-2.5 py-2 text-start shadow-[0_3px_0_0_rgba(0,0,0,0.3)]"
-      aria-label={name}
-    >
-      <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/15 bg-black/40"
-        aria-hidden
-      >
-        {imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imageUrl}
-            alt=""
-            className="h-9 w-9 object-contain"
-          />
-        ) : (
-          <span className="text-xl">{a.emoji}</span>
-        )}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="truncate font-display text-[13px] font-black text-white">
-            {name}
-          </p>
-          {prog && (
-            <span className="shrink-0 font-display text-[11px] font-black tabular-nums text-amber-100/90">
-              <FractionText
-                cur={prog.current}
-                next={prog.target}
-                locale={locale}
-              />
-            </span>
-          )}
-        </div>
-        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/45 ring-1 ring-white/10">
-          <div
-            className="h-full rounded-full bg-linear-to-r from-amber-300 to-accent"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        {stepsLeft > 0 && stepsLeft <= 3 && (
-          <p className="mt-1 font-display text-[10px] font-bold text-lime-300">
-            {t("profile.trophyStepsLeft", {
-              n: toLocaleDigits(stepsLeft, locale),
-            })}
-          </p>
-        )}
-      </div>
-    </motion.button>
-  );
 }
 
 type BadgeTileProps = {

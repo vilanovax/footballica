@@ -64,7 +64,7 @@ export function AppShell({ children }: AppShellProps) {
           {children}
         </main>
         {!hideNav && <BottomNav />}
-        <Toaster position="top-center" />
+        <Toaster tone="arena" position="top-center" />
       </div>
     </div>
   );

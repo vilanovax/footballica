@@ -178,6 +178,8 @@ export async function getProfileSnapshot(): Promise<ProfileSnapshot | null> {
     managerName: user.displayName ?? "Manager",
     clubName: club.name,
     stadiumName: club.stadiumName,
+    stadiumLevel: club.stadiumLevel,
+    fans: club.fans,
     avatar: club.avatar,
     flag: club.flag,
     colorKey: club.colorKey,

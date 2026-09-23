@@ -75,39 +75,41 @@ export function DuelScorecard({
   return (
     <section
       className={cn(
-        "relative flex flex-1 flex-col overflow-hidden rounded-bubble-xl",
+        "relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-bubble-xl",
         !isResult && "game-sheet",
-        isResult ? "min-h-0" : "min-h-[min(100%,34rem)]",
       )}
     >
       {!isResult && (
         <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-          <div className="game-sheet-wash absolute inset-x-0 top-0 h-44" />
-          <div className="absolute -start-16 top-1/4 h-52 w-52 rounded-full bg-emerald-400/15 blur-3xl" />
-          <div className="absolute -end-14 bottom-1/5 h-44 w-44 rounded-full bg-amber-400/12 blur-3xl" />
+          <div className="game-sheet-wash absolute inset-x-0 top-0 h-36" />
+          <div className="absolute -inset-s-16 top-1/4 h-48 w-48 rounded-full bg-emerald-400/15 blur-3xl" />
+          <div className="absolute -inset-e-14 bottom-1/5 h-40 w-40 rounded-full bg-amber-400/12 blur-3xl" />
         </div>
       )}
 
       <div
         className={cn(
-          "relative z-10 flex flex-1 flex-col",
-          isResult ? "gap-3 px-0 py-0" : "gap-4 px-2.5 py-4",
+          "relative z-10 flex min-h-0 flex-1 flex-col",
+          isResult ? "gap-3 px-0 py-0" : "gap-2.5 px-3 py-3",
         )}
       >
         {!isResult && (
-          <div className="flex justify-center">
+          <div className="flex shrink-0 justify-center">
             <StatusBadge status={status} label={statusCopy} />
           </div>
         )}
 
         <motion.header
-          initial={{ opacity: 0, y: -10 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 320, damping: 24 }}
+          className="shrink-0"
         >
           <GamePanel
             tone="emerald"
-            className={cn(isResult ? "px-3 py-4" : "px-3 py-5")}
+            className={cn(
+              "bg-black/25",
+              isResult ? "px-3 py-4" : "px-3 py-4",
+            )}
           >
           {!hideOutcomeBanner && (
             <OutcomeBanner status={status} outcome={outcome} />
@@ -156,26 +158,27 @@ export function DuelScorecard({
           </GamePanel>
         </motion.header>
 
-        <div className="relative flex flex-col gap-2">
-          <div className="flex items-center justify-between px-1">
-            <p className="font-display text-[11px] font-extrabold text-white/55">
+        <div className="relative flex min-h-0 flex-1 flex-col gap-2">
+          <div className="flex shrink-0 items-center justify-between px-0.5">
+            <p className="font-display text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/70">
               {t("duel.scorecard.board")}
             </p>
-            <p className="font-display text-[11px] font-bold text-white/35">
+            <p className="font-display text-[10px] font-bold text-white/40">
               {t("duel.scorecard.boardHint")}
             </p>
           </div>
-          {rounds.map((round, i) => (
-            <RoundRow key={round.roundNumber} round={round} index={i} />
-          ))}
+          <div className="flex min-h-0 flex-1 flex-col gap-2">
+            {rounds.map((round, i) => (
+              <RoundRow key={round.roundNumber} round={round} index={i} grow />
+            ))}
+          </div>
         </div>
 
         {!hideFooter && (
           <motion.footer
-            initial={{ opacity: 0, y: 16 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.12 }}
-            className="mt-auto flex flex-col gap-2.5 pt-1"
+            className="mt-auto flex shrink-0 flex-col gap-2 pt-0.5"
           >
             {status === "WAITING" ? (
               <WaitingCard />
@@ -216,10 +219,10 @@ function StatusBadge({
 }) {
   const tone =
     status === "YOUR_TURN"
-      ? "bg-emerald-400/20 text-emerald-200 ring-emerald-300/45"
+      ? "emerald"
       : status === "WAITING"
-        ? "bg-amber-400/20 text-amber-200 ring-amber-300/45"
-        : "bg-white/10 text-white/70 ring-white/20";
+        ? "amber"
+        : "default";
   const dot =
     status === "YOUR_TURN"
       ? "bg-emerald-400"
@@ -228,14 +231,9 @@ function StatusBadge({
         : "bg-white/50";
 
   return (
-    <span
-      className={[
-        "inline-flex items-center gap-2 rounded-full px-3 py-1 font-display text-[11px] font-extrabold uppercase tracking-wider ring-1",
-        tone,
-      ].join(" ")}
-    >
+    <GameChip tone={tone} className="uppercase tracking-wide">
       <motion.span
-        className={["h-2 w-2 rounded-full", dot].join(" ")}
+        className={cn("h-1.5 w-1.5 rounded-full", dot)}
         animate={
           status === "COMPLETED"
             ? { scale: 1 }
@@ -244,27 +242,30 @@ function StatusBadge({
         transition={{ repeat: Infinity, duration: 1 }}
       />
       {label}
-    </span>
+    </GameChip>
   );
 }
 
 function WaitingCard() {
   const { t } = useTranslation();
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-amber-300/30 bg-amber-400/10 px-4 py-5 text-center ring-1 ring-amber-300/20">
+    <GamePanel
+      tone="amber"
+      className="relative overflow-hidden bg-black/25 px-4 py-4 text-center"
+    >
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-linear-to-r from-transparent via-amber-300/10 to-transparent"
+        className="pointer-events-none absolute inset-0 bg-linear-to-r from-transparent via-amber-300/12 to-transparent"
         animate={{ x: ["-40%", "120%"] }}
         transition={{ repeat: Infinity, duration: 2.4, ease: "linear" }}
       />
       <p className="relative font-display text-base font-black text-amber-100">
         {t("duel.scorecard.waitingTitle")}
       </p>
-      <p className="relative mt-1 font-body text-xs font-semibold text-amber-100/65">
+      <p className="relative mt-1 font-display text-xs font-bold text-amber-100/70">
         {t("duel.summaryAutoRefresh")}
       </p>
-    </div>
+    </GamePanel>
   );
 }
 
@@ -384,26 +385,35 @@ function PlayerBlock({
   );
 }
 
-function RoundRow({ round, index }: { round: ScorecardRound; index: number }) {
+function RoundRow({
+  round,
+  grow = false,
+}: {
+  round: ScorecardRound;
+  index?: number;
+  grow?: boolean;
+}) {
   const { t, locale } = useTranslation();
   const cat =
     locale === "fa" ? round.categoryNameFa : round.categoryNameEn;
   const isMemory = round.roundType === "MEMORY";
+  const growCls = grow ? "flex min-h-[3.75rem] flex-1 flex-col justify-center" : "";
 
   if (round.locked) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 * index }}
-        className="relative overflow-hidden rounded-2xl border border-dashed border-white/15 bg-white/4 px-3 py-4 text-center"
+      <GamePanel
+        tone="amber"
+        className={cn(
+          "border-dashed bg-black/20 px-3 py-3 text-center opacity-70",
+          growCls,
+        )}
       >
-        <p className="font-display text-sm font-bold text-white/45">
+        <p className="font-display text-sm font-bold text-white/55">
           {t("duel.scorecard.roundLocked", {
             n: toLocaleDigits(round.roundNumber, locale),
           })}
         </p>
-      </motion.div>
+      </GamePanel>
     );
   }
 
@@ -423,27 +433,28 @@ function RoundRow({ round, index }: { round: ScorecardRound; index: number }) {
           ? "them"
           : "draw";
 
+  const tone =
+    round.waitingOnThem
+      ? ("amber" as const)
+      : lead === "you"
+        ? ("emerald" as const)
+        : lead === "them"
+          ? ("rose" as const)
+          : ("sky" as const);
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{
-        delay: 0.05 * index,
-        type: "spring",
-        stiffness: 280,
-        damping: 22,
-      }}
-      className={[
-        "relative overflow-hidden rounded-2xl border px-3 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.28)]",
-        round.waitingOnThem
-          ? "border-amber-300/35 bg-amber-400/8"
-          : lead === "you"
-            ? "border-emerald-400/25 bg-emerald-500/8"
-            : lead === "them"
-              ? "border-rose-400/25 bg-rose-500/8"
-              : "border-white/12 bg-white/5",
-      ].join(" ")}
+      className={cn(growCls, "w-full")}
     >
+      <GamePanel
+        tone={tone}
+        className={cn(
+          "relative w-full bg-black/30 px-3 py-3",
+          grow && "flex min-h-0 flex-1 flex-col justify-center",
+        )}
+      >
       {lead === "you" && (
         <span
           aria-hidden
@@ -537,6 +548,7 @@ function RoundRow({ round, index }: { round: ScorecardRound; index: number }) {
           )}
         </div>
       )}
+      </GamePanel>
     </motion.div>
   );
 }

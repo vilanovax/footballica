@@ -73,6 +73,8 @@ export function BottomNav() {
           ? `/play/duel/${res.topId}`
           : "/play/duel";
         toast.message(t("duel.inboxToast", { n: String(res.count) }), {
+          id: "duel-inbox-waiting",
+          duration: 7_000,
           action: {
             label: t("duel.inboxPlayNow"),
             onClick: () => router.push(href),

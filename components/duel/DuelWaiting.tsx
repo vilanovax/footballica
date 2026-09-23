@@ -18,8 +18,7 @@ type DuelWaitingProps = {
 };
 
 /**
- * MATCHING → avatar search animation.
- * WAIT → Quiz-of-Kings style board summary (auto-polls; no manual refresh CTA).
+ * Wait / matching bridge — denser Arena surfaces for both modes.
  */
 export function DuelWaiting({
   mode = "wait",
@@ -28,8 +27,6 @@ export function DuelWaiting({
   yourAvatar,
   yourName,
   matchFound = false,
-  pending,
-  onRefresh,
 }: DuelWaitingProps) {
   if (mode === "matching") {
     return (

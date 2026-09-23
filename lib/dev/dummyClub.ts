@@ -58,6 +58,9 @@ export type ProfileSnapshot = {
   managerName: string;
   clubName: string;
   stadiumName: string | null;
+  /** Hub stadium track — always present from day one (ruined ground = 0). */
+  stadiumLevel: number;
+  fans: number;
   avatar: string | null;
   flag: string | null;
   colorKey: string;

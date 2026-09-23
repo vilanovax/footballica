@@ -245,7 +245,7 @@ export function DraftPicker({
                 <GamePanel
                   tone="rose"
                   className={cn(
-                    "flex min-h-[4.25rem] flex-1 items-stretch",
+                    "flex min-h-17 flex-1 items-stretch",
                     specialSelected && "ring-2 ring-arena-amber",
                   )}
                 >
@@ -309,7 +309,7 @@ export function DraftPicker({
             </div>
           )}
 
-          <div className="flex min-h-0 flex-[3] flex-col gap-1.5">
+          <div className="flex min-h-0 flex-3 flex-col gap-1.5">
             {(hasSpecials || options.length > 0) && (
               <p className="shrink-0 px-0.5 text-start font-display text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/70">
                 {t("duel.draftSectionQuiz")}
@@ -346,7 +346,7 @@ export function DraftPicker({
                     <GamePanel
                       tone={theme.panel}
                       className={cn(
-                        "flex min-h-[4.25rem] w-full flex-1 items-center gap-2.5 bg-black/30 p-3",
+                        "flex min-h-17 w-full flex-1 items-center gap-2.5 bg-black/30 p-3",
                         selected && `ring-2 ${theme.ring}`,
                       )}
                     >

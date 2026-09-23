@@ -19,19 +19,23 @@ type PerfectedBanksShelfProps = {
 
 /**
  * Profile shelf of category-locked Penalty Perfects — collection vanity +
- * deep-link back into the chase.
+ * deep-link back into the chase. Empty state stays compact; filled state
+ * expands into a horizontal showcase (UI grows with progression).
  */
 export function PerfectedBanksShelf({ banks }: PerfectedBanksShelfProps) {
   const { t, locale } = useTranslation();
   const router = useRouter();
 
   return (
-    <GamePanel tone="amber" className="p-3">
+    <GamePanel
+      tone="amber"
+      className={banks.length === 0 ? "px-3 py-2.5" : "p-3"}
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute -inset-e-10 top-0 h-28 w-28 rounded-full bg-emerald-300/15 blur-3xl"
       />
-      <div className="relative mb-2.5 flex items-center justify-between gap-2">
+      <div className="relative mb-2 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -41,7 +45,7 @@ export function PerfectedBanksShelf({ banks }: PerfectedBanksShelfProps) {
             draggable={false}
             className="h-5 w-5 shrink-0 object-contain"
           />
-          <h2 className="truncate font-display text-base font-black text-white drop-shadow-sm">
+          <h2 className="truncate font-display text-sm font-black text-white drop-shadow-sm">
             {t("profile.perfectedBanks")}
           </h2>
         </div>
@@ -53,13 +57,13 @@ export function PerfectedBanksShelf({ banks }: PerfectedBanksShelfProps) {
       </div>
 
       {banks.length === 0 ? (
-        <div className="relative text-center">
-          <p className="font-display text-sm font-bold text-white/65">
+        <div className="relative flex flex-wrap items-center justify-between gap-2">
+          <p className="min-w-0 flex-1 font-display text-xs font-bold text-white/65">
             {t("profile.perfectedBanksEmpty")}
           </p>
           <GameCta
             variant="accent"
-            className="mt-3 min-h-11 px-5"
+            className="min-h-10 shrink-0 px-4 text-sm"
             onClick={() => {
               playSound("click");
               haptic(HAPTIC.tap);
