@@ -18,9 +18,8 @@ type PerfectedBanksShelfProps = {
 };
 
 /**
- * Profile shelf of category-locked Penalty Perfects — collection vanity +
- * deep-link back into the chase. Empty state stays compact; filled state
- * expands into a horizontal showcase (UI grows with progression).
+ * Medal collection — category-locked Penalty clears showcase.
+ * Empty stays compact; filled expands into a horizontal shelf.
  */
 export function PerfectedBanksShelf({ banks }: PerfectedBanksShelfProps) {
   const { t, locale } = useTranslation();
@@ -35,8 +34,8 @@ export function PerfectedBanksShelf({ banks }: PerfectedBanksShelfProps) {
         aria-hidden
         className="pointer-events-none absolute -inset-e-10 top-0 h-28 w-28 rounded-full bg-emerald-300/15 blur-3xl"
       />
-      <div className="relative mb-2 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="relative mb-2 flex flex-col gap-0.5">
+        <div className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/target.png"
@@ -49,11 +48,9 @@ export function PerfectedBanksShelf({ banks }: PerfectedBanksShelfProps) {
             {t("profile.perfectedBanks")}
           </h2>
         </div>
-        <GameChip tone="amber" className="shrink-0 tabular-nums text-[11px]">
-          {t("profile.perfectedBanksCount", {
-            n: toLocaleDigits(banks.length, locale),
-          })}
-        </GameChip>
+        <p className="ps-7 font-display text-[10px] font-bold leading-snug text-white/55">
+          {t("profile.perfectedBanksEmptyHint")}
+        </p>
       </div>
 
       {banks.length === 0 ? (

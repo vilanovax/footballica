@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { AvatarImage } from "@/components/common/AvatarImage";
 import type { LeaderboardRow } from "@/actions/getLeaderboard";
 import {
@@ -35,11 +35,27 @@ type LeaderboardListProps = {
 
 type TabKey = "weekly" | "hof";
 
+type ChaseState =
+  | { kind: "lead" }
+  | {
+      kind: "hunt";
+      gap: number;
+      targetRank: number;
+      /** 0–1 progress toward overtaking the rank above. */
+      progress: number;
+      /** Hot chase — within ~8% of the target XP. */
+      close: boolean;
+    };
+
 /** Only animate the first N rows — rest paint instantly to cut hydration TBT. */
 const ANIMATED_ROW_CAP = 6;
 
 /** Approximate row height for content-visibility intrinsic size (avoids scroll jump). */
 const ROW_INTRINSIC = "auto 3.25rem";
+
+/** Sit snug above BottomNav (nav chrome ~5.25rem + safe area). */
+const STICKY_BOTTOM =
+  "bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))]";
 
 const containerVariants = {
   hidden: {},
@@ -68,6 +84,7 @@ export function LeaderboardList({
   currentUserRow = null,
 }: LeaderboardListProps) {
   const { t, locale } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const [tab, setTab] = useState<TabKey>("weekly");
   const [prizesOpen, setPrizesOpen] = useState(false);
   const [hallOfFame, setHallOfFame] = useState<HallOfFameWeek[] | null>(null);
@@ -98,18 +115,24 @@ export function LeaderboardList({
   const [youInView, setYouInView] = useState(true);
   const stickyId = sticky?.userId ?? null;
 
-  const chase = useMemo(() => {
+  const chase = useMemo((): ChaseState | null => {
     if (!sticky || sticky.rank <= 0) return null;
     if (sticky.rank === 1) {
-      return { kind: "lead" as const };
+      return { kind: "lead" };
     }
     const above = rows.find((r) => r.rank === sticky.rank - 1);
     if (!above) return null;
     const gap = Math.max(0, above.weeklyXp - sticky.weeklyXp + 1);
+    const denom = above.weeklyXp + 1;
+    const progress =
+      denom <= 0 ? 0 : Math.min(0.98, sticky.weeklyXp / denom);
+    const close = gap > 0 && gap / Math.max(above.weeklyXp, 1) <= 0.08;
     return {
-      kind: "hunt" as const,
+      kind: "hunt",
       gap,
       targetRank: above.rank,
+      progress,
+      close,
     };
   }, [sticky, rows]);
 
@@ -123,7 +146,8 @@ export function LeaderboardList({
       ([entry]) => setYouInView(entry.isIntersecting),
       {
         root: null,
-        rootMargin: "-72px 0px -140px 0px",
+        // Account for sticky header (~72) + bottom nav (~88) — not mid-viewport.
+        rootMargin: "-72px 0px -96px 0px",
         threshold: 0,
       },
     );
@@ -132,6 +156,16 @@ export function LeaderboardList({
   }, [tab, stickyId, youAnchor]);
 
   const showStickyYou = tab === "weekly" && Boolean(sticky) && !youInView;
+
+  const jumpToYou = useCallback(() => {
+    if (!youAnchor) return;
+    haptic(HAPTIC.tap);
+    playSound("click");
+    youAnchor.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "center",
+    });
+  }, [youAnchor, reduceMotion]);
 
   function selectTab(next: TabKey) {
     if (next === tab) return;
@@ -149,10 +183,12 @@ export function LeaderboardList({
     }
   }
 
+  const resetUrgent = resetsInDays <= 1;
+
   return (
     <section className="relative flex flex-1 flex-col">
-      <header className="sticky top-0 z-20 -mx-1 bg-background/85 pb-2.5 pt-2 backdrop-blur-md">
-        <GamePanel tone="emerald" className="p-3">
+      <header className="sticky top-0 z-20 -mx-1 bg-background/85 pb-2 pt-1.5 backdrop-blur-md">
+        <GamePanel tone="emerald" className="p-2.5">
           <div
             aria-hidden
             className="pointer-events-none absolute -end-8 top-0 h-24 w-24 rounded-full bg-emerald-300/25 blur-2xl"
@@ -160,17 +196,24 @@ export function LeaderboardList({
 
           <div className="relative flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="font-display text-xs font-black text-emerald-200/85">
+              <p className="font-display text-[11px] font-black text-emerald-200/85">
                 {t("leaderboard.eyebrow")}
               </p>
-              <h1 className="mt-0.5 font-display text-2xl font-black text-white drop-shadow-sm">
+              <h1 className="mt-0.5 font-display text-xl font-black text-white drop-shadow-sm">
                 {tab === "weekly"
                   ? t("leaderboard.title")
                   : t("leaderboard.hofTitle")}
               </h1>
             </div>
             {tab === "weekly" && (
-              <GameChip tone="amber" className="shrink-0 gap-1 px-2.5 py-1.5 text-[11px]">
+              <GameChip
+                tone="amber"
+                className={cn(
+                  "shrink-0 gap-1 px-2.5 py-1.5 text-[11px]",
+                  resetUrgent &&
+                    "ring-1 ring-rose-400/70 motion-safe:animate-[pulse_1.8s_ease-in-out_infinite]",
+                )}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/icons/timer.png"
@@ -190,7 +233,7 @@ export function LeaderboardList({
           <div
             role="tablist"
             aria-label={t("leaderboard.eyebrow")}
-            className="relative mt-3 grid grid-cols-2 gap-1.5 rounded-2xl bg-black/30 p-1 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
+            className="relative mt-2.5 grid grid-cols-2 gap-1.5 rounded-2xl bg-black/30 p-1 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
           >
             {(
               [
@@ -215,11 +258,15 @@ export function LeaderboardList({
                     <motion.span
                       layoutId="leaderboard-tab-pill"
                       className="absolute inset-0 rounded-xl bg-accent shadow-[0_3px_0_0_rgba(0,0,0,0.3)]"
-                      transition={{
-                        type: "spring",
-                        stiffness: 420,
-                        damping: 32,
-                      }}
+                      transition={
+                        reduceMotion
+                          ? { duration: 0 }
+                          : {
+                              type: "spring",
+                              stiffness: 420,
+                              damping: 32,
+                            }
+                      }
                     />
                   )}
                   <span className="relative z-10">{item.label}</span>
@@ -238,7 +285,6 @@ export function LeaderboardList({
         )
       ) : (
         <>
-          {/* Chase card — your hunt */}
           {sticky && (
             <YourHuntCard
               you={sticky}
@@ -265,15 +311,15 @@ export function LeaderboardList({
                 tone="amber"
                 className="flex w-full items-center justify-between gap-2 px-3 py-3"
               >
-              <span className="relative inline-flex items-center gap-1.5 font-display text-xs font-black text-amber-50">
-                <RankArt kind="trophy" size="sm" className="h-5 w-5" />
-                {t("leaderboard.prizeBanner", {
-                  n: toLocaleDigits(weeklyChampionCoins(), locale),
-                })}
-              </span>
-              <span className="relative rounded-bubble bg-accent px-2.5 py-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.3)]">
-                {t("leaderboard.prizeTap")}
-              </span>
+                <span className="relative inline-flex items-center gap-1.5 font-display text-xs font-black text-amber-50">
+                  <RankArt kind="trophy" size="sm" className="h-5 w-5" />
+                  {t("leaderboard.prizeBanner", {
+                    n: toLocaleDigits(weeklyChampionCoins(), locale),
+                  })}
+                </span>
+                <span className="relative rounded-bubble bg-accent px-2.5 py-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.3)]">
+                  {t("leaderboard.prizeTap")}
+                </span>
               </GamePanel>
             </button>
           )}
@@ -285,23 +331,29 @@ export function LeaderboardList({
               </div>
             )}
 
-            <div className="mb-1.5 flex items-center justify-between px-1">
-              <p className="font-display text-xs font-black text-emerald-800/80">
-                {t("leaderboard.tableTitle")}
-              </p>
-              <p className="font-display text-[10px] font-black text-emerald-800/55">
+            <div className="mb-1 flex items-end justify-between gap-2 px-1">
+              <div className="min-w-0">
+                <p className="font-display text-xs font-black text-emerald-800/80">
+                  {t("leaderboard.tableTitle")}
+                </p>
+                <p className="mt-0.5 font-display text-[10px] font-bold text-emerald-800/50">
+                  {t("leaderboard.tableTieHint")}
+                </p>
+              </div>
+              <p className="shrink-0 font-display text-[10px] font-black text-emerald-800/55">
                 {t("leaderboard.xpShort")}
               </p>
             </div>
 
             <motion.ol
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className={[
+              variants={reduceMotion ? undefined : containerVariants}
+              initial={reduceMotion ? false : "hidden"}
+              animate={reduceMotion ? undefined : "visible"}
+              className={cn(
                 "flex flex-col gap-1.5",
-                showStickyYou ? "pb-36" : "pb-28",
-              ].join(" ")}
+                // Extra room when the docked "you" chip + jump hint are visible.
+                showStickyYou ? "pb-32" : "pb-28",
+              )}
             >
               {listRows.map((row, index) => {
                 const isYou = sticky?.userId === row.userId;
@@ -310,7 +362,6 @@ export function LeaderboardList({
                     key={row.userId}
                     className="list-none"
                     style={{
-                      // Skip layout/paint for off-screen rows (Top-N can be ~50).
                       contentVisibility: "auto",
                       containIntrinsicSize: ROW_INTRINSIC,
                     }}
@@ -318,7 +369,8 @@ export function LeaderboardList({
                   >
                     <LeaderboardRowItem
                       row={row}
-                      animate={index < ANIMATED_ROW_CAP}
+                      animate={!reduceMotion && index < ANIMATED_ROW_CAP}
+                      priorityAvatar={index < 2 || isYou}
                     />
                   </li>
                 );
@@ -329,10 +381,29 @@ export function LeaderboardList({
       )}
 
       {showStickyYou && sticky && (
-        <div className="pointer-events-none fixed inset-x-0 z-40 mx-auto w-full max-w-mobile px-3 bottom-[calc(10.5rem+env(safe-area-inset-bottom,0px))]">
-          <div className="pointer-events-auto ring-2 ring-arena-amber shadow-[0_0_20px_rgba(251,191,36,0.35)]">
-            <LeaderboardRowItem row={sticky} sticky />
-          </div>
+        <div
+          className={cn(
+            "pointer-events-none fixed inset-x-0 z-40 mx-auto w-full max-w-mobile px-3",
+            STICKY_BOTTOM,
+          )}
+        >
+          <button
+            type="button"
+            onClick={jumpToYou}
+            aria-label={t("leaderboard.jumpToYou")}
+            className="pointer-events-auto w-full text-start transition-transform active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arena-ring"
+          >
+            <div
+              aria-hidden
+              className="ring-2 ring-arena-amber shadow-[0_0_20px_rgba(251,191,36,0.35)]"
+            >
+              <LeaderboardRowItem row={sticky} sticky />
+            </div>
+            <span className="mt-1 flex items-center justify-center gap-1 font-display text-[10px] font-black text-amber-200/90">
+              <RankArt kind="trophy" size="sm" className="h-3 w-3" />
+              {t("leaderboard.jumpToYou")}
+            </span>
+          </button>
         </div>
       )}
 
@@ -387,10 +458,11 @@ function YourHuntCard({
   onPrizes,
 }: {
   you: LeaderboardRow;
-  chase: { kind: "lead" } | { kind: "hunt"; gap: number; targetRank: number } | null;
+  chase: ChaseState | null;
   onPrizes: () => void;
 }) {
   const { t, locale } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const tier = you.rank > 0 ? tierForRank(you.rank) : "climbing";
   const tierLabel =
     tier === "elite"
@@ -407,69 +479,118 @@ function YourHuntCard({
         ? "bg-emerald-400/25 text-emerald-100 ring-emerald-300/45"
         : "bg-white/10 text-white/80 ring-white/20";
 
+  const barPct =
+    chase?.kind === "lead"
+      ? 100
+      : chase?.kind === "hunt"
+        ? Math.round(chase.progress * 100)
+        : 0;
+  const barHot = chase?.kind === "hunt" && chase.close;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-3"
+      className="mb-2.5"
     >
-      <GamePanel tone="emerald" className="p-3">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -end-8 top-0 h-24 w-24 rounded-full bg-emerald-300/30 blur-2xl"
-      />
+      <GamePanel tone="emerald" className="p-2.5">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -end-8 top-0 h-24 w-24 rounded-full bg-emerald-300/30 blur-2xl"
+        />
 
-      <div className="relative flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-xs font-black text-emerald-200/85">
-            {t("leaderboard.yourHunt")}
-          </p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span className="font-display text-lg font-black text-white drop-shadow-sm">
-              {you.rank > 0
-                ? t("leaderboard.rankLabel", {
-                    n: toLocaleDigits(you.rank, locale),
-                  })
-                : t("leaderboard.unranked")}
-            </span>
-            <span
-              className={[
-                "rounded-full px-2 py-0.5 font-display text-[10px] font-black ring-1",
-                tierTone,
-              ].join(" ")}
-            >
-              {tierLabel}
-            </span>
+        <div className="relative flex items-center gap-2.5">
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-[11px] font-black text-emerald-200/85">
+              {t("leaderboard.yourHunt")}
+            </p>
+            <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+              <span className="font-display text-base font-black text-white drop-shadow-sm">
+                {you.rank > 0
+                  ? t("leaderboard.rankLabel", {
+                      n: toLocaleDigits(you.rank, locale),
+                    })
+                  : t("leaderboard.unranked")}
+              </span>
+              <span
+                className={[
+                  "rounded-full px-2 py-0.5 font-display text-[10px] font-black ring-1",
+                  tierTone,
+                ].join(" ")}
+              >
+                {tierLabel}
+              </span>
+            </div>
+            <p className="mt-1 font-display text-[11px] font-bold text-white/65">
+              {chase?.kind === "lead"
+                ? t("leaderboard.gapLead")
+                : chase?.kind === "hunt"
+                  ? t("leaderboard.gapNext", {
+                      n: toLocaleDigits(chase.gap, locale),
+                      rank: toLocaleDigits(chase.targetRank, locale),
+                    })
+                  : t("leaderboard.rowMatches", {
+                      n: toLocaleDigits(you.matchesPlayed, locale),
+                    })}
+            </p>
           </div>
-          <p className="mt-1 font-display text-[11px] font-bold text-white/65">
-            {chase?.kind === "lead"
-              ? t("leaderboard.gapLead")
-              : chase?.kind === "hunt"
-                ? t("leaderboard.gapNext", {
-                    n: toLocaleDigits(chase.gap, locale),
-                    rank: toLocaleDigits(chase.targetRank, locale),
-                  })
-                : t("leaderboard.rowMatches", {
-                    n: toLocaleDigits(you.matchesPlayed, locale),
-                  })}
-          </p>
+
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <p className="inline-flex items-center gap-1 rounded-xl border border-white/15 bg-black/30 px-2.5 py-1.5 font-display text-lg font-black tabular-nums text-emerald-200">
+              <ResourceIcon kind="xp" size="sm" />
+              {formatNumber(you.weeklyXp, locale)}
+            </p>
+            <button
+              type="button"
+              onClick={onPrizes}
+              className="game-cta game-cta-accent inline-flex min-h-9 items-center gap-1 px-2.5 py-1.5 font-display text-[11px] font-black"
+            >
+              <RankArt kind="trophy" size="sm" className="h-3.5 w-3.5" />
+              {t("leaderboard.prizeTap")}
+            </button>
+          </div>
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <p className="inline-flex items-center gap-1 rounded-xl border border-white/15 bg-black/30 px-2.5 py-1.5 font-display text-xl font-black tabular-nums text-emerald-200">
-            <ResourceIcon kind="xp" size="sm" />
-            {formatNumber(you.weeklyXp, locale)}
-          </p>
-          <button
-            type="button"
-            onClick={onPrizes}
-            className="game-cta game-cta-accent inline-flex min-h-9 items-center gap-1 px-2.5 py-1.5 font-display text-[11px] font-black"
-          >
-            <RankArt kind="trophy" size="sm" className="h-3.5 w-3.5" />
-            {t("leaderboard.prizeTap")}
-          </button>
-        </div>
-      </div>
+        {(chase?.kind === "lead" || chase?.kind === "hunt") && (
+          <div className="relative mt-2.5">
+            <div
+              className="h-2 overflow-hidden rounded-full bg-black/40 shadow-[inset_0_1px_2px_rgba(0,0,0,0.45)]"
+              role="progressbar"
+              aria-valuenow={barPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={
+                chase.kind === "lead"
+                  ? t("leaderboard.gapLead")
+                  : t("leaderboard.gapNext", {
+                      n: toLocaleDigits(chase.gap, locale),
+                      rank: toLocaleDigits(chase.targetRank, locale),
+                    })
+              }
+            >
+              <motion.div
+                className={cn(
+                  "h-full rounded-full",
+                  chase.kind === "lead"
+                    ? "bg-linear-to-r from-amber-300 to-amber-500"
+                    : barHot
+                      ? "bg-linear-to-r from-accent to-amber-300"
+                      : "bg-linear-to-r from-emerald-400 to-emerald-300",
+                  barHot &&
+                    !reduceMotion &&
+                    "motion-safe:animate-[pulse_1.6s_ease-in-out_infinite]",
+                )}
+                initial={reduceMotion ? false : { width: 0 }}
+                animate={{ width: `${barPct}%` }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : { type: "spring", stiffness: 120, damping: 22 }
+                }
+              />
+            </div>
+          </div>
+        )}
       </GamePanel>
     </motion.div>
   );
@@ -479,10 +600,12 @@ function LeaderboardRowItem({
   row,
   sticky,
   animate = true,
+  priorityAvatar = false,
 }: {
   row: LeaderboardRow;
   sticky?: boolean;
   animate?: boolean;
+  priorityAvatar?: boolean;
 }) {
   const { t, locale } = useTranslation();
   const unplayed = row.playState === "unplayed";
@@ -492,17 +615,21 @@ function LeaderboardRowItem({
     sticky || you || hot ? "emerald" : unplayed ? "sky" : "emerald";
 
   const body = (
-      <GamePanel
-        tone={tone as "emerald" | "sky"}
-        className={cn(
-          "flex min-h-12 items-center gap-2 px-2 py-1.5",
-          (sticky || you) &&
-            "ring-2 ring-arena-amber shadow-[0_0_18px_rgba(251,191,36,0.28)]",
-          unplayed && "opacity-75",
-          !hot && !you && !sticky && !unplayed && "game-panel opacity-95",
-        )}
-      >
-      {(sticky || you) && (
+    <GamePanel
+      tone={tone as "emerald" | "sky"}
+      className={cn(
+        "flex min-h-12 items-center gap-2 px-2 py-1.5",
+        sticky &&
+          "ring-2 ring-arena-amber shadow-[0_0_18px_rgba(251,191,36,0.28)]",
+        // In-list YOU: lighter ring so Hunt card stays the hero signal.
+        you &&
+          !sticky &&
+          "ring-1 ring-arena-amber/70 shadow-[0_0_10px_rgba(251,191,36,0.15)]",
+        unplayed && "opacity-75",
+        !hot && !you && !sticky && !unplayed && "game-panel opacity-95",
+      )}
+    >
+      {sticky && (
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_120%_at_0%_50%,rgba(251,191,36,0.18),transparent_55%)]"
@@ -529,6 +656,7 @@ function LeaderboardRowItem({
       <AvatarImage
         avatarKey={row.avatarKey}
         sizes="36px"
+        priority={priorityAvatar}
         className={[
           "relative h-9 w-9 shrink-0 rounded-full ring-2",
           you ? "ring-accent/80" : "ring-white/20",
@@ -577,7 +705,7 @@ function LeaderboardRowItem({
           <ResourceIcon kind="xp" size="sm" className="h-3.5 w-3.5" />
         </p>
       </div>
-      </GamePanel>
+    </GamePanel>
   );
 
   if (sticky || !animate) {

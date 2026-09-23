@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { AvatarImage } from "@/components/common/AvatarImage";
 import type { LeaderboardRow } from "@/actions/getLeaderboard";
 import { useTranslation } from "@/lib/i18n/useTranslation";
@@ -31,8 +31,8 @@ const PLACES: Record<
     glow: "shadow-[0_0_28px_rgba(250,204,21,0.55)]",
     barOuter: "bg-linear-to-b from-amber-200 via-amber-400 to-amber-700",
     barInner: "bg-linear-to-b from-white/35 via-transparent to-black/25",
-    barHeight: "h-[5.25rem]",
-    avatarSize: "h-[4.75rem] w-[4.75rem]",
+    barHeight: "h-[4.75rem]",
+    avatarSize: "h-[4.25rem] w-[4.25rem]",
     numberTone: "text-amber-950",
   },
   2: {
@@ -40,8 +40,8 @@ const PLACES: Record<
     glow: "shadow-[0_0_18px_rgba(203,213,225,0.4)]",
     barOuter: "bg-linear-to-b from-slate-100 via-slate-300 to-slate-500",
     barInner: "bg-linear-to-b from-white/40 via-transparent to-black/20",
-    barHeight: "h-16",
-    avatarSize: "h-14 w-14",
+    barHeight: "h-14",
+    avatarSize: "h-12 w-12",
     numberTone: "text-slate-800",
   },
   3: {
@@ -49,8 +49,8 @@ const PLACES: Record<
     glow: "shadow-[0_0_18px_rgba(192,132,87,0.45)]",
     barOuter: "bg-linear-to-b from-orange-200 via-orange-400 to-amber-800",
     barInner: "bg-linear-to-b from-white/30 via-transparent to-black/25",
-    barHeight: "h-12",
-    avatarSize: "h-14 w-14",
+    barHeight: "h-11",
+    avatarSize: "h-12 w-12",
     numberTone: "text-amber-950",
   },
 };
@@ -60,10 +60,11 @@ const RENDER_ORDER = [2, 1, 3] as const;
 /** Top-3 podium — staged dark chrome with dimensional steps. */
 export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
   const { t, locale } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const byRank = new Map(rows.map((r) => [r.rank, r] as const));
 
   return (
-    <GamePanel tone="amber" className="mb-3 px-2.5 pb-2 pt-3">
+    <GamePanel tone="amber" className="mb-2.5 px-2 pb-1.5 pt-2.5">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(ellipse_70%_90%_at_50%_0%,rgba(251,191,36,0.28),transparent_70%)]"
@@ -76,7 +77,7 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
         </p>
       </div>
 
-      <div className="relative flex items-end justify-center gap-1 px-0.5 pt-5">
+      <div className="relative flex items-end justify-center gap-1 px-0.5 pt-4">
         {RENDER_ORDER.map((rank) => {
           const row = byRank.get(rank);
           if (!row) return null;
@@ -86,22 +87,29 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
           return (
             <motion.div
               key={row.userId}
-              initial={{ opacity: 0, y: 28 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{
-                type: "spring",
-                stiffness: 280,
-                damping: 20,
-                delay: rank === 1 ? 0.06 : rank === 2 ? 0.14 : 0.22,
-              }}
+              transition={
+                reduceMotion
+                  ? { duration: 0 }
+                  : {
+                      type: "spring",
+                      stiffness: 280,
+                      damping: 20,
+                      delay: rank === 1 ? 0.06 : rank === 2 ? 0.14 : 0.22,
+                    }
+              }
               className={[
                 "flex min-w-0 flex-1 flex-col items-center",
                 isChampion ? "z-10" : "z-0",
               ].join(" ")}
             >
               {isChampion && (
-                <div className="mb-0.5 motion-safe:animate-[podium-crown_2.4s_ease-in-out_infinite]" aria-hidden>
-                  <RankArt kind="crown" size="md" className="h-7 w-7" />
+                <div
+                  className="mb-0.5 motion-safe:animate-[podium-crown_2.4s_ease-in-out_infinite]"
+                  aria-hidden
+                >
+                  <RankArt kind="crown" size="md" className="h-6 w-6" />
                 </div>
               )}
 
@@ -120,18 +128,18 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
                   <AvatarImage
                     avatarKey={row.avatarKey}
                     priority={isChampion}
-                    sizes={isChampion ? "76px" : "56px"}
+                    sizes={isChampion ? "68px" : "48px"}
                     className="h-full w-full rounded-full"
                   />
                 </div>
                 <span
-                  className="absolute -bottom-1 flex h-7 w-7 items-center justify-center inset-inline-end-[-2px]"
+                  className="absolute -bottom-1 flex h-6 w-6 items-center justify-center inset-inline-end-[-2px]"
                   aria-label={`#${rank}`}
                 >
                   <RankArt
                     kind={medalKindForPlace(rank)}
                     size="sm"
-                    className="h-7 w-7 drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)]"
+                    className="h-6 w-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)]"
                   />
                 </span>
                 {row.isCurrentUser && (
@@ -143,7 +151,7 @@ export function LeaderboardPodium({ rows }: LeaderboardPodiumProps) {
 
               <p
                 className={[
-                  "mt-2 w-full truncate px-0.5 text-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]",
+                  "mt-1.5 w-full truncate px-0.5 text-center font-display font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]",
                   isChampion ? "text-xs" : "text-[11px]",
                 ].join(" ")}
                 title={row.clubName}

@@ -1,29 +1,34 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { AvatarImage } from "@/components/common/AvatarImage";
 import type { HallOfFameWeek } from "@/actions/getHallOfFame";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { formatNumber, toLocaleDigits } from "@/lib/i18n/format";
 import { ResourceIcon } from "@/components/common/ResourceIcon";
 import { RankArt, medalKindForPlace } from "@/components/leaderboard/RankArt";
+import { GamePanel } from "@/components/ui/game/GamePanel";
+import { cn } from "@/lib/utils";
 
 type HallOfFamePanelProps = {
   weeks: HallOfFameWeek[];
 };
 
-const RANK_STYLE: Record<number, { ring: string; glow: string }> = {
+const RANK_TONE: Record<
+  number,
+  { panel: "amber" | "emerald" | "sky"; ring: string }
+> = {
   1: {
-    ring: "shadow-[0_0_0_1px_rgba(251,191,36,0.75)]",
-    glow: "bg-linear-to-r from-amber-50 via-amber-200 to-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.35)]",
+    panel: "amber",
+    ring: "ring-1 ring-amber-300/55 shadow-[0_0_18px_rgba(251,191,36,0.28)]",
   },
   2: {
-    ring: "shadow-[0_0_0_1px_rgba(148,163,184,0.7)]",
-    glow: "bg-linear-to-r from-slate-50 to-slate-200",
+    panel: "sky",
+    ring: "ring-1 ring-slate-300/40",
   },
   3: {
-    ring: "shadow-[0_0_0_1px_rgba(217,119,6,0.55)]",
-    glow: "bg-linear-to-r from-orange-50 to-amber-200",
+    panel: "emerald",
+    ring: "ring-1 ring-orange-300/40",
   },
 };
 
@@ -41,107 +46,116 @@ function weekLabel(
 }
 
 /**
- * Past weekly podiums — golden treatment for champions of history.
+ * Past weekly podiums — Arena chrome (pitch-dark) matching the weekly tab.
  */
 export function HallOfFamePanel({ weeks }: HallOfFamePanelProps) {
   const { t, locale } = useTranslation();
+  const reduceMotion = useReducedMotion();
 
   if (weeks.length === 0) {
     return (
-      <div className="mt-4 rounded-bubble-xl bg-amber-50/50 px-4 py-10 text-center shadow-[0_0_0_1px_dashed_rgba(251,191,36,0.55)]">
-        <div className="flex justify-center" aria-hidden>
+      <GamePanel tone="amber" className="mt-4 px-4 py-10 text-center">
+        <div className="relative flex justify-center" aria-hidden>
           <RankArt kind="trophy" size="lg" className="h-12 w-12" />
         </div>
-        <p className="mt-2 font-display text-base font-bold text-foreground">
+        <p className="relative mt-2 font-display text-base font-bold text-amber-50">
           {t("leaderboard.hofEmpty")}
         </p>
-        <p className="mt-1 font-body text-sm text-muted-foreground">
+        <p className="relative mt-1 font-body text-sm text-amber-100/65">
           {t("leaderboard.hofEmptyHint")}
         </p>
-      </div>
+      </GamePanel>
     );
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-28 pt-2">
+    <div className="flex flex-col gap-4 pb-28 pt-2">
       {weeks.map((week, wi) => (
         <motion.section
           key={week.tehranWeekKey}
-          initial={{ opacity: 0, y: 12 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: wi * 0.05 }}
-          className="overflow-hidden rounded-bubble-xl bg-surface shadow-[0_0_0_1px_rgba(251,191,36,0.4),0_4px_0_0_rgba(0,0,0,0.08)]"
+          transition={
+            reduceMotion ? { duration: 0 } : { delay: wi * 0.05 }
+          }
         >
-          <header className="flex items-center gap-2 border-b border-amber-500/25 bg-linear-to-r from-amber-50 to-transparent px-4 py-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/trophy.png"
-              alt=""
-              aria-hidden
-              className="h-5 w-5 object-contain"
-            />
-            <h2 className="font-display text-sm font-black tracking-wide text-amber-900">
-              {weekLabel(week.tehranWeekKey, locale, t)}
-            </h2>
-          </header>
+          <GamePanel tone="amber" className="overflow-hidden p-0">
+            <header className="relative flex items-center gap-2 border-b border-white/10 bg-black/25 px-3 py-2.5">
+              <RankArt kind="trophy" size="sm" className="h-5 w-5" />
+              <h2 className="font-display text-sm font-black tracking-wide text-amber-100">
+                {weekLabel(week.tehranWeekKey, locale, t)}
+              </h2>
+            </header>
 
-          <ol className="flex flex-col gap-2 p-3">
-            {week.entries.map((entry) => {
-              const style = RANK_STYLE[entry.rank] ?? RANK_STYLE[3]!;
-              return (
-                <li
-                  key={entry.id}
-                  className={[
-                    "flex items-center gap-3 rounded-bubble p-3",
-                    style.ring,
-                    style.glow,
-                    entry.isCurrentUser ? "ring-2 ring-primary/50" : "",
-                  ].join(" ")}
-                >
-                  <span
-                    className="flex h-10 w-10 shrink-0 items-center justify-center"
-                    aria-label={`#${entry.rank}`}
-                  >
-                    {entry.rank === 1 ? (
-                      <RankArt kind="crown" size="lg" className="h-9 w-9" />
-                    ) : (
-                      <RankArt
-                        kind={medalKindForPlace(entry.rank)}
-                        size="lg"
-                        className="h-9 w-9"
-                      />
-                    )}
-                  </span>
-                  <AvatarImage
-                    avatarKey={entry.avatarKey}
-                    sizes="44px"
-                    className="h-11 w-11 shrink-0 rounded-full ring-2 ring-white/80"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-display text-base font-bold text-black/90">
-                      {entry.clubName}
-                    </p>
-                    {entry.isCurrentUser && (
-                      <span className="mt-0.5 inline-flex rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-extrabold text-primary-foreground">
-                        {t("leaderboard.you")}
+            <ol className="relative flex flex-col gap-2 p-2.5">
+              {week.entries.map((entry) => {
+                const style = RANK_TONE[entry.rank] ?? RANK_TONE[3]!;
+                return (
+                  <li key={entry.id}>
+                    <GamePanel
+                      tone={style.panel}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5",
+                        style.ring,
+                        entry.isCurrentUser &&
+                          "ring-2 ring-arena-amber shadow-[0_0_14px_rgba(251,191,36,0.3)]",
+                      )}
+                    >
+                      <span
+                        className="relative flex h-10 w-10 shrink-0 items-center justify-center"
+                        aria-label={`#${entry.rank}`}
+                      >
+                        {entry.rank === 1 ? (
+                          <RankArt
+                            kind="crown"
+                            size="lg"
+                            className="h-9 w-9"
+                          />
+                        ) : (
+                          <RankArt
+                            kind={medalKindForPlace(entry.rank)}
+                            size="lg"
+                            className="h-9 w-9"
+                          />
+                        )}
                       </span>
-                    )}
-                    {entry.rank === 1 && (
-                      <p className="mt-0.5 font-display text-[11px] font-bold text-amber-900">
-                        {t("leaderboard.champion")}
-                      </p>
-                    )}
-                  </div>
-                  <div className="shrink-0 text-end">
-                    <p className="inline-flex items-center gap-1 font-display text-lg font-extrabold leading-none text-black/90">
-                      <ResourceIcon kind="xp" size="sm" className="h-4 w-4" />
-                      {formatNumber(entry.xp, locale)}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+                      <AvatarImage
+                        avatarKey={entry.avatarKey}
+                        sizes="44px"
+                        priority={wi === 0 && entry.rank === 1}
+                        className="relative h-11 w-11 shrink-0 rounded-full ring-2 ring-white/25"
+                      />
+                      <div className="relative min-w-0 flex-1">
+                        <p className="truncate font-display text-base font-bold text-white">
+                          {entry.clubName}
+                        </p>
+                        {entry.isCurrentUser && (
+                          <span className="mt-0.5 inline-flex rounded-full bg-accent px-2 py-0.5 font-display text-[10px] font-extrabold text-accent-foreground">
+                            {t("leaderboard.you")}
+                          </span>
+                        )}
+                        {entry.rank === 1 && (
+                          <p className="mt-0.5 font-display text-[11px] font-bold text-amber-200/90">
+                            {t("leaderboard.champion")}
+                          </p>
+                        )}
+                      </div>
+                      <div className="relative shrink-0 text-end">
+                        <p className="inline-flex items-center gap-1 font-display text-lg font-extrabold leading-none text-emerald-300">
+                          <ResourceIcon
+                            kind="xp"
+                            size="sm"
+                            className="h-4 w-4"
+                          />
+                          {formatNumber(entry.xp, locale)}
+                        </p>
+                      </div>
+                    </GamePanel>
+                  </li>
+                );
+              })}
+            </ol>
+          </GamePanel>
         </motion.section>
       ))}
     </div>
