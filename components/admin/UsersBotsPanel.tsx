@@ -14,18 +14,29 @@ import {
   X,
   Coins,
   Search,
+  Gauge,
+  Save,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   generateBots,
   bulkRenameBots,
+  bulkSetBotDifficulty,
   deleteBot,
   renameBot,
   setBotEnabled,
+  updateBotDifficulty,
   type AdminBotRow,
   type AdminUserRow,
 } from "@/actions/admin/bots";
 import { grantCoinsToUser } from "@/actions/admin/economy";
-import { BOT_DIFFICULTIES, type BotDifficulty } from "@/lib/bots/difficulty";
+import { updateGameConfig, getGameConfig } from "@/actions/admin/config";
+import {
+  BOT_DIFFICULTIES,
+  BOT_DIFFICULTY_META,
+  type BotDifficulty,
+} from "@/lib/bots/difficulty";
+import { mergeGameConfig, type GameConfig } from "@/lib/game/economy";
 import { formatJalaliLabel } from "@/lib/admin/jalali";
 import { AdminHelpTip } from "@/components/admin/AdminHelpTip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,6 +63,7 @@ import {
 type UsersBotsPanelProps = {
   bots: AdminBotRow[];
   users: AdminUserRow[];
+  botsConfig: GameConfig["bots"];
 };
 
 function dateKeyFromIso(iso: string): string {
@@ -67,27 +79,54 @@ function looksRtl(text: string): boolean {
   return /[\u0600-\u06FF]/.test(text);
 }
 
-export function UsersBotsPanel({ bots, users }: UsersBotsPanelProps) {
+export function UsersBotsPanel({
+  bots,
+  users,
+  botsConfig,
+}: UsersBotsPanelProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [tab, setTab] = useState("bots");
   const [botQuery, setBotQuery] = useState("");
   const [userQuery, setUserQuery] = useState("");
+  const [diffFilter, setDiffFilter] = useState<"ALL" | BotDifficulty>("ALL");
+  const [enabledFilter, setEnabledFilter] = useState<"ALL" | "ON" | "OFF">(
+    "ALL",
+  );
 
   const enabledBots = useMemo(
     () => bots.filter((b) => b.enabled).length,
     [bots],
   );
 
+  const difficultyCounts = useMemo(() => {
+    const counts: Record<BotDifficulty, number> = {
+      EASY: 0,
+      MEDIUM: 0,
+      HARD: 0,
+    };
+    for (const b of bots) {
+      const d = b.difficulty ?? "MEDIUM";
+      counts[d] += 1;
+    }
+    return counts;
+  }, [bots]);
+
   const filteredBots = useMemo(() => {
     const q = botQuery.trim().toLowerCase();
-    if (!q) return bots;
-    return bots.filter(
-      (b) =>
+    return bots.filter((b) => {
+      if (diffFilter !== "ALL" && (b.difficulty ?? "MEDIUM") !== diffFilter) {
+        return false;
+      }
+      if (enabledFilter === "ON" && !b.enabled) return false;
+      if (enabledFilter === "OFF" && b.enabled) return false;
+      if (!q) return true;
+      return (
         b.clubName.toLowerCase().includes(q) ||
-        (b.difficulty ?? "").toLowerCase().includes(q),
-    );
-  }, [bots, botQuery]);
+        (b.difficulty ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [bots, botQuery, diffFilter, enabledFilter]);
 
   const filteredUsers = useMemo(() => {
     const q = userQuery.trim().toLowerCase();
@@ -105,7 +144,7 @@ export function UsersBotsPanel({ bots, users }: UsersBotsPanelProps) {
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard
           label="Real users"
           value={users.length}
@@ -123,6 +162,24 @@ export function UsersBotsPanel({ bots, users }: UsersBotsPanelProps) {
           value={bots.length - enabledBots}
           hint="Skipped in matchmaking"
           tone="slate"
+        />
+        <StatCard
+          label="Easy"
+          value={difficultyCounts.EASY}
+          hint={`${Math.round(botsConfig.accuracyEasy * 100)}% hit`}
+          tone="emerald"
+        />
+        <StatCard
+          label="Medium"
+          value={difficultyCounts.MEDIUM}
+          hint={`${Math.round(botsConfig.accuracyMedium * 100)}% hit`}
+          tone="amber"
+        />
+        <StatCard
+          label="Hard"
+          value={difficultyCounts.HARD}
+          hint={`${Math.round(botsConfig.accuracyHard * 100)}% hit`}
+          tone="rose"
         />
       </div>
 
@@ -149,6 +206,7 @@ export function UsersBotsPanel({ bots, users }: UsersBotsPanelProps) {
             <div className="flex flex-wrap gap-2">
               <GenerateBotsDialog pending={pending} onDone={refresh} />
               <BulkRenameDialog pending={pending} onDone={refresh} />
+              <BulkDifficultyDialog pending={pending} onDone={refresh} />
             </div>
           ) : null}
         </div>
@@ -236,24 +294,71 @@ export function UsersBotsPanel({ bots, users }: UsersBotsPanelProps) {
         </TabsContent>
 
         <TabsContent value="bots" className="mt-0 space-y-3">
+          <BotSkillSettings initial={botsConfig} pending={pending} onDone={refresh} />
+
           <section className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
             <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3.5 py-2">
               <p className="text-[11px] font-bold uppercase tracking-wide text-slate-700">
-                Search bots
+                Search &amp; filter
               </p>
               <div className="flex items-center gap-1.5">
-                <AdminHelpTip text="Click a name to rename. Toggle Enabled to include/exclude from matchmaking." />
+                <AdminHelpTip text="Click a name to rename. Change difficulty per row. Toggle Enabled for matchmaking. Delay timing lives in Game Config → Duel." />
                 <p className="text-[11px] font-semibold text-slate-700">
                   {filteredBots.length} shown · {enabledBots} on
                 </p>
               </div>
             </header>
-            <div className="p-3">
-              <SearchField
-                value={botQuery}
-                onChange={setBotQuery}
-                placeholder="Search bot name…"
-              />
+            <div className="flex flex-wrap items-end gap-2 p-3">
+              <div className="min-w-48 flex-1">
+                <SearchField
+                  value={botQuery}
+                  onChange={setBotQuery}
+                  placeholder="Search bot name…"
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Difficulty
+                </Label>
+                <Select
+                  value={diffFilter}
+                  onValueChange={(v) =>
+                    setDiffFilter(v as "ALL" | BotDifficulty)
+                  }
+                >
+                  <SelectTrigger className="h-9 w-34">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All</SelectItem>
+                    {BOT_DIFFICULTIES.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {BOT_DIFFICULTY_META[d].label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1">
+                <Label className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Status
+                </Label>
+                <Select
+                  value={enabledFilter}
+                  onValueChange={(v) =>
+                    setEnabledFilter(v as "ALL" | "ON" | "OFF")
+                  }
+                >
+                  <SelectTrigger className="h-9 w-30">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All</SelectItem>
+                    <SelectItem value="ON">Enabled</SelectItem>
+                    <SelectItem value="OFF">Disabled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </section>
 
@@ -266,7 +371,7 @@ export function UsersBotsPanel({ bots, users }: UsersBotsPanelProps) {
                 <p className="text-xs font-medium text-slate-700">
                   {bots.length === 0
                     ? "Generate a batch to fill the duel pool."
-                    : "Clear search to see the pool."}
+                    : "Clear filters to see the pool."}
                 </p>
               </div>
             ) : (
@@ -286,7 +391,6 @@ export function UsersBotsPanel({ bots, users }: UsersBotsPanelProps) {
                           initialName={b.clubName}
                           disabled={pending}
                         />
-                        <DifficultyBadge difficulty={b.difficulty} />
                         {!b.enabled ? (
                           <span className="rounded-md bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-800 ring-1 ring-slate-200">
                             OFF
@@ -298,7 +402,12 @@ export function UsersBotsPanel({ bots, users }: UsersBotsPanelProps) {
                         <span>{b.duelsPlayed} duels</span>
                       </p>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <InlineDifficultySelect
+                        botId={b.id}
+                        difficulty={b.difficulty}
+                        disabled={pending}
+                      />
                       <BotEnabledToggle
                         botId={b.id}
                         enabled={b.enabled}
@@ -350,14 +459,18 @@ function StatCard({
   label: string;
   value: number;
   hint: string;
-  tone: "sky" | "emerald" | "slate";
+  tone: "sky" | "emerald" | "slate" | "amber" | "rose";
 }) {
   const ring =
     tone === "sky"
       ? "border-sky-200"
       : tone === "emerald"
         ? "border-emerald-200"
-        : "border-slate-200/90";
+        : tone === "amber"
+          ? "border-amber-200"
+          : tone === "rose"
+            ? "border-rose-200"
+            : "border-slate-200/90";
   return (
     <div className={`rounded-xl border bg-white px-3.5 py-3 shadow-sm ${ring}`}>
       <p className="text-[11px] font-bold uppercase tracking-wide text-slate-700">
@@ -382,7 +495,7 @@ function SearchField({
 }) {
   return (
     <div className="relative min-w-0 sm:max-w-md">
-      <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+      <Search className="pointer-events-none absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -729,20 +842,201 @@ function InlineBotName({
   );
 }
 
-function DifficultyBadge({ difficulty }: { difficulty: BotDifficulty | null }) {
-  const d = difficulty ?? "MEDIUM";
-  const tone =
-    d === "EASY"
-      ? "bg-emerald-50 text-emerald-950 ring-emerald-200"
-      : d === "HARD"
-        ? "bg-rose-50 text-rose-950 ring-rose-200"
-        : "bg-amber-50 text-amber-950 ring-amber-200";
+function InlineDifficultySelect({
+  botId,
+  difficulty,
+  disabled,
+}: {
+  botId: string;
+  difficulty: BotDifficulty | null;
+  disabled?: boolean;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState<BotDifficulty>(difficulty ?? "MEDIUM");
+  const [busy, startTransition] = useTransition();
+
+  useEffect(() => {
+    setValue(difficulty ?? "MEDIUM");
+  }, [difficulty]);
+
   return (
-    <span
-      className={`inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-bold ring-1 ${tone}`}
+    <Select
+      value={value}
+      disabled={disabled || busy}
+      onValueChange={(v) => {
+        const next = v as BotDifficulty;
+        const prev = value;
+        setValue(next);
+        startTransition(async () => {
+          const res = await updateBotDifficulty(botId, next);
+          if (!res.ok) {
+            setValue(prev);
+            toast.error("Could not update difficulty.");
+            return;
+          }
+          toast.success(`Difficulty → ${BOT_DIFFICULTY_META[next].label}`);
+          router.refresh();
+        });
+      }}
     >
-      {d}
-    </span>
+      <SelectTrigger
+        className={[
+          "h-8 w-27 text-[11px] font-bold",
+          value === "EASY"
+            ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+            : value === "HARD"
+              ? "border-rose-200 bg-rose-50 text-rose-950"
+              : "border-amber-200 bg-amber-50 text-amber-950",
+        ].join(" ")}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {BOT_DIFFICULTIES.map((d) => (
+          <SelectItem key={d} value={d}>
+            {BOT_DIFFICULTY_META[d].label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function BotSkillSettings({
+  initial,
+  pending,
+  onDone,
+}: {
+  initial: GameConfig["bots"];
+  pending: boolean;
+  onDone: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
+  const [busy, startTransition] = useTransition();
+
+  useEffect(() => {
+    setDraft(initial);
+  }, [initial]);
+
+  const mixTotal =
+    Math.max(0, draft.matchmakingWeightEasy) +
+    Math.max(0, draft.matchmakingWeightMedium) +
+    Math.max(0, draft.matchmakingWeightHard);
+  const pct = (n: number) =>
+    mixTotal <= 0 ? 0 : Math.round((Math.max(0, n) / mixTotal) * 100);
+
+  function setNum(key: keyof GameConfig["bots"], raw: string) {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return;
+    setDraft((prev) => ({ ...prev, [key]: n }));
+  }
+
+  function save() {
+    startTransition(async () => {
+      const current = await getGameConfig();
+      const next = mergeGameConfig({
+        ...current,
+        bots: draft,
+      });
+      const res = await updateGameConfig(next);
+      if (!res.ok) {
+        toast.error("Could not save bot skill settings.");
+        return;
+      }
+      toast.success("Bot skill settings saved");
+      onDone();
+    });
+  }
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-emerald-200 bg-linear-to-br from-emerald-50/80 to-white shadow-sm">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100 px-3.5 py-2">
+        <div className="flex items-center gap-1.5">
+          <Gauge className="h-3.5 w-3.5 text-emerald-700" />
+          <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-900">
+            Bot skill &amp; matchmaking
+          </p>
+          <AdminHelpTip text="Accuracy = P(correct) per difficulty band. Matchmaking weights control which band is assigned after the queue wait. Bot delay (timing) is in Game Config → Duel." />
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          className="h-8 gap-1.5"
+          disabled={pending || busy}
+          onClick={save}
+        >
+          <Save className="h-3.5 w-3.5" />
+          {busy ? "Saving…" : "Save"}
+        </Button>
+      </header>
+      <div className="grid gap-3 p-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+            Accuracy (0–1)
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {(
+              [
+                ["accuracyEasy", "Easy"],
+                ["accuracyMedium", "Medium"],
+                ["accuracyHard", "Hard"],
+              ] as const
+            ).map(([key, label]) => (
+              <label
+                key={key}
+                className="flex flex-col gap-0.5 rounded-lg border border-slate-200 bg-white px-2 py-1.5"
+              >
+                <span className="text-[10px] font-semibold text-slate-600">
+                  {label}
+                </span>
+                <Input
+                  type="number"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={draft[key]}
+                  onChange={(e) => setNum(key, e.target.value)}
+                  className="h-8 font-mono text-sm font-semibold tabular-nums"
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+            Matchmaking weights · mix {pct(draft.matchmakingWeightEasy)}/
+            {pct(draft.matchmakingWeightMedium)}/
+            {pct(draft.matchmakingWeightHard)}%
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {(
+              [
+                ["matchmakingWeightEasy", "Easy"],
+                ["matchmakingWeightMedium", "Medium"],
+                ["matchmakingWeightHard", "Hard"],
+              ] as const
+            ).map(([key, label]) => (
+              <label
+                key={key}
+                className="flex flex-col gap-0.5 rounded-lg border border-slate-200 bg-white px-2 py-1.5"
+              >
+                <span className="text-[10px] font-semibold text-slate-600">
+                  {label}
+                </span>
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={draft[key]}
+                  onChange={(e) => setNum(key, e.target.value)}
+                  className="h-8 font-mono text-sm font-semibold tabular-nums"
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -812,7 +1106,8 @@ function GenerateBotsDialog({
               <SelectContent>
                 {BOT_DIFFICULTIES.map((d) => (
                   <SelectItem key={d} value={d}>
-                    {d}
+                    {BOT_DIFFICULTY_META[d].label} —{" "}
+                    {BOT_DIFFICULTY_META[d].hint}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -913,6 +1208,104 @@ function BulkRenameDialog({
           </Button>
           <Button type="button" disabled={busy} onClick={handleRename}>
             {busy ? "Renaming…" : "Apply"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BulkDifficultyDialog({
+  pending,
+  onDone,
+}: {
+  pending: boolean;
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [difficulty, setDifficulty] = useState<BotDifficulty>("MEDIUM");
+  const [scope, setScope] = useState<"all" | "enabled">("all");
+  const [busy, startTransition] = useTransition();
+
+  function handleApply() {
+    startTransition(async () => {
+      const res = await bulkSetBotDifficulty(difficulty, {
+        onlyEnabled: scope === "enabled",
+      });
+      if (!res.ok) {
+        toast.error(res.message ?? "Bulk update failed");
+        return;
+      }
+      toast.success(
+        `Set ${res.updated} bots → ${BOT_DIFFICULTY_META[difficulty].label}`,
+      );
+      setOpen(false);
+      onDone();
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="gap-1.5"
+          disabled={pending}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          Bulk difficulty
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Bulk set difficulty</DialogTitle>
+          <DialogDescription>
+            Apply one awareness band to many bots at once.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <Label>Difficulty</Label>
+            <Select
+              value={difficulty}
+              onValueChange={(v) => setDifficulty(v as BotDifficulty)}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BOT_DIFFICULTIES.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {BOT_DIFFICULTY_META[d].label} —{" "}
+                    {BOT_DIFFICULTY_META[d].hint}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label>Scope</Label>
+            <Select
+              value={scope}
+              onValueChange={(v) => setScope(v as "all" | "enabled")}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All bots</SelectItem>
+                <SelectItem value="enabled">Enabled only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button type="button" disabled={busy} onClick={handleApply}>
+            {busy ? "Updating…" : "Apply"}
           </Button>
         </DialogFooter>
       </DialogContent>

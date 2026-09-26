@@ -25,6 +25,8 @@ import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
+import { GameChip } from "@/components/ui/game/GameChip";
+import { GameTile } from "@/components/ui/game/GameTile";
 
 export { countMissionRewardsReady, hasMissionRewardReady };
 
@@ -77,7 +79,7 @@ function firstIncompleteHref(
 
 /**
  * Bottom-sheet mission hub — claim-first footer, Daily / Campaign tabs.
- * Dark emerald game chrome aligned with Club Hub sheets.
+ * Dark emerald arena chrome aligned with Club Hub sheets.
  */
 export function MissionDrawer({
   open,
@@ -147,7 +149,7 @@ export function MissionDrawer({
   const campaignStats = boardStats(liveCampaign);
   const activeBoard = tab === "daily" ? liveDaily : liveCampaign;
   const activeStats = tab === "daily" ? dailyStats : campaignStats;
-  const anyRewardReady = hasMissionRewardReady(liveDaily, liveCampaign);
+  const activeReady = activeStats.ready;
   const showTabs = hasDaily && hasCampaignPane;
   const continueHref = firstIncompleteHref(activeBoard);
 
@@ -246,20 +248,9 @@ export function MissionDrawer({
             animate={{ y: 0 }}
             exit={{ y: "105%" }}
             transition={{ type: "spring", stiffness: 420, damping: 36 }}
-            className="game-pinstripe relative z-10 flex max-h-[84dvh] flex-col overflow-hidden rounded-t-[1.75rem] bg-linear-to-b from-arena-deep via-arena to-arena-mid shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.35),0_-20px_50px_rgba(0,0,0,0.55)]"
+            className="game-sheet relative z-10 flex max-h-[84dvh] flex-col overflow-hidden rounded-t-[1.75rem] bg-linear-to-b from-arena-deep via-arena to-arena-mid shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.35),0_-20px_50px_rgba(0,0,0,0.55)]"
           >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -inset-e-16 top-0 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl"
-            />
-            {anyRewardReady && (
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -inset-s-12 top-8 h-32 w-32 rounded-full bg-amber-300/20 blur-3xl"
-              />
-            )}
-
-            <header className="relative shrink-0 px-4 pb-2.5 pt-3">
+            <header className="relative shrink-0 px-4 pb-2 pt-3">
               <div className="mb-2.5 flex justify-center">
                 <span
                   aria-hidden
@@ -268,50 +259,42 @@ export function MissionDrawer({
               </div>
 
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 text-start">
-                  <div className="flex items-center gap-2.5">
-                    <GameIconWell
-                      size="md"
-                      src="/icons/hub-mission.png"
-                      className="h-11 w-11 shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <h2 className="font-display text-xl font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]">
-                        {t("missions.drawerTitle")}
-                      </h2>
-                      <p
-                        className={[
-                          "mt-0.5 font-display text-xs font-bold",
-                          anyRewardReady
-                            ? "text-amber-200"
-                            : "text-white/55",
-                        ].join(" ")}
-                      >
-                        {anyRewardReady
-                          ? t("missions.drawerSubtitleReady")
-                          : t("missions.drawerSubtitle", {
-                              done: toLocaleDigits(
-                                dailyStats.done + campaignStats.done,
-                                locale,
-                              ),
-                              total: toLocaleDigits(
-                                dailyStats.total + campaignStats.total,
-                                locale,
-                              ),
-                            })}
-                      </p>
-                    </div>
+                <div className="flex min-w-0 items-center gap-2.5 text-start">
+                  <GameIconWell
+                    size="md"
+                    src="/icons/hub-mission.png"
+                    className="h-11 w-11 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <h2 className="font-display text-xl font-black text-arena-fg">
+                      {t("missions.drawerTitle")}
+                    </h2>
+                    <p
+                      className={[
+                        "mt-0.5 font-display text-xs font-bold",
+                        activeReady ? "text-amber-200" : "text-arena-muted",
+                      ].join(" ")}
+                    >
+                      {activeReady
+                        ? t("missions.drawerSubtitleReady")
+                        : activeStats.total > 0
+                          ? t("missions.drawerSubtitle", {
+                              done: toLocaleDigits(activeStats.done, locale),
+                              total: toLocaleDigits(activeStats.total, locale),
+                            })
+                          : t("missions.drawerEmpty")}
+                    </p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={close}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/40 font-display text-base font-black text-white/70 transition-transform active:scale-95"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/40 font-display text-base font-black text-white/70 shadow-[0_0_0_1px_rgba(255,255,255,0.14),0_3px_0_0_rgba(0,0,0,0.35)] transition-transform active:scale-95"
                   aria-label={t("common.close")}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/icons/close.png"
+                    src="/icons/close-arena.png"
                     alt=""
                     draggable={false}
                     className="h-5 w-5 object-contain opacity-90"
@@ -323,7 +306,7 @@ export function MissionDrawer({
                 <div
                   role="tablist"
                   aria-label={t("missions.drawerTitle")}
-                  className="relative mt-3.5 grid grid-cols-2 gap-1 rounded-2xl border border-white/12 bg-black/40 p-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+                  className="relative mt-3 grid grid-cols-2 gap-1 rounded-2xl bg-black/40 p-1 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
                 >
                   {(
                     [
@@ -331,15 +314,19 @@ export function MissionDrawer({
                         key: "daily" as const,
                         label: t("missions.tabDaily"),
                         stats: dailyStats,
+                        chestReady: Boolean(liveDaily?.chestReady),
                       },
                       {
                         key: "campaign" as const,
                         label: t("missions.tabCampaign"),
                         stats: campaignStats,
+                        chestReady: Boolean(liveCampaign?.chestReady),
                       },
                     ] as const
                   ).map((item) => {
                     const active = tab === item.key;
+                    const readyCount =
+                      item.stats.claimableCount + (item.chestReady ? 1 : 0);
                     return (
                       <button
                         key={item.key}
@@ -349,13 +336,13 @@ export function MissionDrawer({
                         onClick={() => selectTab(item.key)}
                         className={[
                           "relative z-10 flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 font-display text-sm font-black transition-colors",
-                          active ? "text-white" : "text-white/50",
+                          active ? "text-white" : "text-white/45",
                         ].join(" ")}
                       >
                         {active && (
                           <motion.span
                             layoutId="mission-tab-pill"
-                            className="absolute inset-0 rounded-xl border border-emerald-400/35 bg-linear-to-b from-emerald-600/80 to-emerald-900/90 shadow-[0_2px_0_0_rgba(0,0,0,0.35)]"
+                            className="absolute inset-0 rounded-xl bg-linear-to-b from-emerald-600/85 to-emerald-900/95 shadow-[0_0_0_1px_hsl(var(--arena-ring)/0.35),0_2px_0_0_rgba(0,0,0,0.35)]"
                             transition={{
                               type: "spring",
                               stiffness: 420,
@@ -364,19 +351,25 @@ export function MissionDrawer({
                           />
                         )}
                         <span className="relative z-10">{item.label}</span>
-                        <span
-                          className={[
-                            "relative z-10 rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums ring-1",
-                            item.stats.ready
-                              ? "bg-accent text-accent-foreground ring-amber-300/40"
-                              : active
-                                ? "bg-black/30 text-white/80 ring-white/15"
-                                : "bg-white/10 text-white/50 ring-white/10",
-                          ].join(" ")}
-                        >
-                          {toLocaleDigits(item.stats.done, locale)}/
-                          {toLocaleDigits(item.stats.total, locale)}
-                        </span>
+                        {item.stats.ready ? (
+                          <span className="relative z-10 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[10px] font-black tabular-nums text-accent-foreground shadow-[0_0_0_1px_hsl(var(--arena-ring-amber)/0.45)]">
+                            {readyCount > 0
+                              ? toLocaleDigits(readyCount, locale)
+                              : "!"}
+                          </span>
+                        ) : item.stats.total > 0 ? (
+                          <span
+                            className={[
+                              "relative z-10 rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums",
+                              active
+                                ? "bg-black/30 text-white/75"
+                                : "bg-white/8 text-white/40",
+                            ].join(" ")}
+                          >
+                            {toLocaleDigits(item.stats.done, locale)}/
+                            {toLocaleDigits(item.stats.total, locale)}
+                          </span>
+                        ) : null}
                       </button>
                     );
                   })}
@@ -386,7 +379,7 @@ export function MissionDrawer({
 
             <div className="relative flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 pb-3 pt-1">
               {!hasDaily && !hasCampaignPane && (
-                <p className="rounded-2xl border border-white/12 bg-black/35 px-4 py-8 text-center font-display text-sm font-bold text-white/55">
+                <p className="rounded-2xl bg-black/35 px-4 py-8 text-center font-display text-sm font-bold text-arena-muted shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]">
                   {t("missions.drawerEmpty")}
                 </p>
               )}
@@ -421,14 +414,12 @@ export function MissionDrawer({
                     transition={{ duration: 0.18 }}
                     className="space-y-3"
                   >
-                    <div className="rounded-2xl border border-emerald-400/25 bg-black/35 px-3 py-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
-                      <p className="font-display text-[11px] font-black text-emerald-300/95">
-                        {t("campaign.eyebrow")}
-                      </p>
-                      <p className="mt-0.5 font-display text-sm font-bold text-white/85">
-                        {t("campaign.drawerBlurb")}
-                      </p>
-                    </div>
+                    <GameChip
+                      tone="emerald"
+                      className="w-full justify-center py-1.5 text-center"
+                    >
+                      {t("campaign.drawerBlurb")}
+                    </GameChip>
 
                     {hasCampaign && liveCampaign && (
                       <MissionBoard
@@ -446,10 +437,10 @@ export function MissionDrawer({
 
                     {hasChapters && (
                       <div className="space-y-2">
-                        <p className="font-display text-[11px] font-black text-white/55">
+                        <p className="px-0.5 font-display text-[11px] font-black text-arena-muted">
                           {t("campaign.chapters")}
                         </p>
-                        <ul className="flex flex-col gap-1.5">
+                        <ul className="flex flex-col gap-2">
                           {chapters.map((ch, i) => {
                             const title =
                               locale === "fa" ? ch.titleFa : ch.titleEn;
@@ -458,55 +449,59 @@ export function MissionDrawer({
                                 <Link
                                   href={`/play/survival?challenge=${encodeURIComponent(ch.id)}`}
                                   onClick={close}
-                                  className={[
-                                    "flex min-h-12 items-center gap-2.5 rounded-2xl border px-2.5 py-2 transition-transform active:scale-[0.98]",
-                                    ch.conquered
-                                      ? "border-emerald-400/30 bg-emerald-500/15"
-                                      : ch.unlocked
-                                        ? "border-white/12 bg-black/40"
-                                        : "border-white/8 bg-black/25 opacity-70",
-                                  ].join(" ")}
+                                  className="block transition-transform active:scale-[0.98]"
                                 >
-                                  <span
+                                  <GameTile
+                                    tone={
+                                      ch.conquered ? "emerald" : "default"
+                                    }
                                     className={[
-                                      "flex h-9 w-9 items-center justify-center rounded-xl border font-display text-sm font-black",
-                                      ch.conquered
-                                        ? "border-emerald-400/40 bg-emerald-600/40 text-white"
-                                        : "border-white/15 bg-black/40 text-white/70",
+                                      "flex min-h-12 items-center gap-2.5 px-2.5 py-2",
+                                      !ch.unlocked && !ch.conquered
+                                        ? "opacity-60"
+                                        : "",
                                     ].join(" ")}
-                                    aria-hidden
                                   >
-                                    {ch.conquered ? (
-                                      // eslint-disable-next-line @next/next/no-img-element
-                                      <img
-                                        src="/icons/trophy.png"
-                                        alt=""
-                                        draggable={false}
-                                        className="h-5 w-5 object-contain"
-                                      />
-                                    ) : (
-                                      toLocaleDigits(i + 1, locale)
-                                    )}
-                                  </span>
-                                  <span className="min-w-0 flex-1 truncate font-display text-sm font-bold text-white">
-                                    {title}
-                                  </span>
-                                  <span
-                                    className={[
-                                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ring-1",
-                                      ch.conquered
-                                        ? "bg-emerald-500/25 text-emerald-200 ring-emerald-400/30"
+                                    <span
+                                      className={[
+                                        "flex h-9 w-9 items-center justify-center rounded-xl font-display text-sm font-black",
+                                        ch.conquered
+                                          ? "bg-emerald-600/40 text-white"
+                                          : "bg-black/40 text-white/70",
+                                      ].join(" ")}
+                                      aria-hidden
+                                    >
+                                      {ch.conquered ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                          src="/icons/trophy.png"
+                                          alt=""
+                                          draggable={false}
+                                          className="h-5 w-5 object-contain"
+                                        />
+                                      ) : (
+                                        toLocaleDigits(i + 1, locale)
+                                      )}
+                                    </span>
+                                    <span className="min-w-0 flex-1 truncate font-display text-sm font-bold text-arena-fg">
+                                      {title}
+                                    </span>
+                                    <GameChip
+                                      tone={
+                                        ch.conquered
+                                          ? "emerald"
+                                          : ch.unlocked
+                                            ? "amber"
+                                            : "default"
+                                      }
+                                    >
+                                      {ch.conquered
+                                        ? t("campaign.chapterDone")
                                         : ch.unlocked
-                                          ? "bg-accent/90 text-accent-foreground ring-amber-300/35"
-                                          : "bg-white/10 text-white/45 ring-white/10",
-                                    ].join(" ")}
-                                  >
-                                    {ch.conquered
-                                      ? t("campaign.chapterDone")
-                                      : ch.unlocked
-                                        ? t("campaign.chapterPlay")
-                                        : t("campaign.chapterLocked")}
-                                  </span>
+                                          ? t("campaign.chapterPlay")
+                                          : t("campaign.chapterLocked")}
+                                    </GameChip>
+                                  </GameTile>
                                 </Link>
                               </li>
                             );
@@ -548,20 +543,22 @@ export function MissionDrawer({
                       />
                     )}
                     {hasChapters && (
-                      <ul className="flex flex-col gap-1.5">
+                      <ul className="flex flex-col gap-2">
                         {chapters.map((ch, i) => (
                           <li key={ch.id}>
                             <Link
                               href={`/play/survival?challenge=${encodeURIComponent(ch.id)}`}
                               onClick={close}
-                              className="flex min-h-12 items-center gap-2.5 rounded-2xl border border-white/12 bg-black/40 px-2.5 py-2 transition-transform active:scale-[0.98]"
+                              className="block transition-transform active:scale-[0.98]"
                             >
-                              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-black/40 font-display text-sm font-black text-white/70">
-                                {toLocaleDigits(i + 1, locale)}
-                              </span>
-                              <span className="min-w-0 flex-1 truncate font-display text-sm font-bold text-white">
-                                {locale === "fa" ? ch.titleFa : ch.titleEn}
-                              </span>
+                              <GameTile className="flex min-h-12 items-center gap-2.5 px-2.5 py-2">
+                                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-black/40 font-display text-sm font-black text-white/70">
+                                  {toLocaleDigits(i + 1, locale)}
+                                </span>
+                                <span className="min-w-0 flex-1 truncate font-display text-sm font-bold text-arena-fg">
+                                  {locale === "fa" ? ch.titleFa : ch.titleEn}
+                                </span>
+                              </GameTile>
                             </Link>
                           </li>
                         ))}
@@ -572,7 +569,7 @@ export function MissionDrawer({
               </AnimatePresence>
             </div>
 
-            {activeStats.ready ? (
+            {activeReady ? (
               <div className="relative shrink-0 border-t border-white/10 bg-arena/95 px-4 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
                 <GameCta
                   variant="accent"

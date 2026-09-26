@@ -20,9 +20,7 @@ import { BottomSheet } from "@/components/ui/BottomSheet";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
-import { GameOffer } from "@/components/ui/game/GameOffer";
 import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
-import { GameTile } from "@/components/ui/game/GameTile";
 import { cn } from "@/lib/utils";
 
 /** Stable default — avoid `= []` recreating referential identity each render. */
@@ -76,21 +74,27 @@ function statusLabel(d: DuelSnapshot, t: Translate): string {
   return t("duel.inboxWaitingRival");
 }
 
-function deadlineLabel(
+function deadlineMeta(
   iso: string | null,
   locale: Locale,
   t: Translate,
   now: number,
-): string | null {
+): { label: string; tone: "critical" | "warn" | "ok" } | null {
   if (!iso) return null;
   const ms = new Date(iso).getTime() - now;
-  if (ms <= 0) return t("duel.deadlineSoon");
+  if (ms <= 0) return { label: t("duel.deadlineSoon"), tone: "critical" };
   const mins = Math.ceil(ms / 60_000);
-  if (mins >= 60) {
-    const h = Math.floor(mins / 60);
-    return t("duel.deadlineHours", { n: toLocaleDigits(h, locale) });
+  if (mins < 60) {
+    return {
+      label: t("duel.deadlineMins", { n: toLocaleDigits(mins, locale) }),
+      tone: mins <= 30 ? "critical" : "warn",
+    };
   }
-  return t("duel.deadlineMins", { n: toLocaleDigits(mins, locale) });
+  const h = Math.floor(mins / 60);
+  return {
+    label: t("duel.deadlineHours", { n: toLocaleDigits(h, locale) }),
+    tone: h <= 2 ? "warn" : "ok",
+  };
 }
 
 /**
@@ -168,7 +172,7 @@ export function DuelLobby({
     badge: statusLabel(d, t),
     vsLabel: d.isBotOpponent ? t("duel.vsBot") : t("duel.vsRival"),
     youLabel: t("duel.you"),
-    deadline: deadlineLabel(d.turnDeadlineAt, locale, t, now),
+    deadline: deadlineMeta(d.turnDeadlineAt, locale, t, now),
   });
 
   return (
@@ -194,20 +198,14 @@ export function DuelLobby({
           hint={t("duel.lobbyKickoffHint")}
         />
       ) : (
-        <>
-          <LobbyHeroFull onHowTo={() => setHowToOpen(true)} />
-          <KickoffBlock
-            compact={false}
-            pending={pending}
-            yourAvatar={yourAvatar}
-            onStart={handleStart}
-            title={t("duel.lobbyKickoff")}
-            hint={t("duel.lobbyKickoffHint")}
-            startLabel={t("duel.start")}
-            startingLabel={t("duel.starting")}
-            anotherLabel={t("duel.lobbyFindAnother")}
-          />
-        </>
+        <LobbyEmptyKickoff
+          pending={pending}
+          yourAvatar={yourAvatar}
+          onStart={handleStart}
+          onHowTo={() => setHowToOpen(true)}
+          startLabel={t("duel.start")}
+          startingLabel={t("duel.starting")}
+        />
       )}
 
       {turnCount > 0 ? (
@@ -264,20 +262,10 @@ export function DuelLobby({
       ) : null}
 
       {!hasAny ? (
-        <GameTile className="bg-arena/90 px-4 py-6 text-center text-white shadow-arena-ring">
-          <GameIconWell
-            size="lg"
-            src="/icons/target.png"
-            className="mx-auto h-14 w-14"
-            iconClassName="h-8 w-8"
-          />
-          <p className="mt-3 font-display text-sm font-bold text-white/70">
-            {t("duel.empty")}
-          </p>
-        </GameTile>
-      ) : (
-        <LobbyTipStrip onHowTo={() => setHowToOpen(true)} />
-      )}
+        <p className="px-1 text-center font-display text-[11px] font-bold text-white/50">
+          {t("duel.emptyHint")}
+        </p>
+      ) : null}
 
       <BottomSheet
         open={howToOpen}
@@ -405,45 +393,28 @@ function LobbyHeroWithKickoff({
   );
 }
 
-function LobbyTipStrip({ onHowTo }: { onHowTo: () => void }) {
+/** Empty lobby — one composition: title + VS + kickoff (survival-style). */
+function LobbyEmptyKickoff({
+  pending,
+  yourAvatar,
+  onStart,
+  onHowTo,
+  startLabel,
+  startingLabel,
+}: {
+  pending: boolean;
+  yourAvatar?: string | null;
+  onStart: () => void;
+  onHowTo: () => void;
+  startLabel: string;
+  startingLabel: string;
+}) {
   const { t } = useTranslation();
   return (
-    <button
-      type="button"
-      onClick={() => {
-        playSound("click");
-        onHowTo();
-      }}
-      className="flex w-full items-start gap-2.5 rounded-2xl bg-black/25 px-3 py-2.5 text-start shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] transition-transform active:scale-[0.99]"
-    >
-      <GameIconWell
-        size="sm"
-        src="/icons/target.png"
-        className="mt-0.5 h-9 w-9"
-        iconClassName="h-5 w-5"
-      />
-      <div className="min-w-0 flex-1">
-        <p className="font-display text-xs font-black text-white/90">
-          {t("duel.lobbyTipTitle")}
-          <span className="ms-2 font-bold text-sky-200/90">
-            {t("duel.lobbyHowTo")}
-          </span>
-        </p>
-        <p className="mt-0.5 line-clamp-2 font-display text-[11px] font-bold leading-snug text-white/55">
-          {t("play.info.duel.rules")}
-        </p>
-      </div>
-    </button>
-  );
-}
-
-function LobbyHeroFull({ onHowTo }: { onHowTo: () => void }) {
-  const { t } = useTranslation();
-  return (
-    <GamePanel tone="amber" className="p-3.5">
+    <GamePanel tone="amber" className="relative overflow-hidden p-3.5">
       <div
         aria-hidden
-        className="pointer-events-none absolute -end-10 -top-8 h-28 w-28 rounded-full bg-amber-300/20 blur-3xl"
+        className="pointer-events-none absolute -inset-e-10 -top-8 h-28 w-28 rounded-full bg-amber-300/25 blur-3xl"
       />
       <div className="relative flex items-start gap-3">
         <GameIconWell
@@ -454,75 +425,78 @@ function LobbyHeroFull({ onHowTo }: { onHowTo: () => void }) {
           iconClassName="h-7 w-7"
         />
         <div className="min-w-0 flex-1">
-          <p className="font-display text-[11px] font-black text-amber-100/80">
-            {t("duel.eyebrow")}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="font-display text-[11px] font-black text-amber-100/80">
+              {t("duel.eyebrow")}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                playSound("click");
+                onHowTo();
+              }}
+              aria-label={t("duel.lobbyHowTo")}
+              className="font-display text-[10px] font-black text-sky-200 underline-offset-2 hover:underline"
+            >
+              ؟
+            </button>
+          </div>
           <h1 className="mt-0.5 font-display text-2xl font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
             {t("duel.lobbyTitle")}
           </h1>
-          <p className="mt-1 font-display text-xs font-bold leading-snug text-white/65">
-            {t("duel.lobbySub")}
+          <p className="mt-1 font-display text-xs font-bold leading-snug text-white/70">
+            {t("duel.lobbyHook")}
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              playSound("click");
-              onHowTo();
-            }}
-            className="mt-2 font-display text-[11px] font-black text-sky-200 underline-offset-2 hover:underline"
-          >
-            {t("duel.lobbyHowTo")}
-          </button>
         </div>
       </div>
-    </GamePanel>
-  );
-}
 
-function KickoffBlock({
-  compact,
-  pending,
-  yourAvatar,
-  onStart,
-  title,
-  hint,
-  startLabel,
-  startingLabel,
-  anotherLabel,
-}: {
-  compact: boolean;
-  pending: boolean;
-  yourAvatar?: string | null;
-  onStart: () => void;
-  title: string;
-  hint: string;
-  startLabel: string;
-  startingLabel: string;
-  anotherLabel: string;
-}) {
-  if (compact) {
-    return (
-      <GameOffer>
-        <div className="flex items-center gap-3">
-          <div className="flex shrink-0 items-center -space-x-3 rtl:space-x-reverse">
-            <AvatarRing size="sm" avatarKey={yourAvatar} />
-            <AvatarRing size="sm" mystery />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-sm font-black text-white">
-              {anotherLabel}
-            </p>
-            <p className="truncate font-display text-[11px] font-bold text-amber-100/70">
-              {hint}
-            </p>
-          </div>
-          <GameCta
-            variant="accent"
-            disabled={pending}
-            onClick={onStart}
-            className="shrink-0 px-3.5 text-sm"
-          >
-            {pending ? (
+      <div className="relative mt-4 flex items-center justify-center gap-4">
+        <AvatarRing pulse avatarKey={yourAvatar} />
+        <motion.span className="rounded-full bg-accent px-3 py-1 font-display text-sm font-black text-accent-foreground shadow-[0_3px_0_0_hsl(var(--accent-deep))]">
+          VS
+        </motion.span>
+        <AvatarRing mystery />
+      </div>
+
+      <div className="relative mt-3 flex flex-wrap items-center justify-center gap-1.5">
+        <GameChip className="gap-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/energy.png"
+            alt=""
+            draggable={false}
+            className="h-3.5 w-3.5 object-contain"
+          />
+          {t("duel.chipEnergy")}
+        </GameChip>
+        <GameChip className="gap-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/timer.png"
+            alt=""
+            draggable={false}
+            className="h-3.5 w-3.5 object-contain"
+          />
+          {t("duel.chipTurn")}
+        </GameChip>
+      </div>
+
+      <GameCta
+        variant="accent"
+        block
+        disabled={pending}
+        onClick={onStart}
+        className="relative mt-3.5 min-h-14 text-base"
+      >
+        <AnimatePresence mode="wait">
+          {pending ? (
+            <motion.span
+              key="load"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2"
+            >
               <motion.span
                 animate={{ rotate: 360 }}
                 transition={{
@@ -540,102 +514,31 @@ function KickoffBlock({
                   className="h-5 w-5 object-contain"
                 />
               </motion.span>
-            ) : (
-              <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/icons/energy.png"
-                  alt=""
-                  aria-hidden
-                  className="h-4 w-4 object-contain"
-                />
-                <span className="max-w-[7rem] truncate">{startLabel}</span>
-              </>
-            )}
-          </GameCta>
-        </div>
-      </GameOffer>
-    );
-  }
-
-  return (
-    <GamePanel tone="amber" className="p-4">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -end-8 top-0 h-24 w-24 rounded-full bg-amber-300/25 blur-3xl"
-      />
-      <div className="relative flex flex-col items-center gap-4">
-        <div className="flex items-center gap-4">
-          <AvatarRing pulse avatarKey={yourAvatar} />
-          <motion.span className="rounded-full bg-accent px-3 py-1 font-display text-sm font-black text-accent-foreground shadow-[0_3px_0_0_hsl(var(--accent-deep))]">
-            VS
-          </motion.span>
-          <AvatarRing mystery />
-        </div>
-
-        <div className="text-center">
-          <p className="font-display text-lg font-black text-white">{title}</p>
-          <p className="mt-1 max-w-[16rem] font-display text-xs font-bold leading-snug text-white/65">
-            {hint}
-          </p>
-        </div>
-
-        <GameCta
-          variant="accent"
-          block
-          disabled={pending}
-          onClick={onStart}
-          className="min-h-14 text-lg"
-        >
-          <AnimatePresence mode="wait">
-            {pending ? (
-              <motion.span
-                key="load"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-2"
-              >
-                <motion.span
-                  animate={{ rotate: 360 }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 0.8,
-                    ease: "linear",
-                  }}
-                  aria-hidden
-                  className="inline-flex"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/icons/memory-ball.png"
-                    alt=""
-                    className="h-5 w-5 object-contain"
-                  />
-                </motion.span>
-                {startingLabel}
-              </motion.span>
-            ) : (
-              <motion.span
-                key="ready"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-2"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/icons/energy.png"
-                  alt=""
-                  aria-hidden
-                  className="h-5 w-5 object-contain"
-                />
-                {startLabel}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </GameCta>
-      </div>
+              {startingLabel}
+            </motion.span>
+          ) : (
+            <motion.span
+              key="ready"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/energy.png"
+                alt=""
+                aria-hidden
+                className="h-5 w-5 object-contain"
+              />
+              {startLabel}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </GameCta>
+      <p className="relative mt-2 text-center font-display text-[11px] font-bold text-white/55">
+        {t("duel.lobbyKickoffHint")}
+      </p>
     </GamePanel>
   );
 }
@@ -661,7 +564,7 @@ function InboxSection({
             <h2
               className={cn(
                 "font-display text-sm font-black",
-                hot ? "text-secondary" : "text-foreground",
+                hot ? "text-amber-200" : "text-white/85",
               )}
             >
               {title}
@@ -676,7 +579,7 @@ function InboxSection({
             ) : null}
           </div>
           {hint ? (
-            <p className="mt-0.5 font-display text-[11px] font-bold text-muted-foreground">
+            <p className="mt-0.5 font-display text-[11px] font-bold text-white/55">
               {hint}
             </p>
           ) : null}
@@ -762,7 +665,7 @@ function FixtureCard({
   ctaLabel?: string;
   vsLabel: string;
   youLabel: string;
-  deadline?: string | null;
+  deadline?: { label: string; tone: "critical" | "warn" | "ok" } | null;
 }) {
   const { you, them } = viewerMatchScore(d);
   const youParty =
@@ -804,8 +707,11 @@ function FixtureCard({
         <GamePanel
           tone={panelTone}
           className={cn(
-            "flex min-h-[4.5rem] items-center gap-3 bg-black/35 p-3 transition-transform active:scale-[0.985]",
+            "flex min-h-18 items-center gap-3 bg-black/35 p-3 transition-transform active:scale-[0.985]",
             urgent && "ring-2 ring-arena-amber",
+            deadline?.tone === "critical" &&
+              urgent &&
+              "shadow-[0_0_20px_rgba(244,63,94,0.28)]",
             isFinished && "opacity-90",
           )}
         >
@@ -818,14 +724,13 @@ function FixtureCard({
             />
           )}
 
-          {/* Avatars */}
           <div className="relative flex shrink-0 items-center -space-x-2.5 ps-0.5 rtl:space-x-reverse">
             <AvatarImage
               avatarKey={youParty?.avatar}
               className="h-11 w-11 rounded-full ring-2 ring-sky-300/70"
               muted={!youParty?.avatar}
             />
-            <div className="relative z-[1]">
+            <div className="relative z-1">
               <AvatarImage
                 avatarKey={themParty?.avatar}
                 className={cn(
@@ -835,14 +740,13 @@ function FixtureCard({
                 muted={!themParty?.avatar || themLost}
               />
               {d.isBotOpponent && !d.shadowBotActive && (
-                <span className="absolute -bottom-0.5 -end-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[9px] shadow-sm ring-2 ring-arena">
-                  🤖
+                <span className="absolute -bottom-0.5 -inset-e-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[8px] font-black text-accent-foreground shadow-sm ring-2 ring-arena">
+                  BOT
                 </span>
               )}
             </div>
           </div>
 
-          {/* Meta */}
           <div className="relative min-w-0 flex-1 text-start">
             <div className="flex flex-wrap items-center gap-1.5">
               <p className="truncate font-display text-[15px] font-black text-white">
@@ -863,7 +767,20 @@ function FixtureCard({
                 label={badge}
               />
               {deadline && !isFinished ? (
-                <GameChip tone="amber" className="gap-1">
+                <GameChip
+                  tone={
+                    deadline.tone === "critical"
+                      ? "amber"
+                      : deadline.tone === "warn"
+                        ? "amber"
+                        : "default"
+                  }
+                  className={cn(
+                    "gap-1",
+                    deadline.tone === "critical" &&
+                      "bg-rose-500/35 text-rose-50 ring-1 ring-rose-300/50",
+                  )}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/icons/timer.png"
@@ -871,7 +788,7 @@ function FixtureCard({
                     className="h-3.5 w-3.5 object-contain"
                     draggable={false}
                   />
-                  {deadline}
+                  {deadline.label}
                 </GameChip>
               ) : isFinished ? (
                 <span className="truncate font-display text-[11px] font-bold text-white/55">

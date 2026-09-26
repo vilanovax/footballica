@@ -19,8 +19,8 @@ type PostMatchMissionGiftProps = {
 };
 
 /**
- * Compact post-match mission pulse — animated gift opens MissionDrawer.
- * Replaces the bulky MissionProgressBanner on Arena result screens.
+ * Compact post-match mission pulse — opens MissionDrawer.
+ * Horizontal chip so the result CTA dock stays thumb-reachable.
  */
 export function PostMatchMissionGift({
   missions,
@@ -40,54 +40,65 @@ export function PostMatchMissionGift({
   return (
     <>
       <motion.div
-        initial={reduceMotion ? false : { opacity: 0, scale: 0.85, y: 8 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.2 }}
+        initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 340, damping: 20, delay: 0.15 }}
         className={["flex justify-center", className ?? ""].join(" ")}
       >
         <motion.button
           type="button"
           onClick={handleOpen}
           aria-label={t("result.missionGiftAria")}
-          className="relative flex h-28 w-28 items-center justify-center rounded-3xl bg-black/35 ring-1 ring-amber-300/35 shadow-[0_0_28px_rgba(251,191,36,0.32)] transition-transform active:scale-95"
+          className={[
+            "relative inline-flex min-h-12 w-full max-w-sm items-center justify-center gap-2.5 rounded-2xl px-4 py-2.5",
+            "bg-black/40 ring-1 ring-amber-300/40",
+            "shadow-[0_3px_0_0_rgba(0,0,0,0.35),0_0_20px_rgba(251,191,36,0.22)]",
+            "transition-transform active:scale-[0.98]",
+          ].join(" ")}
           animate={
             reduceMotion
               ? undefined
               : rewardReady
-                ? {
-                    rotate: [0, -8, 8, -6, 6, 0],
-                    y: [0, -3, 0],
-                    scale: [1, 1.06, 1],
-                  }
-                : {
-                    y: [0, -2, 0],
-                  }
+                ? { scale: [1, 1.02, 1] }
+                : undefined
           }
           transition={
             reduceMotion
               ? undefined
               : {
-                  duration: rewardReady ? 1.35 : 2.2,
+                  duration: 1.4,
                   repeat: Infinity,
-                  repeatDelay: rewardReady ? 0.85 : 1.4,
+                  repeatDelay: 1.1,
                   ease: "easeInOut",
                 }
           }
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/icons/gift.png"
-            alt=""
-            aria-hidden
-            draggable={false}
-            className="h-18 w-18 object-contain drop-shadow-[0_6px_14px_rgba(0,0,0,0.45)]"
-          />
-          {rewardReady && (
-            <span
+          <span className="relative shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/gift.png"
+              alt=""
               aria-hidden
-              className="absolute -inset-e-1 -top-1 h-3.5 w-3.5 rounded-full bg-rose-400 ring-2 ring-arena shadow-[0_0_10px_rgba(251,113,133,0.75)]"
+              draggable={false}
+              className="h-10 w-10 object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.4)]"
             />
-          )}
+            {rewardReady && (
+              <span
+                aria-hidden
+                className="absolute -inset-e-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-rose-400 ring-2 ring-arena shadow-[0_0_8px_rgba(251,113,133,0.7)]"
+              />
+            )}
+          </span>
+          <span className="min-w-0 text-start">
+            <span className="block font-display text-sm font-black text-amber-100">
+              {rewardReady
+                ? t("result.missionGiftReady")
+                : t("result.missionGiftLabel")}
+            </span>
+            <span className="block font-display text-[11px] font-bold text-white/55">
+              {t("result.missionGiftHint")}
+            </span>
+          </span>
         </motion.button>
       </motion.div>
 

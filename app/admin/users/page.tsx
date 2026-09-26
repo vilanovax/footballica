@@ -2,11 +2,16 @@ import { Users } from "lucide-react";
 import { listAdminBots, listAdminUsers } from "@/actions/admin/bots";
 import { UsersBotsPanel } from "@/components/admin/UsersBotsPanel";
 import { AdminHelpTip } from "@/components/admin/AdminHelpTip";
+import { getGameConfig } from "@/lib/game/gameConfig";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsersPage() {
-  const [bots, users] = await Promise.all([listAdminBots(), listAdminUsers()]);
+  const [bots, users, config] = await Promise.all([
+    listAdminBots(),
+    listAdminUsers(),
+    getGameConfig(),
+  ]);
   const enabledBots = bots.filter((b) => b.enabled).length;
 
   return (
@@ -14,7 +19,7 @@ export default async function AdminUsersPage() {
       <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 px-5 py-4 text-white shadow-sm">
         <div
           aria-hidden
-          className="pointer-events-none absolute -end-12 -top-16 h-40 w-40 rounded-full bg-sky-400/20 blur-3xl"
+          className="pointer-events-none absolute -inset-e-12 -top-16 h-40 w-40 rounded-full bg-sky-400/20 blur-3xl"
         />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2">
@@ -31,7 +36,7 @@ export default async function AdminUsersPage() {
             <AdminHelpTip
               wide
               title="Managers + duel pool"
-              text="Real users are OTP managers. Bots fill Draft Duel matchmaking when the queue is cold. Disabled bots stay listed but are skipped."
+              text="Real users are OTP managers. Bots fill Draft Duel matchmaking when the queue is cold. Set per-bot difficulty here; tune band accuracy + delay in Bot skill / Game Config → Duel."
             />
           </h1>
           <p className="mt-1 text-sm font-medium text-white/70">
@@ -46,7 +51,7 @@ export default async function AdminUsersPage() {
         </div>
       </div>
 
-      <UsersBotsPanel bots={bots} users={users} />
+      <UsersBotsPanel bots={bots} users={users} botsConfig={config.bots} />
     </div>
   );
 }

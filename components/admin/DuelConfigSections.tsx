@@ -248,6 +248,12 @@ export function DuelConfigSections({
             AFK / queue
           </a>
           <a
+            href="#duel-bots"
+            className="rounded-full bg-white px-3 py-1.5 text-slate-700 ring-1 ring-slate-200"
+          >
+            Bot skill
+          </a>
+          <a
             href="#duel-memory"
             className="rounded-full bg-white px-3 py-1.5 text-slate-700 ring-1 ring-slate-200"
           >
@@ -351,21 +357,21 @@ export function DuelConfigSections({
         <div className="space-y-2">
           <div className="rounded-xl border border-amber-200 bg-white p-3">
             <p className="mb-2 flex items-center gap-1 text-[11px] font-bold text-slate-700">
-              When turn timer expires
-              <AdminHelpTip text="Past turn hours: Shadow Bot fabricates AFK answers, or Auto forfeit ends the match." />
+              When turn timer expires (player or human rival)
+              <AdminHelpTip text="Same clock for both humans. Pure bot opponents never forfeit — they auto-play within Bot delay. Auto forfeit ends the match (recommended). Shadow Bot fabricates AFK answers." />
             </p>
             <div className="grid grid-cols-2 gap-1 rounded-lg bg-amber-50 p-1 ring-1 ring-amber-100">
               {(
                 [
                   {
-                    id: "SHADOW_BOT" as const,
-                    label: "Bot fills turn",
-                    sub: "Recommended",
-                  },
-                  {
                     id: "AUTO_FORFEIT" as const,
                     label: "Auto forfeit",
-                    sub: "AFK loses",
+                    sub: "AFK loses · match ends",
+                  },
+                  {
+                    id: "SHADOW_BOT" as const,
+                    label: "Bot fills turn",
+                    sub: "Keep match alive",
                   },
                 ] as const
               ).map((opt) => {
@@ -407,7 +413,7 @@ export function DuelConfigSections({
           <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
             <NumField
               label="Turn timer"
-              tip="Hours before timeout handling. Lazy-evaluated on inbox fetch + cron."
+              tip="Hours each human (you or rival) has to take their turn. After this: Auto forfeit or Shadow Bot. Pure bots ignore this and play within Bot delay. Applied on inbox/lobby load + /api/cron/duels."
               path="duel.turnHours"
               draft={draft}
               onFieldChange={onFieldChange}
@@ -424,19 +430,104 @@ export function DuelConfigSections({
             />
             <MinutesField
               label="Bot delay min"
-              tip="Shadow Bot waits at least this long before answering (simulates a human)."
+              tip="Pure bots and Shadow Bot wait at least this long before answering (simulates a human)."
               path="duel.botDelayMinMs"
               draft={draft}
               onFieldChange={onFieldChange}
             />
             <MinutesField
               label="Bot delay max"
-              tip="Shadow Bot waits at most this long before answering."
+              tip="Pure bots and Shadow Bot wait at most this long before answering."
               path="duel.botDelayMaxMs"
               draft={draft}
               onFieldChange={onFieldChange}
             />
           </div>
+        </div>
+      </Section>
+
+      <Section
+        id="duel-bots"
+        title="Bot skill"
+        titleFa="سختی بات"
+        hint="Per-bot difficulty (EASY / MEDIUM / HARD) is set on Users → Bots. These rates apply to every bot in that band."
+        accent="emerald"
+      >
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-slate-600">
+            Accuracy = P(correct) on quiz / Memory / Tiki. Matchmaking weights
+            control the cold-start bot mix after the queue wait.
+          </p>
+          <div className="grid gap-1.5 sm:grid-cols-3">
+            <NumField
+              label="Easy accuracy"
+              tip="P(correct) for EASY bots (0–1)."
+              path="bots.accuracyEasy"
+              draft={draft}
+              onFieldChange={onFieldChange}
+              min={0}
+              step={0.01}
+              suffix="p"
+            />
+            <NumField
+              label="Medium accuracy"
+              tip="P(correct) for MEDIUM bots (0–1)."
+              path="bots.accuracyMedium"
+              draft={draft}
+              onFieldChange={onFieldChange}
+              min={0}
+              step={0.01}
+              suffix="p"
+            />
+            <NumField
+              label="Hard accuracy"
+              tip="P(correct) for HARD bots (0–1)."
+              path="bots.accuracyHard"
+              draft={draft}
+              onFieldChange={onFieldChange}
+              min={0}
+              step={0.01}
+              suffix="p"
+            />
+          </div>
+          <div className="grid gap-1.5 sm:grid-cols-3">
+            <NumField
+              label="MM weight Easy"
+              tip="Relative weight when assigning an EASY bot after matchmaking timeout."
+              path="bots.matchmakingWeightEasy"
+              draft={draft}
+              onFieldChange={onFieldChange}
+              min={0}
+            />
+            <NumField
+              label="MM weight Medium"
+              tip="Relative weight when assigning a MEDIUM bot."
+              path="bots.matchmakingWeightMedium"
+              draft={draft}
+              onFieldChange={onFieldChange}
+              min={0}
+            />
+            <NumField
+              label="MM weight Hard"
+              tip="Relative weight when assigning a HARD bot."
+              path="bots.matchmakingWeightHard"
+              draft={draft}
+              onFieldChange={onFieldChange}
+              min={0}
+            />
+          </div>
+          <p className="text-[11px] font-semibold text-slate-500">
+            Current mix ≈{" "}
+            {(() => {
+              const e = Math.max(0, draft.bots.matchmakingWeightEasy);
+              const m = Math.max(0, draft.bots.matchmakingWeightMedium);
+              const h = Math.max(0, draft.bots.matchmakingWeightHard);
+              const t = e + m + h;
+              if (t <= 0) return "—";
+              const pct = (n: number) => Math.round((n / t) * 100);
+              return `${pct(e)}% Easy · ${pct(m)}% Medium · ${pct(h)}% Hard`;
+            })()}
+          </p>
         </div>
       </Section>
 

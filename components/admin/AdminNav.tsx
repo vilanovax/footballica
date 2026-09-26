@@ -19,6 +19,7 @@ import {
   LayoutGrid,
   Route,
   Brain,
+  Swords,
   type LucideIcon,
 } from "lucide-react";
 
@@ -61,6 +62,7 @@ const GROUPS: NavGroup[] = [
     label: "System",
     links: [
       { href: "/admin/config", label: "Game Config", icon: Coins },
+      { href: "/admin/duels", label: "Duel health", icon: Swords },
       { href: "/admin/users", label: "Users & Bots", icon: Users },
       { href: "/admin/reports", label: "Reports", icon: Flag },
       { href: "/admin/settings", label: "Settings", icon: Settings },

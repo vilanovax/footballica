@@ -5,9 +5,10 @@ import type { DuelInboxItem } from "@/actions/duel/getInboxCount";
 import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
 import type { CampaignSeasonView } from "@/lib/game/campaignSeason";
 import type { ActiveNewsBoosterSnapshot } from "@/lib/club/upgrades";
-import { HubTodayRail } from "@/components/club-hub/HubTodayRail";
-import { HubDailyMissions } from "@/components/club-hub/HubDailyMissions";
+import { ActiveNewsChip } from "@/components/club-hub/ActiveNewsChip";
+import { HubMissionReadyNudge } from "@/components/club-hub/HubMissionReadyNudge";
 import { DuelInboxBanner } from "@/components/duel/DuelInboxBanner";
+import { hasMissionRewardReady } from "@/lib/game/missionRewards";
 import {
   useClubHubData,
   usePublishClubHubBoards,
@@ -19,7 +20,6 @@ type ClubHubSecondaryPanelsProps = {
   missionBoard: EvaluateMissionsResult | null;
   dailyBoard: EvaluateMissionsResult | null;
   campaignSeason: CampaignSeasonView | null;
-  mysteryStreak: number;
   activeNews: ActiveNewsBoosterSnapshot | null;
 };
 
@@ -27,7 +27,8 @@ type ClubHubSecondaryPanelsProps = {
  * Client rails for streamed Club secondary data. Publishes boards into
  * ClubHub context so the header mission badge + MissionDrawer stay in sync.
  *
- * Order: play urgency (duel) → daily progress → discovery rail.
+ * Order: play urgency (duel) → claim-ready mission nudge → active news.
+ * Full daily list lives in MissionDrawer (header icon), not inline.
  * MatchDoor (Penalty) sits above this stack in ClubHub.
  */
 export function ClubHubSecondaryPanels({
@@ -36,16 +37,9 @@ export function ClubHubSecondaryPanels({
   missionBoard,
   dailyBoard,
   campaignSeason,
-  mysteryStreak,
   activeNews,
 }: ClubHubSecondaryPanelsProps) {
-  // lastMatch stays on the critical MatchDoor path — not streamed here.
-  const {
-    openMissions,
-    onOpenNews,
-    onNewsExpired,
-    onBalances,
-  } = useClubHubData();
+  const { openMissions, onOpenNews, onNewsExpired } = useClubHubData();
 
   const boards = useMemo(
     () => ({
@@ -73,20 +67,24 @@ export function ClubHubSecondaryPanels({
         variant="club"
       />
 
-      <HubDailyMissions
-        board={dailyBoard}
-        onOpen={() => openMissions("daily")}
-        onBalances={onBalances}
+      <HubMissionReadyNudge
+        dailyBoard={dailyBoard}
+        campaignBoard={missionBoard}
+        onOpen={() => {
+          const dailyReady = hasMissionRewardReady(dailyBoard, null);
+          openMissions(dailyReady ? "daily" : "campaign");
+        }}
       />
 
-      <HubTodayRail
-        mysteryStreak={mysteryStreak}
-        campaignSeason={campaignSeason}
-        activeNews={activeNews}
-        onOpenCampaign={() => openMissions("campaign")}
-        onOpenNews={onOpenNews}
-        onNewsExpired={onNewsExpired}
-      />
+      {activeNews ? (
+        <ActiveNewsChip
+          key={activeNews.expiresAt}
+          booster={activeNews}
+          onOpen={onOpenNews}
+          onExpired={onNewsExpired}
+          compact
+        />
+      ) : null}
     </div>
   );
 }

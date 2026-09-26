@@ -19,6 +19,9 @@ export type DuelJobStats = {
 /**
  * Single entry for cron + opportunistic ticks on duel reads.
  * Order: human pair → matchmaking bot fallback → bot plays → turn forfeits → week reset.
+ *
+ * Weekly league rollover lives here (and deferred on leaderboard reads) — do not
+ * await `ensureWeeklyLeagueReset` on hot standings fetches.
  */
 export async function tickDuelJobs(limit = 40): Promise<DuelJobStats> {
   const paired = await pairOpenMatchingDuels(limit);

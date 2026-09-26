@@ -99,7 +99,7 @@ export function PenaltyMatch({
   const answer = usePenaltyStore((s) => s.answer);
   const next = usePenaltyStore((s) => s.next);
   const reset = usePenaltyStore((s) => s.reset);
-  const useHelper = usePenaltyStore((s) => s.useHelper);
+  const applyHelper = usePenaltyStore((s) => s.useHelper);
   const setPaused = usePenaltyStore((s) => s.setPaused);
 
   const [shake, setShake] = useState(false);
@@ -146,11 +146,11 @@ export function PenaltyMatch({
   // resolveMatch). The dock only fires onUse when the helper is actually usable.
   const handleUseHelper = useCallback(
     (key: HelperKey) => {
-      useHelper(key);
+      applyHelper(key);
       haptic(HAPTIC.tap);
       playSound("upgrade");
     },
-    [useHelper],
+    [applyHelper],
   );
 
   // Timer loop via rAF — only runs while playing (paused on reveal).

@@ -41,12 +41,19 @@ export async function expireDuelIfDue(
     return false;
   }
 
-  // Pure bot opponent still scheduled — let bot runner handle it.
+  // Pure bot opponent — play when due (or heal missing botPlayAt).
   if (duel.isBotOpponent && !duel.shadowBotActive) {
     if (duel.botPlayAt && duel.botPlayAt > now) return false;
+    // Deadline hit with no schedule → play immediately rather than forfeit the bot.
+    if (!duel.botPlayAt) {
+      await prisma.duelMatch.update({
+        where: { id: duelId },
+        data: { botPlayAt: now },
+      });
+    }
     const botOk = await runBotTurnIfDue(duelId, now);
     if (botOk) return true;
-    // Fall through to forfeit if bot couldn't play.
+    // Fall through to forfeit if bot couldn't play (broken board / empty bank).
   }
 
   const timedOutId = duel.turnUserId;

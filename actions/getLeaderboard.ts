@@ -200,13 +200,13 @@ const getCachedTopStandings = unstable_cache(
 /**
  * Weekly league standings: humans with weeklyXp > 0 only (Top 50).
  * Shared Top-N is cached ~45s; viewer flags + sticky row stay per-request.
+ *
+ * Week rollover is owned by `/api/cron/duels` + `tickDuelJobs` — never await
+ * the reset on the hot read path. We only schedule a deferred check so a
+ * Monday visitor still settles the league if cron lagged.
  */
 export async function getLeaderboard(): Promise<LeaderboardPayload> {
-  try {
-    await ensureWeeklyLeagueReset();
-  } catch (err) {
-    console.error("ensureWeeklyLeagueReset in getLeaderboard", err);
-  }
+  scheduleWeeklyLeagueResetCheck();
 
   const currentUserId = await getSessionUserId();
   let standings = await getCachedTopStandings();
@@ -236,6 +236,7 @@ export async function getLeaderboard(): Promise<LeaderboardPayload> {
 
 /**
  * Bust Top-N cache and return a live board (bypasses unstable_cache for this hit).
+ * Awaits week reset so an explicit refresh after Monday still settles prizes.
  */
 export async function refreshLeaderboard(): Promise<LeaderboardPayload> {
   revalidateTag(LEADERBOARD_CACHE_TAG, "max");
@@ -247,6 +248,15 @@ export async function refreshLeaderboard(): Promise<LeaderboardPayload> {
   const currentUserId = await getSessionUserId();
   const standings = await loadTopStandings();
   return assembleLeaderboard(standings, currentUserId);
+}
+
+/** Non-blocking rollover probe — primary path remains duel cron / tickDuelJobs. */
+function scheduleWeeklyLeagueResetCheck() {
+  after(() => {
+    void ensureWeeklyLeagueReset().catch((err) =>
+      console.error("ensureWeeklyLeagueReset (deferred)", err),
+    );
+  });
 }
 
 async function assembleLeaderboard(

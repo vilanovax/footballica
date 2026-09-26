@@ -3,7 +3,7 @@
  * Injected via NEXT_PUBLIC_FORCE_FORMAT or the ff_format cookie — never on deployed hosts.
  */
 
-import type { QuizQuestion, QuizQuestionType } from "@/lib/quiz/types";
+import type { QuizQuestion } from "@/lib/quiz/types";
 
 export type ForceFormat =
   | "IMAGE"

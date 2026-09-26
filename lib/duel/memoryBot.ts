@@ -2,6 +2,7 @@ import "server-only";
 
 import type { BotDifficulty } from "@/generated/prisma/client";
 import { botAccuracy } from "@/lib/bots/difficulty";
+import type { GameConfig } from "@/lib/game/economy";
 import type { MemoryAttemptLog, MemoryBoardJson } from "@/lib/duel/memoryTypes";
 
 /**
@@ -11,8 +12,9 @@ import type { MemoryAttemptLog, MemoryBoardJson } from "@/lib/duel/memoryTypes";
 export function fabricateBotMemoryLog(
   board: MemoryBoardJson,
   difficulty?: BotDifficulty | null,
+  botsConfig?: GameConfig["bots"],
 ): MemoryAttemptLog {
-  const accuracy = botAccuracy(difficulty);
+  const accuracy = botAccuracy(difficulty, botsConfig);
   const target = Math.max(
     0,
     Math.min(

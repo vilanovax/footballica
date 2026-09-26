@@ -136,7 +136,31 @@ export function PostMatchSummary({
           className="pointer-events-none absolute -inset-s-20 bottom-24 h-40 w-40 rounded-full bg-amber-400/12 blur-3xl"
         />
 
-        <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pb-2.5 pt-1 text-center">
+        {ctas.onClose ? (
+          <div className="relative z-30 flex shrink-0 justify-end pt-[max(0.25rem,env(safe-area-inset-top,0px))]">
+            <button
+              type="button"
+              onClick={ctas.onClose}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-black/40 shadow-[0_0_0_1px_rgba(255,255,255,0.14),0_3px_0_0_rgba(0,0,0,0.35)] transition-transform active:scale-95"
+              aria-label={t("common.close")}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/close-arena.png"
+                alt=""
+                draggable={false}
+                className="h-5 w-5 object-contain opacity-90"
+              />
+            </button>
+          </div>
+        ) : (
+          <div
+            aria-hidden
+            className="relative z-30 shrink-0 pt-[max(0.5rem,env(safe-area-inset-top,0px))]"
+          />
+        )}
+
+        <div className="relative flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain pb-2 pt-0.5 text-center">
           {/* ── 1. Outcome ─────────────────────────────────────────── */}
           <motion.div
             initial={
@@ -152,7 +176,7 @@ export function PostMatchSummary({
           >
             <GamePanel
               tone={won ? "emerald" : "rose"}
-              className="flex flex-col items-center gap-2 px-4 py-4"
+              className="flex flex-col items-center gap-1.5 px-4 py-3.5"
             >
               <motion.div
                 animate={
@@ -540,9 +564,22 @@ export function PostMatchSummary({
                         tone="amber"
                         className="flex items-center gap-3 px-3.5 py-3 text-start"
                       >
-                        <span className="text-2xl" aria-hidden>
-                          {trophy.emoji}
-                        </span>
+                        {trophy.iconSrc ? (
+                          <GameIconWell size="md" amber className="shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={trophy.iconSrc}
+                              alt=""
+                              aria-hidden
+                              draggable={false}
+                              className="h-7 w-7 object-contain"
+                            />
+                          </GameIconWell>
+                        ) : (
+                          <span className="text-2xl" aria-hidden>
+                            {trophy.emoji}
+                          </span>
+                        )}
                         <div className="min-w-0 flex-1">
                           <p className="font-display text-sm font-bold text-amber-200">
                             {trophy.title}

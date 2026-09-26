@@ -205,9 +205,9 @@ export async function submitDuelDefend(
 
     // Defender scores onto their total.
     const defenderIsChallenger = user.id === duel.challengerId;
-    let challengerCorrect =
+    const challengerCorrect =
       duel.challengerCorrect + (defenderIsChallenger ? defenseCorrect : 0);
-    let opponentCorrect =
+    const opponentCorrect =
       duel.opponentCorrect + (!defenderIsChallenger ? defenseCorrect : 0);
 
     const updated = await prisma.$transaction(async (tx) => {

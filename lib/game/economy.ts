@@ -114,6 +114,22 @@ export type GameConfig = {
     tikiTakaTurnMs: number;
   };
   /**
+   * Draft-duel bot pool skill + matchmaking mix.
+   * Per-bot difficulty is on User.botDifficulty; these are the band rates.
+   */
+  bots: {
+    /** P(correct) for EASY bots (0–1). */
+    accuracyEasy: number;
+    /** P(correct) for MEDIUM bots (0–1). */
+    accuracyMedium: number;
+    /** P(correct) for HARD bots (0–1). */
+    accuracyHard: number;
+    /** Relative weight when assigning a bot after matchmaking timeout. */
+    matchmakingWeightEasy: number;
+    matchmakingWeightMedium: number;
+    matchmakingWeightHard: number;
+  };
+  /**
    * Survival Mode soft economy — Live-Ops tunable (weekend 2× coins, etc.).
    * Pure math in `lib/game/survival.ts` reads these; settle fetches config.
    */
@@ -385,7 +401,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     rounds: 2,
     draftChoices: 3,
     turnHours: 24,
-    timeoutAction: "SHADOW_BOT",
+    timeoutAction: "AUTO_FORFEIT",
     botDelayMinMs: 2 * 60 * 1000,
     botDelayMaxMs: 10 * 60 * 1000,
     /** Visual search window before bot fallback (min 5s enforced in merge). */
@@ -396,6 +412,14 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     memoryTurnMs: 20_000,
     memoryRevealMs: 2_000,
     tikiTakaTurnMs: 20_000,
+  },
+  bots: {
+    accuracyEasy: 0.4,
+    accuracyMedium: 0.62,
+    accuracyHard: 0.85,
+    matchmakingWeightEasy: 25,
+    matchmakingWeightMedium: 60,
+    matchmakingWeightHard: 15,
   },
   survival: {
     coinsPerCorrect: 5,
@@ -952,6 +976,30 @@ export function mergeGameConfig(raw: unknown): GameConfig {
         Math.min(60_000, Math.round(num(d.tikiTakaTurnMs, D.duel.tikiTakaTurnMs))),
       ),
     },
+    bots: (() => {
+      const b = (src.bots ?? {}) as Record<string, unknown>;
+      const clamp01 = (v: unknown, fallback: number) =>
+        Math.min(1, Math.max(0, num(v, fallback)));
+      const clampW = (v: unknown, fallback: number) =>
+        Math.max(0, Math.round(num(v, fallback)));
+      return {
+        accuracyEasy: clamp01(b.accuracyEasy, D.bots.accuracyEasy),
+        accuracyMedium: clamp01(b.accuracyMedium, D.bots.accuracyMedium),
+        accuracyHard: clamp01(b.accuracyHard, D.bots.accuracyHard),
+        matchmakingWeightEasy: clampW(
+          b.matchmakingWeightEasy,
+          D.bots.matchmakingWeightEasy,
+        ),
+        matchmakingWeightMedium: clampW(
+          b.matchmakingWeightMedium,
+          D.bots.matchmakingWeightMedium,
+        ),
+        matchmakingWeightHard: clampW(
+          b.matchmakingWeightHard,
+          D.bots.matchmakingWeightHard,
+        ),
+      };
+    })(),
     survival: {
       coinsPerCorrect: Math.max(
         0,

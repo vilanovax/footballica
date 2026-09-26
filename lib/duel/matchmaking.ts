@@ -6,6 +6,7 @@ import { getGameConfig } from "@/lib/game/gameConfig";
 import { pickRandomBotUser } from "@/lib/duel/bot";
 import { pickDraftCategories } from "@/lib/duel/draw";
 import { computeStaminaRegen } from "@/lib/club/stamina";
+import { rollMatchmakingDifficulty } from "@/lib/bots/difficulty";
 
 type Db = typeof prisma | Prisma.TransactionClient;
 
@@ -23,10 +24,7 @@ export async function assignBotToMatchingDuel(
   now = new Date(),
 ): Promise<boolean> {
   const config = await getGameConfig();
-  // Weighted cold-start mix: more MEDIUM than EASY/HARD.
-  const roll = Math.random();
-  const preferred =
-    roll < 0.25 ? "EASY" : roll < 0.85 ? "MEDIUM" : ("HARD" as const);
+  const preferred = rollMatchmakingDifficulty(config.bots);
   const bot = await pickRandomBotUser(preferred);
 
   return prisma.$transaction(async (tx) => {

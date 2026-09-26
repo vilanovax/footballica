@@ -430,6 +430,8 @@ export function MatchResult({
 
   // Metagame-first when an upgrade is buyable; otherwise keep the loop open.
   // Out-of-energy near-perfect lands on Club MatchDoor (refill), not manage.
+  // Always keep an exit path (close + tertiary/secondary back) — never trap
+  // the player between Upgrade and Play Again only.
   type Cta = {
     label: string;
     onClick: () => void;
@@ -437,6 +439,7 @@ export function MatchResult({
   };
   let primaryCta: Cta | null = null;
   let secondaryCta: Cta | null = null;
+  let tertiaryCta: Cta | null = null;
 
   if (upgradeReady) {
     primaryCta = {
@@ -444,19 +447,26 @@ export function MatchResult({
       onClick: leaveToUpgrade,
       variant: "accent",
     };
-    secondaryCta = !hidePlayAgain
-      ? {
-          label: nearPerfect
-            ? t("result.nearPerfectCta")
-            : t("result.playAgain"),
-          onClick: onPlayAgain,
-          variant: "primary",
-        }
-      : {
-          label: t("common.backToClub"),
-          onClick: onExit,
-          variant: "secondary",
-        };
+    if (!hidePlayAgain) {
+      secondaryCta = {
+        label: nearPerfect
+          ? t("result.nearPerfectCta")
+          : t("result.playAgain"),
+        onClick: onPlayAgain,
+        variant: "primary",
+      };
+      tertiaryCta = {
+        label: t("common.backToClub"),
+        onClick: onExit,
+        variant: "secondary",
+      };
+    } else {
+      secondaryCta = {
+        label: t("common.backToClub"),
+        onClick: onExit,
+        variant: "secondary",
+      };
+    }
   } else if (!hidePlayAgain) {
     primaryCta = {
       label: nearPerfect
@@ -475,6 +485,11 @@ export function MatchResult({
       label: t("result.nearPerfectEnergyCta"),
       onClick: onExit,
       variant: "accent",
+    };
+    secondaryCta = {
+      label: t("common.backToClub"),
+      onClick: onExit,
+      variant: "secondary",
     };
   } else {
     primaryCta = {
@@ -545,6 +560,8 @@ export function MatchResult({
         notice: ctaNotice,
         primary: primaryCta,
         secondary: secondaryCta,
+        tertiary: tertiaryCta,
+        onClose: onExit,
       }}
     />
   );

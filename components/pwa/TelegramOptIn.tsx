@@ -51,7 +51,7 @@ export function TelegramOptIn() {
     const onFocus = () => refresh();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + focus only
+     
   }, []);
 
   function connect() {
@@ -84,9 +84,14 @@ export function TelegramOptIn() {
 
   if (!configured) {
     return (
-      <p className="mt-2 font-display text-xs font-bold text-white/55">
-        {t("settings.telegramNotConfigured")}
-      </p>
+      <div className="mt-3 flex items-center gap-2">
+        <GameChip className="uppercase tracking-wide">
+          {t("settings.comingSoon")}
+        </GameChip>
+        <p className="min-w-0 font-display text-[11px] font-bold leading-snug text-white/55">
+          {t("settings.telegramNotConfigured")}
+        </p>
+      </div>
     );
   }
 

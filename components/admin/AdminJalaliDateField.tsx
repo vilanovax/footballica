@@ -72,12 +72,14 @@ export function AdminJalaliDateField({
   const [open, setOpen] = useState(false);
   const [viewJy, setViewJy] = useState(seed.jy);
   const [viewJm, setViewJm] = useState(seed.jm);
+  const selectedJy = selected?.jy;
+  const selectedJm = selected?.jm;
 
   useEffect(() => {
-    if (!selected) return;
-    setViewJy(selected.jy);
-    setViewJm(selected.jm);
-  }, [selected?.jy, selected?.jm]);
+    if (selectedJy == null || selectedJm == null) return;
+    setViewJy(selectedJy);
+    setViewJm(selectedJm);
+  }, [selectedJy, selectedJm]);
 
   useEffect(() => {
     if (!open) return;
@@ -153,7 +155,7 @@ export function AdminJalaliDateField({
         <div
           role="dialog"
           aria-label="تقویم شمسی"
-          className="absolute start-0 z-[80] mt-1.5 w-[17.5rem] rounded-2xl border border-emerald-100 bg-white p-3 shadow-xl"
+          className="absolute inset-s-0 z-80 mt-1.5 w-70 rounded-2xl border border-emerald-100 bg-white p-3 shadow-xl"
           dir="rtl"
         >
           <div className="mb-2 flex items-center justify-between gap-2">

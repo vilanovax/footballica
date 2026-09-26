@@ -8,6 +8,7 @@ import {
   type LeaderboardRow,
 } from "@/actions/getLeaderboard";
 import { LEADERBOARD_TOP_N } from "@/lib/leaderboard/cacheTags";
+import { estimateWinsToCloseGap } from "@/lib/leaderboard/chaseEstimate";
 import {
   getHallOfFame,
   type HallOfFameWeek,
@@ -49,6 +50,8 @@ type ChaseState =
       progress: number;
       /** Hot chase — within ~8% of the target XP. */
       close: boolean;
+      /** Approx duel wins to close the gap (null = unknown). */
+      winsEstimate: number | null;
     }
   | {
       kind: "outside";
@@ -58,6 +61,7 @@ type ChaseState =
       tableSize: number;
       progress: number;
       close: boolean;
+      winsEstimate: number | null;
     }
   | { kind: "unranked" };
 
@@ -172,6 +176,10 @@ export function LeaderboardList({
       const progress =
         denom <= 0 ? 0 : Math.min(0.98, sticky.weeklyXp / denom);
       const close = gap > 0 && gap / Math.max(gate.weeklyXp, 1) <= 0.08;
+      const winsEstimate = estimateWinsToCloseGap(gap, {
+        weeklyXp: sticky.weeklyXp,
+        matchesPlayed: sticky.matchesPlayed,
+      });
       return {
         kind: "outside",
         gap,
@@ -179,6 +187,7 @@ export function LeaderboardList({
         tableSize: Math.min(LEADERBOARD_TOP_N, Math.max(gate.rank, rows.length)),
         progress,
         close,
+        winsEstimate,
       };
     }
 
@@ -192,12 +201,17 @@ export function LeaderboardList({
     const progress =
       denom <= 0 ? 0 : Math.min(0.98, sticky.weeklyXp / denom);
     const close = gap > 0 && gap / Math.max(above.weeklyXp, 1) <= 0.08;
+    const winsEstimate = estimateWinsToCloseGap(gap, {
+      weeklyXp: sticky.weeklyXp,
+      matchesPlayed: sticky.matchesPlayed,
+    });
     return {
       kind: "hunt",
       gap,
       targetRank: above.rank,
       progress,
       close,
+      winsEstimate,
     };
   }, [sticky, rows, outsideTable, youInRows]);
 
@@ -652,6 +666,17 @@ function YourHuntCard({
                 n: toLocaleDigits(you.matchesPlayed, locale),
               });
 
+  const winsHint =
+    (chase?.kind === "hunt" || chase?.kind === "outside") &&
+    chase.winsEstimate != null &&
+    chase.winsEstimate > 0
+      ? chase.winsEstimate === 1
+        ? t("leaderboard.gapOneWin")
+        : t("leaderboard.gapWinsApprox", {
+            n: toLocaleDigits(chase.winsEstimate, locale),
+          })
+      : null;
+
   const barPct =
     chase?.kind === "lead"
       ? 100
@@ -674,7 +699,7 @@ function YourHuntCard({
       <GamePanel tone={outside ? "sky" : "emerald"} className="p-2.5">
         <div
           aria-hidden
-          className="pointer-events-none absolute -end-8 top-0 h-24 w-24 rounded-full bg-emerald-300/30 blur-2xl"
+          className="pointer-events-none absolute -inset-e-8 top-0 h-24 w-24 rounded-full bg-emerald-300/30 blur-2xl"
         />
 
         <div className="relative flex items-center gap-2.5">
@@ -704,6 +729,16 @@ function YourHuntCard({
             <p className="mt-1 font-display text-[11px] font-bold text-white/65">
               {chaseLine}
             </p>
+            {winsHint && (
+              <p
+                className={cn(
+                  "mt-0.5 font-display text-[11px] font-black",
+                  barHot ? "text-accent" : "text-emerald-200/90",
+                )}
+              >
+                {winsHint}
+              </p>
+            )}
           </div>
 
           <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -791,7 +826,7 @@ function ClubInspectBody({ row }: { row: LeaderboardRow }) {
           )}
         />
         {row.rank > 0 && row.rank <= 3 && (
-          <span className="absolute -bottom-1 -end-1 flex h-9 w-9 items-center justify-center">
+          <span className="absolute -bottom-1 -inset-e-1 flex h-9 w-9 items-center justify-center">
             <RankArt
               kind={medalKindForPlace(row.rank)}
               size="md"

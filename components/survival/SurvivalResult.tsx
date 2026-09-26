@@ -24,6 +24,7 @@ type SurvivalResultProps = {
   sessionId?: string | null;
   onPlayAgain: () => void;
   onExit: () => void;
+  onChangeCategory: () => void;
 };
 
 type SaveState =
@@ -60,6 +61,7 @@ export function SurvivalResult({
   sessionId = null,
   onPlayAgain,
   onExit,
+  onChangeCategory,
 }: SurvivalResultProps) {
   const { t, locale } = useTranslation();
   const cacheKey = survivalSettleKey(
@@ -139,12 +141,16 @@ export function SurvivalResult({
 
   if (save.status === "error") {
     return (
-      <section className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-        <p className="font-display text-lg font-bold text-destructive">
+      <section className="relative flex flex-1 flex-col items-center justify-center gap-5 overflow-hidden bg-arena px-6 text-center text-arena-fg">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-linear-to-b from-arena-deep via-arena to-arena-mid"
+        />
+        <p className="relative font-display text-lg font-bold text-rose-300">
           {t("survival.settleError")}
         </p>
-        <p className="text-sm text-muted-foreground">{save.message}</p>
-        <GameCta variant="primary" onClick={onExit}>
+        <p className="relative text-sm text-white/55">{save.message}</p>
+        <GameCta variant="primary" onClick={onExit} className="relative">
           {t("survival.backLobby")}
         </GameCta>
       </section>
@@ -209,7 +215,8 @@ export function SurvivalResult({
     trophies.push({
       key: "record",
       emoji: "📈",
-      title: t("result.newRecordTrophy"),
+      iconSrc: "/icons/trophy.png",
+      title: t("survival.newRecordBanner"),
       subtitle: t("survival.newRecord", {
         n: toLocaleDigits(data.rewards.score, locale),
       }),
@@ -219,6 +226,7 @@ export function SurvivalResult({
     trophies.push({
       key: "challenge",
       emoji: data.challenge.badgeEmoji ?? "🏆",
+      iconSrc: "/icons/medal-gold.png",
       title: t("result.challengeConquered"),
       subtitle: t("survival.challengeConquered", {
         n: toLocaleDigits(data.challenge.targetScore, locale),
@@ -258,6 +266,14 @@ export function SurvivalResult({
           bare: true,
         }
       : null,
+    data.streak.extended && data.streak.dailyStreak > 1
+      ? {
+          key: "streak",
+          label: toLocaleDigits(data.streak.dailyStreak, locale),
+          iconSrc: "/icons/streak.png",
+          bare: true,
+        }
+      : null,
   ].filter(Boolean) as Array<{
     key: string;
     label: string;
@@ -265,13 +281,10 @@ export function SurvivalResult({
     bare: boolean;
   }>;
 
-  const streakNote = data.streak.extended
-    ? data.streak.dailyStreak > 1
-      ? t("result.streakExtended", {
-          n: toLocaleDigits(data.streak.dailyStreak, locale),
-        })
-      : t("result.streakStarted")
-    : null;
+  const streakNote =
+    data.streak.extended && data.streak.dailyStreak <= 1
+      ? t("result.streakStarted")
+      : null;
 
   return (
     <PostMatchSummary
@@ -281,7 +294,7 @@ export function SurvivalResult({
         title: cleared
           ? t("survival.clearedTitle")
           : t("survival.eliminatedTitle"),
-        subtitle: `${data.category.icon || "📚"} ${catName}`,
+        subtitle: catName,
         hint: cleared ? t("survival.clearedBody") : t("survival.eliminatedBody"),
         hintTone: cleared ? "positive" : "negative",
         chips,
@@ -315,7 +328,7 @@ export function SurvivalResult({
       celebrateBadges={challengeBadges.length > 0}
       ctas={{
         primary: {
-          label: t("survival.playAgain"),
+          label: t("survival.playAgainNamed", { name: catName }),
           onClick: onPlayAgain,
           variant: "primary",
         },
@@ -323,6 +336,11 @@ export function SurvivalResult({
           label: t("survival.backLobby"),
           onClick: onExit,
           variant: "accent",
+        },
+        tertiary: {
+          label: t("survival.changeCategory"),
+          onClick: onChangeCategory,
+          variant: "secondary",
         },
       }}
     />

@@ -6,7 +6,6 @@ import type { ActiveNewsBoosterSnapshot } from "@/lib/club/upgrades";
 import { ClubHubSecondaryPanels } from "@/components/club-hub/ClubHubSecondaryPanels";
 
 type ClubHubSecondaryProps = {
-  mysteryStreak: number;
   activeNews: ActiveNewsBoosterSnapshot | null;
 };
 
@@ -14,10 +13,7 @@ type ClubHubSecondaryProps = {
  * Deferred hub rails — streamed under Suspense so MatchDoor + HUD paint first.
  * Skips duel-mission backfill (drawer syncs on open).
  */
-export async function ClubHubSecondary({
-  mysteryStreak,
-  activeNews,
-}: ClubHubSecondaryProps) {
+export async function ClubHubSecondary({ activeNews }: ClubHubSecondaryProps) {
   const [inbox, missions, challenges] = await Promise.all([
     getDuelInbox(),
     getMyMissions({ skipDuelSync: true }),
@@ -50,7 +46,6 @@ export async function ClubHubSecondary({
       missionBoard={missionBoard}
       dailyBoard={dailyBoard}
       campaignSeason={campaignSeason}
-      mysteryStreak={mysteryStreak}
       activeNews={activeNews}
     />
   );

@@ -26,10 +26,7 @@ import {
   statusAfterDefendSubmit,
 } from "@/lib/duel/fsm";
 import { creditDuelMissions } from "@/lib/game/missionEngine";
-import {
-  duelHasMemoryRound,
-  memoryRoundCreateData,
-} from "@/lib/duel/createMemoryRound";
+import { memoryRoundCreateData } from "@/lib/duel/createMemoryRound";
 import { quizRoundCreateData } from "@/lib/duel/createQuizRound";
 import { parseMemoryBoard } from "@/lib/duel/memoryBoard";
 import { fabricateBotMemoryLog } from "@/lib/duel/memoryBot";
@@ -153,11 +150,19 @@ async function playOneShadowTurn(
       difficulty,
       now,
       config.duel.turnHours,
+      config.bots,
     );
   }
 
   if (status === "B_DEFENDING" || status === "A_DEFENDING") {
-    return playDefendTurn(duel, actorId, difficulty, now, config.duel.turnHours);
+    return playDefendTurn(
+      duel,
+      actorId,
+      difficulty,
+      now,
+      config.duel.turnHours,
+      config.bots,
+    );
   }
 
   if (status === "A_ATTACKING" || status === "B_ATTACKING") {
@@ -173,6 +178,7 @@ async function playDefendTurn(
   difficulty: BotDifficulty,
   now: Date,
   turnHours: number,
+  botsConfig: import("@/lib/game/economy").GameConfig["bots"],
 ): Promise<boolean> {
   const roundNumber = duel.status === "A_DEFENDING" ? 2 : 1;
   const round = duel.rounds.find((r) => r.roundNumber === roundNumber);
@@ -184,7 +190,7 @@ async function playDefendTurn(
   if (round.roundType === "MEMORY") {
     const board = parseMemoryBoard(round.boardJson);
     if (!board) return false;
-    const mem = fabricateBotMemoryLog(board, difficulty);
+    const mem = fabricateBotMemoryLog(board, difficulty, botsConfig);
     defenseLog = mem;
     defenseCorrect = mem.pairsFound;
   } else if (
@@ -215,9 +221,9 @@ async function playDefendTurn(
   const nextStatus = statusAfterDefendSubmit(roundNumber);
 
   const isChallenger = actorId === duel.challengerId;
-  let challengerCorrect =
+  const challengerCorrect =
     duel.challengerCorrect + (isChallenger ? defenseCorrect : 0);
-  let opponentCorrect =
+  const opponentCorrect =
     duel.opponentCorrect + (!isChallenger ? defenseCorrect : 0);
 
   if (nextStatus === "B_ATTACKING") {
@@ -410,7 +416,7 @@ async function playAttackTurn(
         },
       });
     }
-    const mem = fabricateBotMemoryLog(board, difficulty);
+    const mem = fabricateBotMemoryLog(board, difficulty, liveConfig.bots);
     const attackCorrect = mem.pairsFound;
     const nextStatus = statusAfterAttackSubmit(roundNumber);
     const isChallenger = actorId === duel.challengerId;

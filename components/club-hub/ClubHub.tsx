@@ -518,20 +518,35 @@ function MissionBadgeButton({
     boards.dailyBoard,
     boards.missionBoard,
   );
+  const daily = boards.dailyBoard;
+  const dailyDone = daily?.missions.filter((m) => m.isCompleted).length ?? 0;
+  const dailyTotal = daily?.missions.length ?? 0;
+  const showProgress = missionReadyCount === 0 && dailyTotal > 0;
+
   return (
     <button
       type="button"
       onClick={onOpen}
       aria-label={label}
-      className="game-icon-btn relative active:scale-90"
+      className={[
+        "game-icon-btn relative active:scale-90",
+        missionReadyCount > 0
+          ? "shadow-[0_0_0_1px_hsl(var(--arena-ring-amber)/0.55),0_0_14px_rgba(251,191,36,0.35)]"
+          : "",
+      ].join(" ")}
     >
       <HubIcon kind="mission" size="md" priority />
-      {missionReadyCount > 0 && (
-        <span className="absolute -inset-e-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
+      {missionReadyCount > 0 ? (
+        <span className="absolute -inset-e-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)] ring-1 ring-amber-200/50">
           {toLocaleDigits(Math.min(missionReadyCount, 9), locale)}
           {missionReadyCount > 9 ? "+" : ""}
         </span>
-      )}
+      ) : showProgress ? (
+        <span className="absolute -inset-e-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-black/75 px-1 font-display text-[9px] font-black tabular-nums text-white/85 shadow-[0_2px_0_0_rgba(0,0,0,0.35)] ring-1 ring-white/20">
+          {toLocaleDigits(dailyDone, locale)}/
+          {toLocaleDigits(dailyTotal, locale)}
+        </span>
+      ) : null}
     </button>
   );
 }

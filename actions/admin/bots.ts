@@ -469,3 +469,49 @@ export async function setBotEnabled(
     return { ok: false, error: "server_error" };
   }
 }
+
+export type BulkSetDifficultyResult =
+  | { ok: true; updated: number }
+  | {
+      ok: false;
+      error: "unauthorized" | "invalid_input" | "server_error";
+      message?: string;
+    };
+
+/**
+ * Set difficulty for many bots at once.
+ * `ids` empty = all bots (optionally only enabled).
+ */
+export async function bulkSetBotDifficulty(
+  difficulty: string,
+  opts: { ids?: string[]; onlyEnabled?: boolean } = {},
+): Promise<BulkSetDifficultyResult> {
+  if (!(await assertAdmin())) return { ok: false, error: "unauthorized" };
+  if (!isBotDifficulty(difficulty)) {
+    return {
+      ok: false,
+      error: "invalid_input",
+      message: `Difficulty must be one of ${BOT_DIFFICULTIES.join(", ")}.`,
+    };
+  }
+
+  try {
+    const where =
+      opts.ids && opts.ids.length > 0
+        ? { id: { in: opts.ids }, isBot: true as const }
+        : {
+            isBot: true as const,
+            ...(opts.onlyEnabled ? { botEnabled: true } : {}),
+          };
+
+    const res = await prisma.user.updateMany({
+      where,
+      data: { botDifficulty: difficulty },
+    });
+    revalidatePath("/admin/users");
+    return { ok: true, updated: res.count };
+  } catch (err) {
+    console.error("bulkSetBotDifficulty failed", err);
+    return { ok: false, error: "server_error" };
+  }
+}

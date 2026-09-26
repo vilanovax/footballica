@@ -59,6 +59,10 @@ type ConfigBag = Record<string, unknown> & { leagueWeekKey?: string };
  * If the Tehran week rolled over, archive the human podium to Hall of Fame,
  * pay `WEEKLY_PRIZE_TIERS` (coins → club, XP → user), zero human `weeklyXp`
  * (bots + mock emails keep scores), and stamp the new week on GameConfig.
+ *
+ * Call sites: `/api/cron/duels` via `tickDuelJobs`, deferred leaderboard
+ * reads (`after`), and explicit `refreshLeaderboard`. Do not await on the
+ * standings hot path.
  */
 export async function ensureWeeklyLeagueReset(
   now = new Date(),

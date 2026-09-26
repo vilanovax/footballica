@@ -19,7 +19,7 @@ type ActiveNewsChipProps = {
   booster: ActiveNewsBoosterSnapshot;
   onExpired?: () => void;
   onOpen?: () => void;
-  /** Slim club-chrome strip for the post-stadium Today rail. */
+  /** Slim club-chrome strip under daily missions. */
   compact?: boolean;
 };
 

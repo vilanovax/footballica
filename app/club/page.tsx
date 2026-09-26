@@ -63,10 +63,7 @@ async function ClubHubLoader({ openManage }: { openManage: boolean }) {
     >
       {club.tutorialStep === 2 ? (
         <Suspense key="hub-secondary" fallback={<HubSecondarySkeleton />}>
-          <ClubHubSecondary
-            mysteryStreak={club.mysteryStreak}
-            activeNews={club.activeNewsBooster}
-          />
+          <ClubHubSecondary activeNews={club.activeNewsBooster} />
         </Suspense>
       ) : null}
     </ClubHub>

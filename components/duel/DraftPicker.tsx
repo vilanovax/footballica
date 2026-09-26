@@ -111,7 +111,6 @@ export function DraftPicker({
   specialAvailable,
   pending,
   onPick,
-  onPickMemory,
   onPickSpecial,
 }: DraftPickerProps) {
   const { t, locale } = useTranslation();

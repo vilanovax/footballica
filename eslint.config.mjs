@@ -13,6 +13,17 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      // React Compiler lints (eslint-plugin-react-hooks v7) — too noisy for
+      // intentional patterns (prop→state sync, particle RNG, live-fill refs).
+      // Re-enable when adopting the compiler end-to-end.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/incompatible-library": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

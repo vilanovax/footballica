@@ -77,6 +77,8 @@ export type PostMatchBadge = {
 export type PostMatchTrophy = {
   key: string;
   emoji: string;
+  /** Prefer PNG game icon over emoji chrome when set. */
+  iconSrc?: string;
   title: string;
   subtitle?: string;
 };
@@ -111,4 +113,6 @@ export type PostMatchCtas = {
   primary?: PostMatchCta | null;
   secondary?: PostMatchCta | null;
   tertiary?: PostMatchCta | null;
+  /** Top-corner dismiss — always available exit to Club Hub. */
+  onClose?: (() => void) | null;
 };

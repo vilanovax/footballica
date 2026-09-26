@@ -23,7 +23,7 @@ const fontBody = Nunito({
 const fontFa = Vazirmatn({
   variable: "--font-fa",
   subsets: ["arabic"],
-  weight: ["400", "700"],
+  weight: ["400", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {

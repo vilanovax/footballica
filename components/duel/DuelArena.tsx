@@ -384,7 +384,7 @@ export function DuelArena({
       cancelled = true;
       beginDefendInFlight.current = false;
     };
-  }, [duel.status, duel.youAre, duelId, questions, refresh, duel.turn.roundNumber, duel.rounds]);
+  }, [duel, duelId, questions, refresh]);
 
   // MEMORY bootstrap (attack or defend)
   useEffect(() => {
@@ -437,17 +437,7 @@ export function DuelArena({
       cancelled = true;
       beginMemoryInFlight.current = false;
     };
-  }, [
-    duel.status,
-    duel.youAre,
-    duel.canAct,
-    duelId,
-    memoryBoard,
-    memoryEndsAt,
-    refresh,
-    duel.turn.roundNumber,
-    duel.rounds,
-  ]);
+  }, [duel, duelId, memoryBoard, memoryEndsAt, refresh]);
 
   useEffect(() => {
     if (phase.kind !== "loading") return;

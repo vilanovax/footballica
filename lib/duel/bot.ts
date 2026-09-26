@@ -7,10 +7,7 @@ import { normalizeClubName } from "@/lib/auth/blacklist";
 import { botAccuracy } from "@/lib/bots/difficulty";
 import { countCorrect } from "@/lib/duel/scoring";
 import type { DuelAnswerLogEntry } from "@/lib/duel/types";
-import {
-  duelHasMemoryRound,
-  memoryRoundCreateData,
-} from "@/lib/duel/createMemoryRound";
+import { memoryRoundCreateData } from "@/lib/duel/createMemoryRound";
 import { duelHasSpecialRound } from "@/lib/duel/specialRounds";
 import { quizRoundCreateData } from "@/lib/duel/createQuizRound";
 import { usedCategoryIdsFromRounds } from "@/lib/duel/draw";
@@ -126,13 +123,14 @@ export function scheduleBotPlayAt(now = new Date(), delayMs?: number): Date {
 
 /**
  * Build plausible bot answers. Accuracy follows `botDifficulty`
- * (EASY ~40%, MEDIUM ~62%, HARD ~85%).
+ * + Live-Ops `GameConfig.bots.accuracy*`.
  */
 export async function fabricateBotAnswers(
   questionIds: string[],
   difficulty?: BotDifficulty | null,
 ): Promise<DuelAnswerLogEntry[]> {
-  const accuracy = botAccuracy(difficulty);
+  const config = await getGameConfig();
+  const accuracy = botAccuracy(difficulty, config.bots);
   const rows = await prisma.question.findMany({
     where: { id: { in: questionIds } },
     select: { id: true, correctIndex: true, content: true },
@@ -263,7 +261,11 @@ export async function runBotTurnIfDue(duelId: string, now = new Date()): Promise
           pairCount: config.duel.memoryPairs,
           roundNumber: 2,
         });
-        const memoryAttack = fabricateBotMemoryLog(memoryData.board, difficulty);
+        const memoryAttack = fabricateBotMemoryLog(
+          memoryData.board,
+          difficulty,
+          config.bots,
+        );
         attackCorrect = memoryAttack.pairsFound;
         opponentCorrect += attackCorrect;
         await tx.duelRound.update({
@@ -345,7 +347,7 @@ export async function runBotTurnIfDue(duelId: string, now = new Date()): Promise
   if (round1.roundType === "MEMORY") {
     const board = parseMemoryBoard(round1.boardJson);
     if (!board) return false;
-    const mem = fabricateBotMemoryLog(board, difficulty);
+    const mem = fabricateBotMemoryLog(board, difficulty, config.bots);
     defenseLog = mem;
     defenseCorrect = mem.pairsFound;
   } else if (
@@ -409,7 +411,11 @@ export async function runBotTurnIfDue(duelId: string, now = new Date()): Promise
         pairCount: config.duel.memoryPairs,
         roundNumber: 2,
       });
-      const memoryAttack = fabricateBotMemoryLog(memoryData.board, difficulty);
+      const memoryAttack = fabricateBotMemoryLog(
+        memoryData.board,
+        difficulty,
+        config.bots,
+      );
       attackCorrect = memoryAttack.pairsFound;
       opponentCorrect += attackCorrect;
 
@@ -491,19 +497,26 @@ export async function runBotTurnIfDue(duelId: string, now = new Date()): Promise
 /** Process all duels whose bot delay has elapsed (cron / opportunistic). */
 export async function processDueBotTurns(limit = 20): Promise<number> {
   const now = new Date();
+  // Include null botPlayAt — heal stuck WAITING_B / B_* where schedule was lost.
   const due = await prisma.duelMatch.findMany({
     where: {
       isBotOpponent: true,
-      botPlayAt: { lte: now },
       status: { in: ["WAITING_B", "B_DEFENDING", "B_ATTACKING"] },
+      OR: [{ botPlayAt: { lte: now } }, { botPlayAt: null }],
     },
-    select: { id: true },
+    select: { id: true, botPlayAt: true },
     take: limit,
     orderBy: { botPlayAt: "asc" },
   });
 
   let n = 0;
   for (const row of due) {
+    if (!row.botPlayAt) {
+      await prisma.duelMatch.update({
+        where: { id: row.id },
+        data: { botPlayAt: now },
+      });
+    }
     const ok = await runBotTurnIfDue(row.id, now);
     if (ok) n += 1;
   }

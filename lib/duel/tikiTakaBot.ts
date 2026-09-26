@@ -3,6 +3,7 @@ import "server-only";
 import type { BotDifficulty } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { botAccuracy } from "@/lib/bots/difficulty";
+import { getGameConfig } from "@/lib/game/gameConfig";
 import { playerMatchesCell, toGridPlayerAttrs } from "@/lib/grid/rules";
 import { GRID_SIZE, cellKey } from "@/lib/grid/types";
 import type { TikiTakaBoardJson } from "@/lib/duel/tikiTakaTypes";
@@ -53,7 +54,8 @@ export async function fabricateTikiTakaGuess(
       !playerMatchesCell(toGridPlayerAttrs(p), rowAxis, colAxis),
   );
 
-  const wantHit = Math.random() < botAccuracy(difficulty);
+  const { bots } = await getGameConfig();
+  const wantHit = Math.random() < botAccuracy(difficulty, bots);
 
   if (wantHit && valid.length > 0) {
     const pick = valid[Math.floor(Math.random() * valid.length)]!;

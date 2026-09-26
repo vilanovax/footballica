@@ -51,6 +51,7 @@ export async function updateGameConfig(raw: unknown): Promise<ConfigResult> {
   revalidateTag(GAME_CONFIG_CACHE_TAG, "max");
   revalidatePath("/admin/config");
   revalidatePath("/admin/modes");
+  revalidatePath("/admin/users");
   revalidatePath("/admin");
   revalidatePath("/play");
   revalidatePath("/club");

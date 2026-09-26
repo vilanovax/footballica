@@ -24,7 +24,7 @@ type SurvivalLobbyProps = {
 };
 
 /**
- * Survival hub — one clear main run, then optional paid challenges.
+ * Survival hub — one composition: rule + kickoff, then optional challenges.
  */
 export function SurvivalLobby({
   challenges,
@@ -38,8 +38,7 @@ export function SurvivalLobby({
   const hasRecord = survivalBest > 0;
 
   return (
-    <section className="flex flex-1 flex-col gap-3.5 pb-4">
-      {/* ── What is Survival ─────────────────────────────────────── */}
+    <section className="flex flex-1 flex-col gap-3 pb-4">
       <GamePanel tone="rose" className="relative overflow-hidden p-3.5 text-start">
         <div
           aria-hidden
@@ -69,15 +68,14 @@ export function SurvivalLobby({
             <h1 className="mt-0.5 font-display text-2xl font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
               {t("survival.lobbyTitle")}
             </h1>
+            <p className="mt-1.5 font-display text-sm font-bold leading-snug text-white/85">
+              {t("survival.lobbyHook")}
+            </p>
           </div>
         </div>
 
-        <p className="relative mt-3 font-display text-sm font-bold leading-snug text-white/90">
-          {t("survival.lobbyHook")}
-        </p>
-
         <div
-          className="relative mt-3 flex items-center justify-center gap-2"
+          className="relative mt-3 flex items-center justify-center gap-1.5"
           dir="ltr"
           aria-label={t("survival.howHeartsTitle")}
         >
@@ -90,79 +88,24 @@ export function SurvivalLobby({
                 type: "spring",
                 stiffness: 380,
                 damping: 18,
-                delay: 0.08 + i * 0.07,
+                delay: 0.06 + i * 0.06,
               }}
             >
-              <GameIconWell
-                size="md"
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src="/icons/heart.png"
-                className="h-12 w-12"
-                iconClassName="h-7 w-7"
+                alt=""
+                draggable={false}
+                className="h-9 w-9 object-contain drop-shadow-[0_4px_10px_rgba(220,38,38,0.35)]"
               />
             </motion.div>
           ))}
         </div>
-        <p className="relative mt-2 text-center font-display text-xs font-bold text-rose-100/90">
+        <p className="relative mt-1.5 text-center font-display text-xs font-bold text-rose-100/90">
           {t("survival.ruleLine")}
         </p>
-        <p className="relative mt-1 text-center font-display text-[11px] font-bold text-white/55">
-          {t("survival.scoreLine")}
-        </p>
-      </GamePanel>
 
-      {/* ── Main path: classic run ───────────────────────────────── */}
-      <GamePanel tone="amber" className="relative p-3.5 text-start">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -inset-s-8 bottom-0 h-24 w-24 rounded-full bg-amber-300/25 blur-3xl"
-        />
-        <div className="relative flex items-start gap-3">
-          <GameIconWell
-            size="md"
-            amber
-            src="/icons/nav-ball.png"
-            className="h-12 w-12"
-            iconClassName="h-7 w-7"
-          />
-          <div className="min-w-0 flex-1">
-            <GameChip tone="amber" className="mb-1">
-              {t("survival.classicBadge")}
-            </GameChip>
-            <h2 className="font-display text-lg font-black text-white">
-              {t("survival.classicTitle")}
-            </h2>
-            <p className="mt-0.5 font-display text-xs font-bold leading-snug text-white/70">
-              {t("survival.classicSub")}
-            </p>
-          </div>
-        </div>
-
-        <ol className="relative mt-3 space-y-1.5 rounded-2xl bg-black/25 px-3 py-2.5 font-display text-xs font-bold text-white/80 ring-1 ring-white/10">
-          <li className="flex gap-2">
-            <span className="tabular-nums text-amber-200">۱.</span>
-            <span>{t("survival.stepPick")}</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="tabular-nums text-amber-200">۲.</span>
-            <span>{t("survival.stepPlay")}</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="tabular-nums text-amber-200">۳.</span>
-            <span>{t("survival.stepRecord")}</span>
-          </li>
-        </ol>
-
-        <div className="relative mt-3 flex flex-wrap gap-1.5">
-          <GameChip className="gap-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/heart.png"
-              alt=""
-              draggable={false}
-              className="h-3.5 w-3.5 object-contain"
-            />
-            {t("survival.chipHearts", { n: toLocaleDigits(3, locale) })}
-          </GameChip>
+        <div className="relative mt-3 flex flex-wrap justify-center gap-1.5">
           <GameChip className="gap-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -195,7 +138,7 @@ export function SurvivalLobby({
             playSound("click");
             haptic(HAPTIC.tap);
           }}
-          className="game-cta game-cta-accent relative mt-3 flex min-h-14 w-full items-center justify-center gap-1 font-display text-base font-black"
+          className="game-cta game-cta-accent relative mt-3.5 flex min-h-14 w-full items-center justify-center gap-1 font-display text-base font-black"
         >
           {t("survival.classicCta")}
           <span aria-hidden className="rtl:-scale-x-100">
@@ -207,9 +150,8 @@ export function SurvivalLobby({
         </p>
       </GamePanel>
 
-      {/* ── Optional: live challenges ────────────────────────────── */}
       {liveCount > 0 ? (
-        <div className="hub-deck flex flex-1 flex-col gap-3">
+        <div className="hub-deck flex flex-1 flex-col gap-2.5">
           <div className="px-0.5">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-display text-xs font-black text-arena-muted">
@@ -220,9 +162,6 @@ export function SurvivalLobby({
               </GameChip>
             </div>
             <p className="mt-1 font-display text-[11px] font-bold leading-snug text-arena-muted/95">
-              {t("survival.lobbyChallengesHint")}
-            </p>
-            <p className="mt-1 font-display text-[11px] font-bold leading-snug text-white/50">
               {t("survival.challengeVsClassic")}
             </p>
           </div>

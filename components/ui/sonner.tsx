@@ -35,22 +35,23 @@ export function Toaster({
           classNames: {
             toast: cn(
               "group toast-arena !flex !items-center !gap-3 !rounded-2xl !border-0",
-              "!bg-[hsl(var(--arena-mid))] !text-white !font-display",
+              // Font comes from toaster CSS (Fredoka LTR / Vazirmatn RTL) — don't force Fredoka.
+              "!bg-[hsl(var(--arena-mid))] !text-white",
               "!shadow-[0_0_0_1px_hsl(var(--arena-ring-amber)/0.45),0_6px_0_0_rgba(0,0,0,0.4)]",
               "!px-3.5 !py-3 !min-h-14",
               arenaClasses?.toast,
             ),
             title: cn(
-              "!font-display !text-[15px] !font-extrabold !leading-snug !text-white",
+              "!text-[15px] !font-extrabold !leading-snug !text-white",
               arenaClasses?.title,
             ),
             description: cn(
-              "!font-display !text-xs !font-bold !leading-snug !text-white/70",
+              "!text-xs !font-bold !leading-snug !text-white/70",
               arenaClasses?.description,
             ),
             content: cn("!flex-1 !min-w-0", arenaClasses?.content),
             actionButton: cn(
-              "!shrink-0 !font-display !rounded-xl !h-auto !min-h-10 !px-3 !py-2",
+              "!shrink-0 !rounded-xl !h-auto !min-h-10 !px-3 !py-2",
               "!bg-[hsl(var(--accent))] !text-[hsl(var(--accent-foreground))]",
               "!text-[12px] !font-extrabold !leading-none",
               "!shadow-[0_3px_0_0_hsl(var(--accent-deep))]",

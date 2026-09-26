@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useLayoutEffect, useState } from "react";
+import { createContext, useContext, useLayoutEffect } from "react";
 import { useLanguageStore } from "@/stores/languageStore";
 import { DEFAULT_LOCALE, getDirection, type Locale } from "@/lib/i18n/config";
 

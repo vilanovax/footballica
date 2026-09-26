@@ -112,7 +112,7 @@ export function DuelSpecialPlay({ duelId, duel, mode, onDone }: Props) {
   } | null>(null);
   const [localDuel, setLocalDuel] = useState(duel);
   const [flash, setFlash] = useState<Flash>(null);
-  const [flashKey, setFlashKey] = useState(0);
+  const [, setFlashKey] = useState(0);
 
   const isAttack = mode === "attack";
   const theme = useAttackTheme(isAttack);

@@ -13,8 +13,9 @@ import { TelegramOptIn } from "@/components/pwa/TelegramOptIn";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
-import { GamePanel, type GamePanelTone } from "@/components/ui/game/GamePanel";
+import { GamePanel } from "@/components/ui/game/GamePanel";
 import { GameTile } from "@/components/ui/game/GameTile";
+import { cn } from "@/lib/utils";
 
 type Theme = "day" | "dark";
 
@@ -30,31 +31,47 @@ const LOCALE_LABEL: Record<Locale, { native: string; flag: string }> = {
   fa: { native: "فارسی", flag: "🇮🇷" },
 };
 
-function SectionHeader({
+const fadeUp = {
+  hidden: { opacity: 0, y: 10 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: 0.04 * i,
+      duration: 0.28,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  }),
+};
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="px-1 font-display text-[11px] font-black uppercase tracking-widest text-arena-muted">
+      {children}
+    </h2>
+  );
+}
+
+function SettingHead({
   iconSrc,
   title,
   desc,
-  children,
 }: {
   iconSrc: string;
   title: string;
   desc: string;
-  children?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="flex min-w-0 items-start gap-3">
-        <GameIconWell size="md" src={iconSrc} />
-        <div className="min-w-0">
-          <p className="font-display text-base font-black text-white drop-shadow-sm">
-            {title}
-          </p>
-          <p className="mt-0.5 font-display text-[11px] font-bold text-white/70">
-            {desc}
-          </p>
-        </div>
+    <div className="flex min-w-0 items-start gap-3">
+      <GameIconWell size="md" src={iconSrc} />
+      <div className="min-w-0 pt-0.5">
+        <p className="font-display text-base font-black text-white drop-shadow-sm">
+          {title}
+        </p>
+        <p className="mt-0.5 font-display text-[11px] font-bold leading-snug text-white/60">
+          {desc}
+        </p>
       </div>
-      {children}
     </div>
   );
 }
@@ -75,37 +92,96 @@ function OptionTile({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className="min-h-14 text-start"
+      className="min-h-touch text-start"
     >
       <GameTile
         tone={selected ? "amber" : "default"}
-        className={[
-          "relative flex h-full flex-col items-center justify-center gap-1 px-3 py-3",
-          selected ? "ring-1 ring-amber-300/45" : "",
-        ].join(" ")}
+        className="relative flex h-full min-h-14 items-center gap-2.5 px-3 py-2.5"
       >
-        {selected && (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 500, damping: 22 }}
-            className="absolute top-1.5 inset-inline-end-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/35 text-[11px] font-black text-amber-100"
-            aria-hidden
-          >
-            ✓
-          </motion.span>
-        )}
-        <span className="text-2xl" aria-hidden>
+        <span className="text-xl leading-none" aria-hidden>
           {icon}
         </span>
         <span
-          className={[
-            "font-display text-sm font-black",
+          className={cn(
+            "flex-1 font-display text-sm font-black",
             selected ? "text-white" : "text-white/70",
-          ].join(" ")}
+          )}
         >
           {label}
         </span>
+        {selected && (
+          <motion.span
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 520, damping: 24 }}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/35"
+            aria-hidden
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/done.png"
+              alt=""
+              draggable={false}
+              className="h-3.5 w-3.5 object-contain"
+            />
+          </motion.span>
+        )}
+      </GameTile>
+    </button>
+  );
+}
+
+function SoundSwitch({
+  on,
+  onToggle,
+  title,
+  desc,
+  onLabel,
+  offLabel,
+}: {
+  on: boolean;
+  onToggle: () => void;
+  title: string;
+  desc: string;
+  onLabel: string;
+  offLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={onToggle}
+      className="w-full text-start"
+    >
+      <GameTile
+        tone={on ? "amber" : "default"}
+        className="flex min-h-14 items-center gap-3 px-3 py-2.5"
+      >
+        <GameIconWell size="sm" src="/icons/energy.png" />
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-sm font-black text-white">{title}</p>
+          <p className="mt-0.5 font-display text-[11px] font-bold text-white/55">
+            {desc}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <GameChip tone={on ? "amber" : "default"} className="uppercase">
+            {on ? onLabel : offLabel}
+          </GameChip>
+          <span
+            className={cn(
+              "relative flex h-8 w-14 items-center rounded-full px-0.5 transition-colors",
+              on ? "justify-end bg-accent" : "justify-start bg-black/40",
+            )}
+          >
+            <motion.span
+              layout
+              transition={{ type: "spring", stiffness: 500, damping: 34 }}
+              className="h-7 w-7 rounded-full bg-white shadow"
+            />
+          </span>
+        </div>
       </GameTile>
     </button>
   );
@@ -138,11 +214,15 @@ export default function SettingsPage() {
   function handleToggleMute() {
     const willUnmute = isMuted;
     toggleMute();
+    haptic(HAPTIC.light);
     if (willUnmute) play("click");
   }
 
   function handleSetLocale(next: Locale) {
-    if (next !== locale) play("click");
+    if (next !== locale) {
+      play("click");
+      haptic(HAPTIC.tap);
+    }
     setLocale(next);
     router.refresh();
   }
@@ -150,6 +230,10 @@ export default function SettingsPage() {
   const soundOn = mounted ? !isMuted : true;
 
   function applyTheme(next: Theme) {
+    if (next !== theme) {
+      play("click");
+      haptic(HAPTIC.tap);
+    }
     setTheme(next);
     try {
       localStorage.setItem("footballica:theme", next);
@@ -163,22 +247,50 @@ export default function SettingsPage() {
     }
   }
 
-  const sections: {
-    tone: GamePanelTone;
-    key: string;
-    node: React.ReactNode;
-  }[] = [
-    {
-      key: "lang",
-      tone: "emerald",
-      node: (
-        <>
-          <SectionHeader
+  return (
+    <section className="flex flex-1 flex-col gap-3.5 pb-6">
+      <motion.div
+        custom={0}
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+      >
+        <GamePanel tone="emerald" pinstripe className="relative overflow-hidden px-4 py-3.5">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-e-10 -top-6 h-28 w-28 rounded-full bg-emerald-400/20 blur-3xl"
+          />
+          <div className="relative flex items-center gap-3">
+            <GameIconWell size="lg" amber src="/icons/hub-settings.png" />
+            <div className="min-w-0">
+              <p className="font-display text-[10px] font-black uppercase tracking-widest text-emerald-200/80">
+                {t("settings.eyebrow")}
+              </p>
+              <h1 className="mt-0.5 font-display text-2xl font-black text-white drop-shadow-sm">
+                {t("settings.title")}
+              </h1>
+            </div>
+          </div>
+        </GamePanel>
+      </motion.div>
+
+      {/* Match feel — language, lights, sound */}
+      <motion.div
+        custom={1}
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+        className="hub-deck flex flex-col gap-2.5"
+      >
+        <SectionLabel>{t("settings.groupFeel")}</SectionLabel>
+
+        <GamePanel tone="emerald" className="p-3.5">
+          <SettingHead
             iconSrc="/icons/hub-settings.png"
             title={t("settings.language")}
             desc={t("settings.languageDesc")}
           />
-          <div className="mt-3.5 grid grid-cols-2 gap-2.5">
+          <div className="mt-3 grid grid-cols-2 gap-2">
             {LOCALES.map((code) => (
               <OptionTile
                 key={code}
@@ -189,20 +301,15 @@ export default function SettingsPage() {
               />
             ))}
           </div>
-        </>
-      ),
-    },
-    {
-      key: "theme",
-      tone: "amber",
-      node: (
-        <>
-          <SectionHeader
-            iconSrc="/icons/mystery.png"
+        </GamePanel>
+
+        <GamePanel tone="amber" className="p-3.5">
+          <SettingHead
+            iconSrc="/icons/stadium.png"
             title={t("settings.theme")}
             desc={t("settings.themeDesc")}
           />
-          <div className="mt-3.5 grid grid-cols-2 gap-2.5">
+          <div className="mt-3 grid grid-cols-2 gap-2">
             <OptionTile
               selected={theme === "day"}
               onClick={() => applyTheme("day")}
@@ -216,79 +323,57 @@ export default function SettingsPage() {
               label={t("settings.night")}
             />
           </div>
-        </>
-      ),
-    },
-    {
-      key: "sound",
-      tone: "sky",
-      node: (
-        <>
-          <SectionHeader
-            iconSrc="/icons/energy.png"
-            title={t("settings.sound")}
-            desc={t("settings.soundDesc")}
-          >
-            <button
-              type="button"
-              role="switch"
-              aria-checked={soundOn}
-              onClick={handleToggleMute}
-              className={[
-                "relative flex h-11 w-20 shrink-0 items-center rounded-full px-1 ring-1 transition-colors",
-                soundOn
-                  ? "justify-end bg-accent ring-amber-300/50"
-                  : "justify-start bg-black/40 ring-white/15",
-              ].join(" ")}
-            >
-              <motion.span
-                layout
-                transition={{ type: "spring", stiffness: 500, damping: 34 }}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-sm"
-              >
-                <span aria-hidden>{soundOn ? "🔊" : "🔇"}</span>
-              </motion.span>
-            </button>
-          </SectionHeader>
-          <GameChip
-            tone={soundOn ? "amber" : "default"}
-            className="mt-3"
-          >
-            {soundOn ? t("settings.on") : t("settings.off")}
-          </GameChip>
-        </>
-      ),
-    },
-    {
-      key: "push",
-      tone: "sky",
-      node: (
-        <>
-          <SectionHeader
+        </GamePanel>
+
+        <SoundSwitch
+          on={soundOn}
+          onToggle={handleToggleMute}
+          title={t("settings.sound")}
+          desc={t("settings.soundDesc")}
+          onLabel={t("settings.on")}
+          offLabel={t("settings.off")}
+        />
+      </motion.div>
+
+      {/* Alerts — push + telegram */}
+      <motion.div
+        custom={2}
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+        className="hub-deck flex flex-col gap-2.5"
+      >
+        <SectionLabel>{t("settings.groupAlerts")}</SectionLabel>
+
+        <GamePanel tone="sky" className="p-3.5">
+          <SettingHead
             iconSrc="/icons/hub-news.png"
             title={t("settings.push")}
             desc={t("settings.pushDesc")}
           />
           <PushOptIn />
-          <div className="mt-5 border-t border-white/10 pt-4">
-            <p className="font-display text-sm font-black text-white">
-              {t("settings.telegram")}
-            </p>
-            <p className="mt-1 font-display text-xs font-bold text-white/55">
-              {t("settings.telegramDesc")}
-            </p>
-            <TelegramOptIn />
-          </div>
-        </>
-      ),
-    },
-    {
-      key: "account",
-      tone: "rose",
-      node: (
-        <>
-          <SectionHeader
-            iconSrc="/icons/close.png"
+        </GamePanel>
+
+        <GamePanel tone="sky" className="p-3.5">
+          <SettingHead
+            iconSrc="/icons/fans.png"
+            title={t("settings.telegram")}
+            desc={t("settings.telegramDesc")}
+          />
+          <TelegramOptIn />
+        </GamePanel>
+      </motion.div>
+
+      {/* Account */}
+      <motion.div
+        custom={3}
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+      >
+        <GamePanel tone="rose" className="p-3.5">
+          <SettingHead
+            iconSrc="/icons/close-arena.png"
             title={t("settings.account")}
             desc={t("settings.accountDesc")}
           />
@@ -297,40 +382,21 @@ export default function SettingsPage() {
             block
             disabled={loggingOut}
             onClick={handleLogout}
-            className="mt-3.5"
+            className="mt-3"
           >
             {loggingOut ? t("settings.loggingOut") : t("settings.logout")}
           </GameCta>
-        </>
-      ),
-    },
-  ];
-
-  return (
-    <section className="flex flex-1 flex-col gap-3 pb-4">
-      <GamePanel tone="emerald" className="px-4 py-3.5">
-        <p className="font-display text-[10px] font-black uppercase tracking-widest text-emerald-200/80">
-          {t("settings.eyebrow")}
-        </p>
-        <h1 className="mt-0.5 font-display text-2xl font-black text-white drop-shadow-sm">
-          {t("settings.title")}
-        </h1>
-      </GamePanel>
-
-      {sections.map((s) => (
-        <GamePanel key={s.key} tone={s.tone} className="p-4">
-          {s.node}
         </GamePanel>
-      ))}
+      </motion.div>
 
-      <footer className="mt-auto pt-2 text-center">
-        <p className="font-display text-lg font-black tracking-wide text-arena-fg">
+      <footer className="pt-1 text-center">
+        <p className="font-display text-base font-black tracking-wide text-arena-fg/90">
           Footballica
         </p>
         <p className="mt-0.5 font-display text-[11px] font-bold text-arena-muted">
           {t("settings.tagline")}
         </p>
-        <p className="mt-1 font-display text-[11px] font-bold tabular-nums text-arena-muted/80">
+        <p className="mt-1 font-display text-[10px] font-bold tabular-nums text-arena-muted/70">
           v0.1.0
         </p>
       </footer>

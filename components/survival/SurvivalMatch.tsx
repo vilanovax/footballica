@@ -29,7 +29,6 @@ import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { GameChip } from "@/components/ui/game/GameChip";
 import { GameIconWell } from "@/components/ui/game/GameIconWell";
 import { GamePanel } from "@/components/ui/game/GamePanel";
-import { ResourceIcon } from "@/components/common/ResourceIcon";
 
 // Post-match / rare chrome — mirror PenaltyMatch kickoff split.
 const SurvivalResult = dynamic(() =>
@@ -52,12 +51,15 @@ type SurvivalMatchProps = {
   initialQuestions: QuizQuestion[];
   /** Premium RecordChallenge id (requires prior unlock). */
   challengeId?: string | null;
+  /** Personal best for this category (chase line in HUD). */
+  categoryBest?: number;
 };
 
 export function SurvivalMatch({
   category,
   initialQuestions,
   challengeId = null,
+  categoryBest = 0,
 }: SurvivalMatchProps) {
   const router = useRouter();
   const { t, locale } = useTranslation();
@@ -88,13 +90,25 @@ export function SurvivalMatch({
 
   const [shake, setShake] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [heartBurst, setHeartBurst] = useState<number | null>(null);
+  const prevLives = useRef(SURVIVAL_LIVES);
   const prefetchLock = useRef(false);
   const timerRef = useRef<QuickTimerHandle>(null);
 
   const handleLeaveMatch = useCallback(() => {
     reset();
-    router.push("/play");
+    router.push("/play/survival");
   }, [reset, router]);
+
+  useEffect(() => {
+    if (lives < prevLives.current) {
+      setHeartBurst(lives);
+      const id = window.setTimeout(() => setHeartBurst(null), 700);
+      prevLives.current = lives;
+      return () => window.clearTimeout(id);
+    }
+    prevLives.current = lives;
+  }, [lives]);
 
   useEffect(() => {
     if (useSurvivalStore.getState().phase !== "idle") return;
@@ -179,13 +193,16 @@ export function SurvivalMatch({
 
     const question = queue[0];
     const hasFact = Boolean(question?.explanation);
+    const isMiss = feedback.result !== "goal";
+    // Keep learning beat on misses; keep goals snappy for Survival pace.
+    const revealMs = hasFact && isMiss ? 1400 : REVEAL_MS;
     const timer = setTimeout(() => {
       const advance = next();
       if (advance.finished) return;
       if (advance.needPrefetch) {
         void prefetch();
       }
-    }, hasFact ? 1600 : REVEAL_MS);
+    }, revealMs);
 
     return () => clearTimeout(timer);
   }, [phase, feedback, next, prefetch, queue]);
@@ -231,6 +248,16 @@ export function SurvivalMatch({
           reset();
           router.push("/play/survival");
         }}
+        onChangeCategory={() => {
+          reset();
+          if (challengeId) {
+            router.push(
+              `/play/survival?challenge=${encodeURIComponent(challengeId)}`,
+            );
+          } else {
+            router.push("/play/survival?pick=1");
+          }
+        }}
       />
     );
   }
@@ -245,7 +272,7 @@ export function SurvivalMatch({
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute start-1/2 top-[28%] h-44 w-44 -translate-x-1/2 rounded-full bg-destructive/20 blur-3xl"
+          className="pointer-events-none absolute inset-s-1/2 top-[28%] h-44 w-44 -translate-x-1/2 rounded-full bg-destructive/20 blur-3xl"
         />
 
         <motion.div
@@ -310,16 +337,31 @@ export function SurvivalMatch({
     else break;
   }
 
+  const critical = lives === 1;
+  const chaseGap =
+    categoryBest > 0 ? Math.max(0, categoryBest - score) : null;
+  const beatingRecord = categoryBest > 0 && score > categoryBest;
+
   return (
-    <section className="relative -mx-4 flex flex-1 flex-col bg-arena px-4 text-arena-fg">
+    <section
+      className={[
+        "relative -mx-4 flex flex-1 flex-col bg-arena px-4 text-arena-fg",
+        critical ? "survival-critical" : "",
+      ].join(" ")}
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 overflow-hidden"
       >
         <div className="absolute inset-0 bg-linear-to-b from-arena-deep via-arena to-arena-mid" />
         <div className="game-pinstripe absolute inset-0 opacity-60" />
-        <div className="absolute -end-16 top-0 h-48 w-48 rounded-full bg-rose-400/12 blur-3xl" />
-        <div className="absolute -start-20 top-40 h-40 w-40 rounded-full bg-amber-400/12 blur-3xl" />
+        <div
+          className={[
+            "absolute -inset-e-16 top-0 h-48 w-48 rounded-full blur-3xl transition-opacity duration-500",
+            critical ? "bg-rose-500/28 opacity-100" : "bg-rose-400/12",
+          ].join(" ")}
+        />
+        <div className="absolute -inset-s-20 top-40 h-40 w-40 rounded-full bg-amber-400/12 blur-3xl" />
       </div>
 
       {process.env.NODE_ENV === "development" ? <FormatDevToggle /> : null}
@@ -330,7 +372,15 @@ export function SurvivalMatch({
         ].join(" ")}
         onAnimationEnd={() => setShake(false)}
       >
-        <GamePanel tone="rose" className="px-3 py-2.5">
+        <GamePanel
+          tone="rose"
+          className={[
+            "px-3 py-2.5 transition-shadow duration-300",
+            critical
+              ? "shadow-[0_0_0_1px_rgba(251,113,133,0.55),0_0_28px_rgba(244,63,94,0.35)]"
+              : "",
+          ].join(" ")}
+        >
           <div className="relative flex items-center gap-2">
             <MatchLeaveControl
               setPaused={setPaused}
@@ -344,41 +394,78 @@ export function SurvivalMatch({
                 {catLabel}
               </p>
             </div>
-            <GameIconWell size="md" src="/icons/heart.png" />
+            {critical ? (
+              <GameChip tone="amber" className="shrink-0 text-[10px]">
+                {t("survival.lastHeart")}
+              </GameChip>
+            ) : (
+              <GameIconWell size="md" src="/icons/heart.png" />
+            )}
           </div>
 
           <div className="relative mt-2.5 flex flex-wrap items-center gap-2">
             <span
-              className="inline-flex items-center gap-0.5 rounded-full bg-black/35 px-2.5 py-1 shadow-[inset_0_0_0_1px_rgba(251,113,133,0.35)]"
+              className={[
+                "inline-flex items-center gap-0.5 rounded-full bg-black/35 px-2.5 py-1",
+                critical
+                  ? "shadow-[inset_0_0_0_1px_rgba(251,113,133,0.65),0_0_14px_rgba(244,63,94,0.4)]"
+                  : "shadow-[inset_0_0_0_1px_rgba(251,113,133,0.35)]",
+              ].join(" ")}
               aria-label={t("survival.lives", {
                 n: toLocaleDigits(lives, locale),
               })}
             >
-              {Array.from({ length: SURVIVAL_LIVES }).map((_, i) => (
-                <motion.span
-                  key={i}
-                  animate={
-                    i < lives
-                      ? { scale: 1, opacity: 1 }
-                      : { scale: 0.75, opacity: 0.28 }
-                  }
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  aria-hidden
-                  className="inline-flex"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/icons/heart.png"
-                    alt=""
-                    draggable={false}
-                    className="h-5 w-5 object-contain"
-                  />
-                </motion.span>
-              ))}
+              {Array.from({ length: SURVIVAL_LIVES }).map((_, i) => {
+                const alive = i < lives;
+                const justLost = heartBurst !== null && i === heartBurst;
+                return (
+                  <motion.span
+                    key={i}
+                    animate={
+                      justLost
+                        ? { scale: [1.2, 0.4], opacity: [1, 0], rotate: [0, -25] }
+                        : alive
+                          ? critical && i === 0
+                            ? { scale: [1, 1.12, 1], opacity: 1 }
+                            : { scale: 1, opacity: 1 }
+                          : { scale: 0.7, opacity: 0.22 }
+                    }
+                    transition={
+                      justLost
+                        ? { duration: 0.45, ease: "easeIn" }
+                        : critical && alive && i === 0
+                          ? {
+                              duration: 0.9,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                            }
+                          : { type: "spring", stiffness: 400, damping: 20 }
+                    }
+                    aria-hidden
+                    className="inline-flex"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={alive || justLost ? "/icons/heart.png" : "/icons/broken-heart.png"}
+                      alt=""
+                      draggable={false}
+                      className="h-5 w-5 object-contain"
+                    />
+                  </motion.span>
+                );
+              })}
             </span>
             <GameChip tone="emerald" className="gap-1 px-2.5 py-1 text-sm">
-              <ResourceIcon kind="xp" size="sm" className="h-3.5 w-3.5" />
-              {toLocaleDigits(score, locale)}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/trophy.png"
+                alt=""
+                aria-hidden
+                className="h-3.5 w-3.5 object-contain"
+              />
+              <span className="tabular-nums">
+                {t("survival.score")} {toLocaleDigits(score, locale)}
+              </span>
             </GameChip>
             <GameChip
               tone={streak >= 2 ? "amber" : "default"}
@@ -393,6 +480,29 @@ export function SurvivalMatch({
               />
               {toLocaleDigits(streak, locale)}
             </GameChip>
+            {categoryBest > 0 ? (
+              <GameChip
+                tone={beatingRecord ? "amber" : "default"}
+                className="gap-1 px-2.5 py-1 text-[11px]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/target.png"
+                  alt=""
+                  aria-hidden
+                  className="h-3.5 w-3.5 object-contain"
+                />
+                <span className="tabular-nums">
+                  {beatingRecord
+                    ? t("survival.beatingRecord")
+                    : chaseGap === 0
+                      ? t("survival.tiedRecord")
+                      : t("survival.chaseRecord", {
+                          n: toLocaleDigits(chaseGap!, locale),
+                        })}
+                </span>
+              </GameChip>
+            ) : null}
           </div>
 
           <div className="relative mt-2.5">

@@ -1043,6 +1043,11 @@ html.player-pitch [data-sonner-toaster].toaster-arena {
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Match RTL app chrome: Vazirmatn for Persian (Fredoka has no Arabic glyphs). */
+html[dir="rtl"].player-pitch [data-sonner-toaster].toaster-arena {
+  font-family: var(--font-fa), var(--font-body), system-ui, sans-serif;
+}
+
 html.player-pitch [data-sonner-toaster].toaster-arena [data-sonner-toast] {
   background: linear-gradient(
     145deg,

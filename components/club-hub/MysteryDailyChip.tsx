@@ -13,7 +13,7 @@ type Props = {
 };
 
 /** Hub shortcut to online Duel — live formats play as specials there. */
-export function MysteryDailyChip(_props: Props) {
+export function MysteryDailyChip({}: Props) {
   const { t } = useTranslation();
 
   return (

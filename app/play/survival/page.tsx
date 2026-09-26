@@ -176,6 +176,7 @@ export default async function SurvivalPage({
       category={category}
       initialQuestions={batch.questions}
       challengeId={challengeId}
+      categoryBest={records[category.id] ?? 0}
     />
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import type { DuelCategoryOption } from "@/lib/duel/types";
@@ -16,6 +16,8 @@ import { GameTile } from "@/components/ui/game/GameTile";
 
 /** Stable default — avoid `= {}` recreating referential identity each render. */
 const EMPTY_RECORDS: Record<string, number> = {};
+
+type SortMode = "record" | "bank" | "name";
 
 type SurvivalCategoryPickerProps = {
   categories: DuelCategoryOption[];
@@ -33,7 +35,33 @@ export function SurvivalCategoryPicker({
   const { t, locale } = useTranslation();
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortMode>("record");
   const [pending, startTransition] = useTransition();
+
+  const sorted = useMemo(() => {
+    const list = [...categories];
+    const nameOf = (c: DuelCategoryOption) =>
+      locale === "fa" ? c.nameFa : c.nameEn;
+    list.sort((a, b) => {
+      if (sort === "record") {
+        const ra = records[a.id] ?? 0;
+        const rb = records[b.id] ?? 0;
+        if (rb !== ra) return rb - ra;
+        if (b.questionCount !== a.questionCount) {
+          return b.questionCount - a.questionCount;
+        }
+        return nameOf(a).localeCompare(nameOf(b), locale);
+      }
+      if (sort === "bank") {
+        if (b.questionCount !== a.questionCount) {
+          return b.questionCount - a.questionCount;
+        }
+        return nameOf(a).localeCompare(nameOf(b), locale);
+      }
+      return nameOf(a).localeCompare(nameOf(b), locale);
+    });
+    return list;
+  }, [categories, records, sort, locale]);
 
   if (categories.length === 0) {
     return (
@@ -64,8 +92,14 @@ export function SurvivalCategoryPicker({
     );
   }
 
+  const sortOptions: { id: SortMode; label: string }[] = [
+    { id: "record", label: t("survival.sortRecord") },
+    { id: "bank", label: t("survival.sortBank") },
+    { id: "name", label: t("survival.sortName") },
+  ];
+
   return (
-    <section className="flex flex-1 flex-col gap-4 pb-4">
+    <section className="flex flex-1 flex-col gap-3.5 pb-4">
       <GamePanel tone="rose" className="p-3.5 text-start">
         <div className="relative flex items-center gap-3">
           <GameIconWell
@@ -90,8 +124,41 @@ export function SurvivalCategoryPicker({
         </div>
       </GamePanel>
 
+      {categories.length > 4 ? (
+        <div
+          className="flex flex-wrap gap-1.5"
+          role="tablist"
+          aria-label={t("survival.sortLabel")}
+        >
+          {sortOptions.map((opt) => {
+            const on = sort === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => {
+                  playSound("click");
+                  haptic(HAPTIC.tap);
+                  setSort(opt.id);
+                }}
+                className={[
+                  "min-h-9 rounded-full px-3 py-1.5 font-display text-xs font-bold transition-colors",
+                  on
+                    ? "bg-amber-400 text-amber-950 shadow-[0_2px_0_0_rgba(0,0,0,0.25)]"
+                    : "bg-black/35 text-white/75 ring-1 ring-white/15",
+                ].join(" ")}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-2.5">
-        {categories.map((c, i) => {
+        {sorted.map((c, i) => {
           const name = locale === "fa" ? c.nameFa : c.nameEn;
           const best = records[c.id] ?? 0;
           const busy = pending && pendingId === c.id;
@@ -103,7 +170,7 @@ export function SurvivalCategoryPicker({
               initial={{ y: 14, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{
-                delay: i * 0.04,
+                delay: Math.min(i, 8) * 0.03,
                 type: "spring",
                 stiffness: 300,
                 damping: 22,
@@ -123,9 +190,13 @@ export function SurvivalCategoryPicker({
               className="text-start disabled:opacity-50"
             >
               <GameTile className="flex min-h-touch items-center gap-3 bg-arena/90 px-3 py-3 text-white shadow-arena-ring">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.12)]">
-                  {c.icon || "❤️"}
-                </span>
+                <GameIconWell
+                  size="md"
+                  className="h-12 w-12 shrink-0"
+                  iconClassName="text-2xl leading-none"
+                >
+                  <span aria-hidden>{c.icon || "⚽"}</span>
+                </GameIconWell>
                 <span className="min-w-0 flex-1">
                   <span className="block font-display text-lg font-bold text-white">
                     {busy ? t("survival.starting") : name}
@@ -149,7 +220,11 @@ export function SurvivalCategoryPicker({
                           n: toLocaleDigits(best, locale),
                         })}
                       </GameChip>
-                    ) : null}
+                    ) : (
+                      <GameChip className="text-white/60">
+                        {t("survival.noRecordYet")}
+                      </GameChip>
+                    )}
                   </span>
                 </span>
               </GameTile>

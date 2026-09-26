@@ -13,6 +13,7 @@ import {
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { playSound } from "@/lib/audio/SoundManager";
+import { GameChip } from "@/components/ui/game/GameChip";
 import { GameCta } from "@/components/ui/game/GameCta";
 import { GameTile } from "@/components/ui/game/GameTile";
 
@@ -128,17 +129,27 @@ export function PushOptIn() {
 
   if (!supported) {
     return (
-      <p className="mt-2 font-display text-xs font-bold text-white/55">
-        {t("settings.pushUnsupported")}
-      </p>
+      <div className="mt-3 flex items-center gap-2">
+        <GameChip className="uppercase tracking-wide">
+          {t("settings.comingSoon")}
+        </GameChip>
+        <p className="min-w-0 font-display text-[11px] font-bold leading-snug text-white/55">
+          {t("settings.pushUnsupported")}
+        </p>
+      </div>
     );
   }
 
   if (!configured) {
     return (
-      <p className="mt-2 font-display text-xs font-bold text-white/55">
-        {t("settings.pushNotConfigured")}
-      </p>
+      <div className="mt-3 flex items-center gap-2">
+        <GameChip className="uppercase tracking-wide">
+          {t("settings.comingSoon")}
+        </GameChip>
+        <p className="min-w-0 font-display text-[11px] font-bold leading-snug text-white/55">
+          {t("settings.pushNotConfigured")}
+        </p>
+      </div>
     );
   }
 
