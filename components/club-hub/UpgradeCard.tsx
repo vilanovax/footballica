@@ -192,7 +192,10 @@ export function UpgradeCard({
               )}
             </div>
             {impact ? (
-              <p className="mt-1 truncate font-display text-[11px] font-bold text-lime-300">
+              <p
+                dir="auto"
+                className="mt-1 truncate font-display text-[11px] font-bold text-lime-200"
+              >
                 {t(`upgrades.impact.${impact.kind}`, {
                   from: toLocaleDigits(impact.from, locale),
                   to: toLocaleDigits(impact.to, locale),
@@ -267,14 +270,6 @@ export function UpgradeCard({
                 )}
               </GameCta>
             )}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/back.png"
-              alt=""
-              aria-hidden
-              draggable={false}
-              className="h-3.5 w-3.5 opacity-50 ltr:rotate-180"
-            />
           </div>
         </div>
         </GamePanel>

@@ -985,10 +985,10 @@ const fa: Dictionary = {
     heroHintTraining: "انرژی روزانهٔ بیشتر برای بازی",
     heroHintMedical: "فاصلهٔ بین +۱ انرژی",
     impact: {
-      maxStamina: "حداکثر انرژی: {from} ← {to}",
-      fansCap: "ظرفیت هوادار: {from} ← {to}",
-      stadiumTier: "سطح استادیوم: {from} ← {to}",
-      regenMinutes: "انرژی +۱ هر {from} ← {to} دقیقه",
+      maxStamina: "حداکثر انرژی: از {from} به {to}",
+      fansCap: "ظرفیت هوادار: از {from} به {to}",
+      stadiumTier: "سطح استادیوم: از {from} به {to}",
+      regenMinutes: "انرژی +۱ از هر {from} دقیقه به هر {to} دقیقه",
     },
     STADIUM: {
       name: "استادیوم",
