@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   CalendarDays,
-  Pencil,
+  Check,
+  ChevronDown,
+  History,
   Save,
-  Sparkles,
+  Search,
   Wand2,
 } from "lucide-react";
 import {
@@ -20,13 +22,6 @@ import { AdminJalaliDateField } from "@/components/admin/AdminJalaliDateField";
 import { formatJalaliLabel } from "@/lib/admin/jalali";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 type PlayerOpt = {
   slug: string;
@@ -34,6 +29,42 @@ type PlayerOpt = {
   nameFa: string;
   isActive: boolean;
 };
+
+const WEEK_DAYS = 7;
+const GUESS_PRESETS = [4, 5, 6, 8, 10];
+/** Picking the same target inside this window gets a repeat warning. */
+const REPEAT_WINDOW_DAYS = 30;
+
+function addDays(key: string, n: number): string {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(Date.UTC(y!, m! - 1, d! + n, 12)).toISOString().slice(0, 10);
+}
+
+function daysBetween(a: string, b: string): number {
+  return Math.round(
+    (Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000,
+  );
+}
+
+const WEEKDAY_FA = new Intl.DateTimeFormat("fa-IR", {
+  weekday: "short",
+  timeZone: "UTC",
+});
+
+function weekdayFa(key: string): string {
+  return WEEKDAY_FA.format(new Date(`${key}T12:00:00Z`));
+}
+
+/** "۱۴۰۵/۰۷/۰۵" → "۰۷/۰۵" for compact day tiles. */
+function shortJalali(key: string): string {
+  const parts = formatJalaliLabel(key).split("/");
+  return parts.length === 3 ? `${parts[1]}/${parts[2]}` : key;
+}
+
+function solveRate(p: AdminMysteryPuzzleRow): string {
+  if (!p.attemptCount) return "—";
+  return `${Math.round((p.solvedCount / p.attemptCount) * 100)}%`;
+}
 
 export function MysteryPuzzlesPanel({
   todayKey,
@@ -45,38 +76,99 @@ export function MysteryPuzzlesPanel({
   players: PlayerOpt[];
 }) {
   const router = useRouter();
-  const seedToday = initialPuzzles.find((p) => p.dateKey === todayKey) ?? null;
   const [puzzles, setPuzzles] = useState(initialPuzzles);
-  const [dateKey, setDateKey] = useState(todayKey);
-  const [playerId, setPlayerId] = useState(
-    seedToday?.targetPlayerId ??
-      players.find((p) => p.isActive)?.slug ??
-      "",
+  const byDate = useMemo(
+    () => new Map(puzzles.map((p) => [p.dateKey, p])),
+    [puzzles],
   );
-  const [maxGuesses, setMaxGuesses] = useState(seedToday?.maxGuesses ?? 6);
+
+  const seed = byDate.get(todayKey) ?? null;
+  const [selectedKey, setSelectedKey] = useState(todayKey);
+  const [playerId, setPlayerId] = useState(seed?.targetPlayerId ?? "");
+  const [maxGuesses, setMaxGuesses] = useState(seed?.maxGuesses ?? 6);
+  const [query, setQuery] = useState("");
+  const [otherDate, setOtherDate] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  const weekKeys = useMemo(
+    () => Array.from({ length: WEEK_DAYS }, (_, i) => addDays(todayKey, i)),
+    [todayKey],
+  );
+  const weekEnd = weekKeys[weekKeys.length - 1]!;
+  const weekSet = weekKeys.filter((k) => byDate.has(k)).length;
+
+  const later = useMemo(
+    () =>
+      puzzles
+        .filter((p) => p.dateKey > weekEnd)
+        .sort((a, b) => a.dateKey.localeCompare(b.dateKey)),
+    [puzzles, weekEnd],
+  );
+  const past = useMemo(
+    () =>
+      puzzles
+        .filter((p) => p.dateKey < todayKey)
+        .sort((a, b) => b.dateKey.localeCompare(a.dateKey)),
+    [puzzles, todayKey],
+  );
+
+  const selected = byDate.get(selectedKey) ?? null;
+  const isPast = selectedKey < todayKey;
+
+  /** Nearest other day each player is scheduled on — drives repeat warnings. */
+  const nearestUse = useMemo(() => {
+    const map = new Map<string, { dateKey: string; gap: number }>();
+    for (const p of puzzles) {
+      if (p.dateKey === selectedKey) continue;
+      const gap = Math.abs(daysBetween(selectedKey, p.dateKey));
+      const prev = map.get(p.targetPlayerId);
+      if (!prev || gap < prev.gap) {
+        map.set(p.targetPlayerId, { dateKey: p.dateKey, gap });
+      }
+    }
+    return map;
+  }, [puzzles, selectedKey]);
 
   const activePlayers = useMemo(
     () => players.filter((p) => p.isActive),
     [players],
   );
 
-  const todayPuzzle = useMemo(
-    () => puzzles.find((p) => p.dateKey === todayKey) ?? null,
-    [puzzles, todayKey],
-  );
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = q
+      ? activePlayers.filter(
+          (p) =>
+            p.nameEn.toLowerCase().includes(q) ||
+            p.nameFa.includes(query.trim()) ||
+            p.slug.includes(q),
+        )
+      : activePlayers;
+    // Fresh picks first; recently used sink to the bottom.
+    return [...list].sort((a, b) => {
+      const ga = nearestUse.get(a.slug)?.gap ?? Infinity;
+      const gb = nearestUse.get(b.slug)?.gap ?? Infinity;
+      const ra = ga <= REPEAT_WINDOW_DAYS ? 1 : 0;
+      const rb = gb <= REPEAT_WINDOW_DAYS ? 1 : 0;
+      if (ra !== rb) return ra - rb;
+      return a.nameEn.localeCompare(b.nameEn);
+    });
+  }, [activePlayers, query, nearestUse]);
 
-  const upcoming = useMemo(
-    () => puzzles.filter((p) => p.dateKey !== todayKey),
-    [puzzles, todayKey],
-  );
+  const pickedPlayer = players.find((p) => p.slug === playerId) ?? null;
+  const pickedRepeat = playerId ? nearestUse.get(playerId) : undefined;
+  const dirty =
+    !selected ||
+    selected.targetPlayerId !== playerId ||
+    selected.maxGuesses !== maxGuesses;
 
-  const editingExisting = useMemo(
-    () => puzzles.some((p) => p.dateKey === dateKey),
-    [puzzles, dateKey],
-  );
-
-  const isEditingToday = dateKey === todayKey;
+  function selectDay(key: string) {
+    const row = byDate.get(key) ?? null;
+    setSelectedKey(key);
+    setPlayerId(row?.targetPlayerId ?? "");
+    setMaxGuesses(row?.maxGuesses ?? 6);
+    setQuery("");
+  }
 
   function publish() {
     if (!playerId) {
@@ -85,62 +177,52 @@ export function MysteryPuzzlesPanel({
     }
     startTransition(async () => {
       const res = await upsertDailyMysteryPuzzle({
-        dateKey,
+        dateKey: selectedKey,
         targetPlayerId: playerId,
         maxGuesses,
       });
       if (!res.ok || !res.puzzle) {
-        const msg =
-          res.ok
-            ? "Could not save."
-            : res.error === "player_inactive"
-              ? "Player is inactive."
-              : res.error === "date_invalid"
-                ? "Date must be YYYY-MM-DD (Tehran)."
-                : res.error === "player_not_found"
-                  ? "Player not found."
-                  : "Could not save puzzle.";
+        const msg = res.ok
+          ? "Could not save."
+          : res.error === "player_inactive"
+            ? "Player is inactive."
+            : res.error === "date_invalid"
+              ? "Invalid date."
+              : res.error === "player_not_found"
+                ? "Player not found."
+                : "Could not save puzzle.";
         toast.error(msg);
         return;
       }
-      setPuzzles((prev) => {
-        const rest = prev.filter((p) => p.dateKey !== res.puzzle!.dateKey);
-        return [res.puzzle!, ...rest].sort((a, b) =>
-          b.dateKey.localeCompare(a.dateKey),
-        );
-      });
+      const saved = res.puzzle;
+      setPuzzles((prev) => [
+        saved,
+        ...prev.filter((p) => p.dateKey !== saved.dateKey),
+      ]);
       toast.success(
-        res.puzzle.isToday
-          ? "Today’s Mysterious Player published"
-          : `Puzzle set for ${formatJalaliLabel(res.puzzle.dateKey)}`,
+        saved.isToday
+          ? "Today’s target is live"
+          : `Saved for ${formatJalaliLabel(saved.dateKey)}`,
       );
+      const nextEmpty = weekKeys.find(
+        (k) => k !== saved.dateKey && !byDate.has(k),
+      );
+      if (nextEmpty) selectDay(nextEmpty);
       router.refresh();
     });
   }
 
-  function loadRow(p: AdminMysteryPuzzleRow) {
-    setDateKey(p.dateKey);
-    setPlayerId(p.targetPlayerId);
-    setMaxGuesses(p.maxGuesses);
-  }
-
-  function loadToday() {
-    if (todayPuzzle) {
-      loadRow(todayPuzzle);
-      return;
-    }
-    setDateKey(todayKey);
-  }
-
   function fillWeek() {
     startTransition(async () => {
-      const res = await ensureMysteryScheduleWeek(7);
+      const res = await ensureMysteryScheduleWeek(WEEK_DAYS);
       if (!res.ok) {
-        toast.error("Could not fill Mystery week.");
+        toast.error("Could not fill the week.");
         return;
       }
       toast.success(
-        `Week filled · +${res.created} new · ${res.skipped} kept`,
+        res.created
+          ? `Filled ${res.created} empty day(s)`
+          : "Week already covered",
       );
       router.refresh();
     });
@@ -148,235 +230,389 @@ export function MysteryPuzzlesPanel({
 
   return (
     <div className="space-y-3">
-      {/* Live today */}
-      <button
-        type="button"
-        onClick={loadToday}
-        className="flex w-full items-center gap-3 rounded-xl border border-amber-200 bg-white px-3.5 py-3 text-start shadow-sm transition hover:border-amber-300 hover:shadow"
-      >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-950 ring-1 ring-amber-200">
-          <Sparkles className="h-4 w-4" strokeWidth={2} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <p className="text-[10px] font-black uppercase tracking-widest text-amber-950">
-              Live today
-            </p>
-            <span
-              className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-950 ring-1 ring-amber-200"
-              dir="rtl"
-            >
-              {formatJalaliLabel(todayKey)}
-            </span>
-            <code className="rounded-md bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-600 ring-1 ring-slate-200">
-              {todayKey}
-            </code>
-          </div>
-          {todayPuzzle ? (
-            <p className="mt-1 truncate text-sm font-semibold text-slate-900">
-              {todayPuzzle.playerNameEn}
-              {todayPuzzle.playerNameFa &&
-              todayPuzzle.playerNameFa !== todayPuzzle.playerNameEn ? (
-                <span className="ms-1.5 font-medium text-slate-600" dir="auto">
-                  · {todayPuzzle.playerNameFa}
-                </span>
-              ) : null}
-              <span className="ms-2 text-[11px] font-semibold text-slate-600">
-                {todayPuzzle.maxGuesses}g · {todayPuzzle.attemptCount} plays ·{" "}
-                {todayPuzzle.solvedCount} solved
-              </span>
-            </p>
-          ) : (
-            <p className="mt-1 text-sm font-medium text-slate-700">
-              No puzzle yet — auto-pick runs until you publish.
-            </p>
-          )}
-        </div>
-        <span className="shrink-0 rounded-md bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-950 ring-1 ring-amber-200">
-          {todayPuzzle ? "Edit" : "Set"}
-        </span>
-      </button>
-
-      {/* Editor */}
+      {/* Week strip */}
       <section className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3.5 py-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-emerald-700" />
+          <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-slate-900">
-              {editingExisting ? "Edit day" : "Publish day"}
+              Next 7 days
             </h2>
-            {isEditingToday ? (
-              <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-950 ring-1 ring-amber-200">
-                TODAY
-              </span>
-            ) : null}
-            <AdminHelpTip text="تاریخ شمسی · ذخیره به‌صورت YYYY-MM-DD روز تهران. تغییر هدف امروز همان لحظه روی GotD اعمال می‌شود." />
+            <span
+              className={[
+                "rounded-md px-2 py-0.5 text-[10px] font-bold ring-1",
+                weekSet === WEEK_DAYS
+                  ? "bg-emerald-50 text-emerald-950 ring-emerald-200"
+                  : "bg-amber-50 text-amber-950 ring-amber-200",
+              ].join(" ")}
+            >
+              {weekSet}/{WEEK_DAYS} set
+            </span>
+            <AdminHelpTip text="Empty days auto-pick a target on first play. Pick a day to set or change its target — changing today applies to GotD instantly." />
           </div>
           <Button
             type="button"
             size="sm"
             variant="outline"
-            disabled={pending}
+            disabled={pending || weekSet === WEEK_DAYS}
             onClick={fillWeek}
-            className="h-8 gap-1.5 border-slate-200"
+            className="h-8 gap-1.5"
           >
-            <Wand2 className="h-3.5 w-3.5 text-amber-700" />
-            Fill week
+            <Wand2 className="h-3.5 w-3.5" />
+            Auto-fill empty
           </Button>
         </header>
 
-        <div className="space-y-3 p-3.5">
-          <div className="grid gap-3 sm:grid-cols-12">
-            <div className="sm:col-span-4">
-              <FieldLabel>تاریخ شمسی</FieldLabel>
-              <AdminJalaliDateField
-                value={dateKey}
-                onChange={setDateKey}
-                disabled={pending}
-              />
-            </div>
-            <div className="sm:col-span-5">
-              <FieldLabel>Target player</FieldLabel>
-              <Select value={playerId} onValueChange={setPlayerId}>
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Select player" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activePlayers.map((p) => (
-                    <SelectItem key={p.slug} value={p.slug}>
-                      {p.nameEn}
-                      {p.nameFa && p.nameFa !== p.nameEn
-                        ? ` · ${p.nameFa}`
-                        : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="sm:col-span-3">
-              <FieldLabel>Max guesses</FieldLabel>
-              <Input
-                type="number"
-                min={1}
-                max={12}
-                value={maxGuesses}
-                onChange={(e) => setMaxGuesses(Number(e.target.value))}
-                className="h-10"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-            <p className="text-[11px] font-medium text-slate-700" dir="rtl">
-              انتخاب‌شده:{" "}
-              <span className="font-bold text-slate-900">
-                {formatJalaliLabel(dateKey)}
-              </span>
-              <span className="mx-1 text-slate-500">·</span>
-              <code className="font-mono text-[10px] text-slate-600">
-                {dateKey}
-              </code>
-            </p>
-            <Button
-              type="button"
-              disabled={pending}
-              onClick={publish}
-              className="h-9 gap-1.5 bg-emerald-600 text-white hover:bg-emerald-500"
-            >
-              <Save className="h-3.5 w-3.5" />
-              {pending
-                ? "Saving…"
-                : editingExisting
-                  ? "Update puzzle"
-                  : "Publish"}
-            </Button>
-          </div>
+        <div className="grid grid-cols-4 gap-1.5 p-2.5 sm:grid-cols-7">
+          {weekKeys.map((key) => {
+            const row = byDate.get(key);
+            const active = key === selectedKey;
+            const isToday = key === todayKey;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => selectDay(key)}
+                aria-pressed={active}
+                className={[
+                  "flex min-h-[4.5rem] flex-col items-start gap-0.5 rounded-lg px-2.5 py-2 text-start transition",
+                  active
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : row
+                      ? "bg-white ring-1 ring-slate-200 hover:ring-slate-300"
+                      : "border border-dashed border-slate-300 bg-white hover:border-slate-400",
+                ].join(" ")}
+              >
+                <span className="flex w-full items-center justify-between gap-1">
+                  <span
+                    className={[
+                      "text-[11px] font-bold tabular-nums",
+                      active ? "text-white" : "text-slate-900",
+                    ].join(" ")}
+                  >
+                    {shortJalali(key)}
+                  </span>
+                  {isToday ? (
+                    <span
+                      className={[
+                        "rounded px-1 text-[9px] font-black uppercase",
+                        active
+                          ? "bg-white/15 text-white"
+                          : "bg-amber-100 text-amber-950",
+                      ].join(" ")}
+                    >
+                      Today
+                    </span>
+                  ) : null}
+                </span>
+                <span
+                  className={[
+                    "text-[10px] font-semibold",
+                    active ? "text-white/80" : "text-slate-700",
+                  ].join(" ")}
+                >
+                  {weekdayFa(key)}
+                </span>
+                <span
+                  className={[
+                    "line-clamp-2 text-[12px] font-semibold leading-tight",
+                    active
+                      ? "text-white"
+                      : row
+                        ? "text-slate-900"
+                        : "text-slate-700",
+                  ].join(" ")}
+                >
+                  {row ? row.playerNameEn : "Auto pick"}
+                </span>
+              </button>
+            );
+          })}
         </div>
+
+        {later.length ? (
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 px-3.5 py-2">
+            <span className="text-[11px] font-bold text-slate-700">Later</span>
+            {later.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => selectDay(p.dateKey)}
+                className={[
+                  "rounded-md px-2 py-1 text-[11px] font-semibold ring-1 transition",
+                  p.dateKey === selectedKey
+                    ? "bg-slate-900 text-white ring-slate-900"
+                    : "bg-white text-slate-800 ring-slate-200 hover:ring-slate-300",
+                ].join(" ")}
+              >
+                <span dir="rtl">{shortJalali(p.dateKey)}</span> ·{" "}
+                {p.playerNameEn}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </section>
 
-      {/* Schedule */}
+      {/* Editor */}
       <section className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
-        <header className="flex items-center justify-between border-b border-slate-100 px-3.5 py-2.5">
-          <h2 className="text-sm font-semibold text-slate-900">Schedule</h2>
-          <span className="text-[11px] font-semibold text-slate-700">
-            {upcoming.length} day{upcoming.length === 1 ? "" : "s"}
-          </span>
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3.5 py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-slate-800" />
+            <h2 className="text-sm font-semibold text-slate-900" dir="rtl">
+              {weekdayFa(selectedKey)} {formatJalaliLabel(selectedKey)}
+            </h2>
+            {selectedKey === todayKey ? (
+              <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-950 ring-1 ring-amber-200">
+                Live now
+              </span>
+            ) : null}
+            <span
+              className={[
+                "rounded-md px-2 py-0.5 text-[10px] font-bold ring-1",
+                selected
+                  ? "bg-emerald-50 text-emerald-950 ring-emerald-200"
+                  : "bg-white text-slate-800 ring-slate-200",
+              ].join(" ")}
+            >
+              {selected ? "Scheduled" : "Auto pick"}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOtherDate((v) => !v)}
+            className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[11px] font-bold text-slate-800 ring-1 ring-slate-200 transition hover:ring-slate-300"
+            aria-expanded={otherDate}
+          >
+            Other date
+            <ChevronDown
+              className={[
+                "h-3 w-3 transition-transform",
+                otherDate ? "rotate-180" : "",
+              ].join(" ")}
+            />
+          </button>
         </header>
 
-        {upcoming.length === 0 ? (
-          <div className="flex flex-col items-center gap-1.5 px-4 py-10 text-center">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 ring-1 ring-slate-200">
-              <CalendarDays className="h-5 w-5" />
-            </span>
-            <p className="text-sm font-semibold text-slate-800">
-              No other days yet
-            </p>
-            <p className="text-xs font-medium text-slate-700">
-              Use Fill week or publish a future date.
-            </p>
+        {otherDate ? (
+          <div className="border-b border-slate-100 px-3.5 py-3 sm:max-w-xs">
+            <FieldLabel>تاریخ شمسی</FieldLabel>
+            <AdminJalaliDateField
+              value={selectedKey}
+              onChange={(key) => selectDay(key)}
+              disabled={pending}
+            />
           </div>
+        ) : null}
+
+        {isPast ? (
+          <p className="px-3.5 py-6 text-center text-sm font-medium text-slate-800">
+            Past days are read-only — pick today or a future date.
+          </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
-            {upcoming.map((p) => {
-              const isUpcoming = p.dateKey > todayKey;
-              return (
-                <li
-                  key={p.id}
-                  className="flex items-center gap-2.5 px-3.5 py-2.5 transition-colors hover:bg-white"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span
-                        className="text-xs font-bold text-slate-900"
-                        dir="rtl"
-                      >
-                        {formatJalaliLabel(p.dateKey)}
-                      </span>
-                      <code className="font-mono text-[10px] text-slate-600">
-                        {p.dateKey}
-                      </code>
-                      {isUpcoming ? (
-                        <span className="rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-bold text-sky-950 ring-1 ring-sky-200">
-                          UPCOMING
-                        </span>
-                      ) : (
-                        <span className="rounded-md bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-700 ring-1 ring-slate-200">
-                          PAST
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-0.5 truncate text-sm font-semibold text-slate-900">
-                      {p.playerNameEn}
-                      {p.playerNameFa && p.playerNameFa !== p.playerNameEn ? (
-                        <span
-                          className="ms-1.5 font-medium text-slate-600"
-                          dir="auto"
+          <div className="grid gap-3 p-3.5 lg:grid-cols-[minmax(0,1fr)_16rem]">
+            {/* Player picker */}
+            <div className="min-w-0">
+              <FieldLabel>Target player</FieldLabel>
+              <div className="relative mt-1.5">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-700" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search name · جستجو"
+                  className="h-10 pl-9"
+                />
+              </div>
+              <ul
+                className="mt-1.5 max-h-72 divide-y divide-slate-100 overflow-y-auto rounded-lg ring-1 ring-slate-200"
+                role="listbox"
+                aria-label="Players"
+              >
+                {filtered.length === 0 ? (
+                  <li className="px-3 py-6 text-center text-[12px] font-medium text-slate-800">
+                    No active player matches
+                  </li>
+                ) : (
+                  filtered.map((p) => {
+                    const on = p.slug === playerId;
+                    const use = nearestUse.get(p.slug);
+                    const recent = use && use.gap <= REPEAT_WINDOW_DAYS;
+                    return (
+                      <li key={p.slug}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={on}
+                          onClick={() => setPlayerId(p.slug)}
+                          className={[
+                            "flex min-h-11 w-full items-center gap-2 px-3 py-2 text-start transition",
+                            on ? "bg-emerald-50" : "hover:bg-slate-50",
+                          ].join(" ")}
                         >
-                          · {p.playerNameFa}
-                        </span>
-                      ) : null}
-                      <span className="ms-2 text-[11px] font-semibold text-slate-600">
-                        {p.maxGuesses}g · {p.attemptCount}p · {p.solvedCount}s
-                      </span>
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => loadRow(p)}
-                    className="h-8 w-8 shrink-0 text-slate-700 hover:bg-white hover:text-slate-900"
-                    aria-label={`Edit ${formatJalaliLabel(p.dateKey)}`}
-                    title="Edit"
+                          <span
+                            className={[
+                              "min-w-0 flex-1 truncate text-[13px] font-semibold",
+                              on ? "text-emerald-950" : "text-slate-900",
+                            ].join(" ")}
+                          >
+                            {p.nameEn}
+                            {p.nameFa && p.nameFa !== p.nameEn ? (
+                              <span
+                                className={[
+                                  "ms-2 text-[12px] font-medium",
+                                  on ? "text-emerald-900" : "text-slate-700",
+                                ].join(" ")}
+                              >
+                                <bdi>{p.nameFa}</bdi>
+                              </span>
+                            ) : null}
+                          </span>
+                          {recent ? (
+                            <span
+                              className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-950 ring-1 ring-amber-200"
+                              dir="rtl"
+                            >
+                              {shortJalali(use.dateKey)}
+                            </span>
+                          ) : null}
+                          {on ? (
+                            <Check className="h-4 w-4 shrink-0 text-emerald-800" />
+                          ) : null}
+                        </button>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </div>
+
+            {/* Summary + save */}
+            <div className="flex flex-col gap-3 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-800">
+                  Target
+                </p>
+                <p className="mt-0.5 text-base font-bold text-slate-900">
+                  {pickedPlayer ? pickedPlayer.nameEn : "Not picked"}
+                </p>
+                {pickedPlayer?.nameFa &&
+                pickedPlayer.nameFa !== pickedPlayer.nameEn ? (
+                  <p
+                    className="text-[12px] font-medium text-slate-800"
+                    dir="auto"
                   >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
+                    {pickedPlayer.nameFa}
+                  </p>
+                ) : null}
+                {pickedRepeat && pickedRepeat.gap <= REPEAT_WINDOW_DAYS ? (
+                  <p className="mt-1.5 rounded-md bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-950 ring-1 ring-amber-200">
+                    Also used on{" "}
+                    <span dir="rtl">
+                      {formatJalaliLabel(pickedRepeat.dateKey)}
+                    </span>
+                  </p>
+                ) : null}
+              </div>
+
+              <div>
+                <FieldLabel>Max guesses</FieldLabel>
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {GUESS_PRESETS.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setMaxGuesses(n)}
+                      aria-pressed={maxGuesses === n}
+                      className={[
+                        "h-9 min-w-9 rounded-md px-2 text-[13px] font-bold tabular-nums ring-1 transition",
+                        maxGuesses === n
+                          ? "bg-slate-900 text-white ring-slate-900"
+                          : "bg-white text-slate-900 ring-slate-200 hover:ring-slate-300",
+                      ].join(" ")}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {selected ? (
+                <p className="text-[11px] font-semibold text-slate-800">
+                  {selected.attemptCount} plays · {selected.solvedCount} solved
+                  · {solveRate(selected)}
+                </p>
+              ) : null}
+
+              <Button
+                type="button"
+                disabled={pending || !playerId || !dirty}
+                onClick={publish}
+                className="mt-auto h-10 gap-1.5 bg-emerald-600 text-white hover:bg-emerald-500"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {pending
+                  ? "Saving…"
+                  : selected
+                    ? dirty
+                      ? "Update"
+                      : "Saved"
+                    : "Publish"}
+              </Button>
+            </div>
+          </div>
         )}
       </section>
+
+      {/* History */}
+      <details className="group overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-2.5">
+          <span className="flex items-center gap-2">
+            <History className="h-4 w-4 text-slate-800" />
+            <span className="text-sm font-semibold text-slate-900">
+              History
+            </span>
+            <span className="text-[11px] font-semibold text-slate-700">
+              {past.length} day{past.length === 1 ? "" : "s"}
+            </span>
+          </span>
+          <ChevronDown className="h-4 w-4 text-slate-800 transition-transform group-open:rotate-180" />
+        </summary>
+        {past.length === 0 ? (
+          <p className="border-t border-slate-100 px-3.5 py-6 text-center text-sm font-medium text-slate-800">
+            No past puzzles yet
+          </p>
+        ) : (
+          <table className="w-full border-t border-slate-100 text-[12px]">
+            <thead>
+              <tr className="text-start text-[10px] font-bold uppercase tracking-wide text-slate-700">
+                <th className="px-3.5 py-2 text-start">Date</th>
+                <th className="px-2 py-2 text-start">Player</th>
+                <th className="px-2 py-2 text-end">Plays</th>
+                <th className="px-3.5 py-2 text-end">Solve</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {past.map((p) => (
+                <tr key={p.id}>
+                  <td
+                    className="whitespace-nowrap px-3.5 py-2 font-bold text-slate-900"
+                    dir="rtl"
+                  >
+                    {formatJalaliLabel(p.dateKey)}
+                  </td>
+                  <td className="max-w-0 truncate px-2 py-2 font-semibold text-slate-900">
+                    {p.playerNameEn}
+                  </td>
+                  <td className="px-2 py-2 text-end font-semibold tabular-nums text-slate-800">
+                    {p.attemptCount}
+                  </td>
+                  <td className="px-3.5 py-2 text-end font-semibold tabular-nums text-slate-800">
+                    {solveRate(p)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </details>
     </div>
   );
 }

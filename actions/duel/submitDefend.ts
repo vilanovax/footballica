@@ -152,7 +152,7 @@ export async function submitDuelDefend(
   duelId: string,
   answers: DuelAnswerSubmission[],
 ): Promise<SubmitDefendResult> {
-  void tickDuelJobs();
+  // Do not tick jobs first — expire/shadow can steal this turn mid-submit.
   // Fair play: reject smuggled solo helpers / boosters from modified clients.
   assertNoDuelBoosters(answers);
 

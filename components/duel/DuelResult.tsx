@@ -157,27 +157,28 @@ export function DuelResult({ duel, missions: initialMissions }: DuelResultProps)
       {/* Scrollable board — dock stays in-flow below (immersive: no BottomNav). */}
       <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-3 pt-3 pb-3">
         <motion.header
-          initial={{ opacity: 0, y: 12, scale: 0.97 }}
+          initial={{ opacity: 0, y: 10, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 280, damping: 22 }}
-          className="mb-3 flex flex-col items-center text-center"
+          className="mb-2.5 flex flex-col items-center text-center"
         >
           <motion.span
             aria-hidden
-            className="text-5xl drop-shadow-lg"
+            className="text-4xl drop-shadow-lg"
             animate={{ rotate: [0, -5, 5, 0], scale: [1, 1.06, 1] }}
             transition={{ duration: 0.55 }}
           >
             {emoji}
           </motion.span>
           <h1
-            className={["mt-2 font-display text-2xl font-black", titleClass].join(
-              " ",
+            className={cn(
+              "mt-1.5 font-display text-xl font-black leading-tight",
+              titleClass,
             )}
           >
             {title}
           </h1>
-          <p className="mt-1 font-display text-sm font-bold text-white/50">
+          <p className="mt-0.5 font-display text-xs font-bold text-white/50">
             {t("duel.resultSub", {
               you: toLocaleDigits(data.youScore, locale),
               them: toLocaleDigits(data.themScore, locale),
@@ -227,10 +228,7 @@ export function DuelResult({ duel, missions: initialMissions }: DuelResultProps)
             transition={{ delay: 0.28 }}
             className="mt-3"
           >
-            <p className="mb-2 px-1 font-display text-[11px] font-black text-white/55">
-              {t("duel.scorecard.missionsNudge")}
-            </p>
-            <MissionProgressBanner missions={missionBoard} />
+            <MissionProgressBanner missions={missionBoard} arena />
           </motion.div>
         )}
       </div>

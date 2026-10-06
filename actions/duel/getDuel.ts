@@ -41,17 +41,22 @@ export type GetDuelResult =
  * If the viewer should defend (WAITING_*), opens that turn and returns questions
  * so the arena can jump straight into play — no client bootstrap race.
  */
-export async function getDuel(duelId: string): Promise<GetDuelResult> {
+export async function getDuel(
+  duelId: string,
+  opts?: { skipJobs?: boolean },
+): Promise<GetDuelResult> {
   // Auth overlaps the ordered job chain (mutations must stay sequential).
   const authPromise = requireUserClub();
-  try {
-    await tickDuelJobs();
-    await pairOpenMatchingDuels(10);
-    await assignBotToMatchingDuel(duelId);
-    await runBotTurnIfDue(duelId);
-    await expireDuelIfDue(duelId);
-  } catch (err) {
-    console.error("duel tick in getDuel", err);
+  if (!opts?.skipJobs) {
+    try {
+      await tickDuelJobs();
+      await pairOpenMatchingDuels(10);
+      await assignBotToMatchingDuel(duelId);
+      await runBotTurnIfDue(duelId);
+      await expireDuelIfDue(duelId);
+    } catch (err) {
+      console.error("duel tick in getDuel", err);
+    }
   }
 
   const pair = await authPromise;

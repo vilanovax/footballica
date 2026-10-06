@@ -555,11 +555,7 @@ export function LeaderboardList({
         title={inspectRow?.clubName ?? ""}
         subtitle={
           inspectRow
-            ? inspectRow.rank > 0
-              ? t("leaderboard.rankLabel", {
-                  n: toLocaleDigits(inspectRow.rank, locale),
-                })
-              : t("leaderboard.unranked")
+            ? inspectTierLabel(inspectRow, t)
             : undefined
         }
         closeLabel={t("common.close")}
@@ -799,84 +795,177 @@ function YourHuntCard({
   );
 }
 
+function inspectTierLabel(
+  row: LeaderboardRow,
+  t: (k: string) => string,
+): string {
+  if (row.rank <= 0) return t("leaderboard.unranked");
+  const tier = tierForRank(row.rank);
+  if (tier === "elite") return t("leaderboard.tierElite");
+  if (tier === "contender") return t("leaderboard.tierContender");
+  if (tier === "pack") return t("leaderboard.tierPack");
+  return t("leaderboard.tierClimbing");
+}
+
 function ClubInspectBody({ row }: { row: LeaderboardRow }) {
   const { t, locale } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const unplayed = row.playState === "unplayed";
+  const onPodium = row.rank > 0 && row.rank <= 3;
+  const you = row.isCurrentUser;
   const tier = row.rank > 0 ? tierForRank(row.rank) : "climbing";
-  const tierLabel =
+  const tierLabel = inspectTierLabel(row, t);
+  const xpPerMatch =
+    !unplayed && row.matchesPlayed > 0
+      ? Math.round(row.weeklyXp / row.matchesPlayed)
+      : null;
+
+  const tierChip =
     tier === "elite"
-      ? t("leaderboard.tierElite")
+      ? "bg-amber-400/30 text-amber-100 ring-amber-300/50"
       : tier === "contender"
-        ? t("leaderboard.tierContender")
-        : tier === "pack"
-          ? t("leaderboard.tierPack")
-          : t("leaderboard.tierClimbing");
+        ? "bg-emerald-400/25 text-emerald-100 ring-emerald-300/45"
+        : "bg-white/10 text-white/80 ring-white/20";
 
   return (
-    <div className="flex flex-col items-center gap-4 pb-1 pt-1">
-      <div className="relative">
-        <AvatarImage
-          avatarKey={row.avatarKey}
-          sizes="88px"
-          priority
+    <div className="relative flex flex-col items-center gap-4 pb-1 pt-0.5">
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute -top-6 start-1/2 h-36 w-36 -translate-x-1/2 rounded-full blur-3xl",
+          you || onPodium
+            ? "bg-amber-400/35"
+            : tier === "contender"
+              ? "bg-emerald-400/25"
+              : "bg-white/10",
+        )}
+      />
+
+      <motion.div
+        className="relative"
+        initial={reduceMotion ? false : { scale: 0.86, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : { type: "spring", stiffness: 320, damping: 22 }
+        }
+      >
+        <div
           className={cn(
-            "h-22 w-22 rounded-full ring-4 ring-white/20",
-            row.isCurrentUser && "ring-accent/80",
-            unplayed && "grayscale",
+            "overflow-hidden rounded-full ring-4 shadow-[0_8px_0_0_rgba(0,0,0,0.35)]",
+            you
+              ? "ring-accent shadow-[0_0_28px_rgba(251,191,36,0.45),0_8px_0_0_rgba(0,0,0,0.35)]"
+              : onPodium
+                ? "ring-amber-300/90 shadow-[0_0_24px_rgba(251,191,36,0.35),0_8px_0_0_rgba(0,0,0,0.35)]"
+                : "ring-white/25",
           )}
-        />
-        {row.rank > 0 && row.rank <= 3 && (
-          <span className="absolute -bottom-1 -inset-e-1 flex h-9 w-9 items-center justify-center">
+        >
+          <AvatarImage
+            avatarKey={row.avatarKey}
+            sizes="112px"
+            priority
+            className={cn(
+              "h-28 w-28 rounded-full",
+              unplayed && "grayscale opacity-80",
+            )}
+          />
+        </div>
+
+        {row.rank > 0 ? (
+          <span
+            className={cn(
+              "absolute -bottom-1 -start-1 flex h-10 min-w-10 items-center justify-center rounded-full px-2 font-display text-sm font-black tabular-nums shadow-[0_3px_0_0_rgba(0,0,0,0.4)] ring-2 ring-arena",
+              onPodium || you
+                ? "bg-accent text-accent-foreground"
+                : "bg-emerald-950 text-emerald-100",
+            )}
+            aria-label={t("leaderboard.rankLabel", {
+              n: toLocaleDigits(row.rank, locale),
+            })}
+          >
+            {toLocaleDigits(row.rank, locale)}
+          </span>
+        ) : null}
+
+        {onPodium ? (
+          <span className="absolute -top-2 -end-2 flex h-10 w-10 items-center justify-center">
             <RankArt
               kind={medalKindForPlace(row.rank)}
               size="md"
-              className="h-9 w-9 drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)]"
+              className="h-10 w-10 drop-shadow-[0_3px_6px_rgba(0,0,0,0.5)]"
             />
           </span>
-        )}
-      </div>
+        ) : null}
+      </motion.div>
 
-      <div className="flex flex-wrap items-center justify-center gap-1.5">
-        {row.isCurrentUser && (
-          <span className="rounded-full bg-accent px-2.5 py-0.5 font-display text-[11px] font-extrabold uppercase text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.3)]">
+      <div className="relative flex flex-wrap items-center justify-center gap-1.5">
+        {you ? (
+          <span className="rounded-full bg-accent px-2.5 py-1 font-display text-[11px] font-extrabold uppercase text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
             {t("leaderboard.you")}
           </span>
-        )}
-        {row.rank > 0 && (
-          <span className="rounded-full bg-white/10 px-2.5 py-0.5 font-display text-[11px] font-black text-white/85 ring-1 ring-white/15">
-            {tierLabel}
-          </span>
-        )}
+        ) : null}
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 font-display text-[11px] font-black ring-1",
+            tierChip,
+          )}
+        >
+          {tierLabel}
+        </span>
       </div>
 
-      <div className="grid w-full grid-cols-2 gap-2">
-        <GamePanel tone="emerald" className="flex flex-col items-center gap-1 px-3 py-3">
-          <p className="font-display text-[10px] font-bold uppercase tracking-wide text-emerald-200/70">
+      <div className="relative grid w-full grid-cols-2 gap-2.5">
+        <GamePanel
+          tone="emerald"
+          className="flex flex-col items-center gap-1.5 px-3 py-3.5"
+        >
+          <ResourceIcon kind="xp" size="md" className="h-6 w-6" />
+          <p className="font-display text-[10px] font-bold uppercase tracking-wide text-emerald-200/75">
             {t("leaderboard.inspectXp")}
           </p>
           <p
             className={cn(
-              "inline-flex items-center gap-1 font-display text-xl font-black tabular-nums",
-              unplayed ? "text-white/45" : "text-emerald-300",
+              "font-display text-2xl font-black tabular-nums leading-none",
+              unplayed ? "text-white/40" : "text-emerald-300",
             )}
           >
-            <ResourceIcon kind="xp" size="sm" />
             {formatNumber(row.weeklyXp, locale)}
           </p>
         </GamePanel>
-        <GamePanel tone="sky" className="flex flex-col items-center gap-1 px-3 py-3">
-          <p className="font-display text-[10px] font-bold uppercase tracking-wide text-sky-100/70">
+
+        <GamePanel
+          tone="sky"
+          className="flex flex-col items-center gap-1.5 px-3 py-3.5"
+        >
+          <RankArt kind="trophy" size="md" className="h-6 w-6 opacity-90" />
+          <p className="font-display text-[10px] font-bold uppercase tracking-wide text-sky-100/75">
             {t("leaderboard.inspectMatches")}
           </p>
-          <p className="font-display text-xl font-black tabular-nums text-white">
-            {unplayed
-              ? "—"
-              : toLocaleDigits(row.matchesPlayed, locale)}
+          <p className="font-display text-2xl font-black tabular-nums leading-none text-white">
+            {unplayed ? "—" : toLocaleDigits(row.matchesPlayed, locale)}
           </p>
         </GamePanel>
       </div>
 
-      <p className="text-center font-display text-[11px] font-bold text-white/45">
+      {xpPerMatch != null ? (
+        <GamePanel
+          tone={you ? "amber" : "emerald"}
+          className="relative flex w-full items-center justify-between gap-3 px-3.5 py-2.5"
+        >
+          <p className="font-display text-[11px] font-bold text-white/70">
+            {t("leaderboard.inspectPace")}
+          </p>
+          <p className="inline-flex items-center gap-1 font-display text-sm font-black tabular-nums text-white">
+            <ResourceIcon kind="xp" size="sm" className="h-3.5 w-3.5" />
+            {t("leaderboard.inspectPaceValue", {
+              n: toLocaleDigits(xpPerMatch, locale),
+            })}
+          </p>
+        </GamePanel>
+      ) : null}
+
+      <p className="relative max-w-[18rem] text-center font-display text-[10px] font-bold leading-snug text-white/40">
         {unplayed
           ? t("leaderboard.notPlayed")
           : t("leaderboard.inspectHint")}

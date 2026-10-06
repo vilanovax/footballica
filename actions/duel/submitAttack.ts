@@ -13,7 +13,6 @@ import { gradeDuelAnswers } from "@/lib/duel/grade";
 import { assertNoDuelBoosters } from "@/lib/duel/fairPlay";
 import type { DuelAnswerSubmission } from "@/lib/duel/types";
 import { randomBotDelayMs, scheduleBotPlayAt } from "@/lib/duel/bot";
-import { tickDuelJobs } from "@/lib/duel/jobs";
 import { toDuelSnapshot, type DuelSnapshot } from "@/lib/duel/snapshot";
 import { duelSnapshotInclude } from "@/lib/duel/include";
 import { listDuelEligibleCategories } from "@/lib/duel/draw";
@@ -43,7 +42,7 @@ export async function submitDuelAttack(
   duelId: string,
   answers: DuelAnswerSubmission[],
 ): Promise<SubmitAttackResult> {
-  void tickDuelJobs();
+  // Do not tick jobs first — expire/shadow can steal this turn mid-submit.
   // Fair play: reject smuggled solo helpers / boosters from modified clients.
   assertNoDuelBoosters(answers);
 

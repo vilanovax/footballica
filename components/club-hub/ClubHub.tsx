@@ -13,6 +13,7 @@ import Link from "next/link";
 import { upgradeClub } from "@/actions/upgradeClub";
 import {
   claimDailyNews,
+  peekDailyNews,
   type NewsPayload,
   type NewsState,
 } from "@/actions/claimDailyNews";
@@ -43,7 +44,7 @@ import {
   ClubHubDataProvider,
   useClubHubData,
 } from "@/components/club-hub/clubHubData";
-
+import { cn } from "@/lib/utils";
 // Heavy / deferred hub panels — keep first Club paint lean (MatchDoor + HUD).
 const MissionDrawer = dynamic(() =>
   import("@/components/profile/MissionDrawer").then((m) => m.MissionDrawer),
@@ -176,39 +177,64 @@ export function ClubHub({
     setError(null);
     setNewsPending(true);
     startTransition(async () => {
-      const result = await claimDailyNews();
+      const result = await peekDailyNews();
       setNewsPending(false);
       if (!result.ok) {
         setError(result.error);
         return;
       }
       setNews({ payload: result.news, state: result.state });
-      if (result.state === "fresh" || result.state === "active") {
-        const payload = result.news;
-        setClub((c) => ({
-          ...c,
-          newsClaimable: false,
-          activeNewsBooster: payload
-            ? {
-                type: payload.type,
-                multiplier: payload.multiplier,
-                headline: payload.headline,
-                expiresAt: payload.expiresAt,
-              }
-            : c.activeNewsBooster,
-        }));
-        if (result.state === "fresh") {
-          playSound("upgrade");
-          haptic([30, 30, 60]);
-        } else {
-          haptic(HAPTIC.light);
-        }
-      } else {
+      // Peek only — do not mark claimed / apply booster until explicit claim.
+      if (result.state === "cooldown") {
         setClub((c) => ({ ...c, newsClaimable: false }));
+      }
+      haptic(HAPTIC.light);
+    });
+  }, [newsPending]);
+
+  const dismissNews = useCallback(() => {
+    setNews(null);
+  }, []);
+
+  const confirmNewsClaim = useCallback(() => {
+    if (!news) return;
+    // Already live or sold out — just close the paper.
+    if (news.state !== "preview" || !news.payload) {
+      setNews(null);
+      return;
+    }
+    if (newsPending) return;
+    setNewsPending(true);
+    const eventId = news.payload.headline;
+    startTransition(async () => {
+      const result = await claimDailyNews(eventId);
+      setNewsPending(false);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      const payload = result.news;
+      setClub((c) => ({
+        ...c,
+        newsClaimable: false,
+        activeNewsBooster: payload
+          ? {
+              type: payload.type,
+              multiplier: payload.multiplier,
+              headline: payload.headline,
+              expiresAt: payload.expiresAt,
+            }
+          : c.activeNewsBooster,
+      }));
+      setNews(null);
+      if (result.state === "fresh") {
+        playSound("upgrade");
+        haptic([30, 30, 60]);
+      } else {
         haptic(HAPTIC.light);
       }
     });
-  }, [newsPending]);
+  }, [news, newsPending]);
 
   function focusUpgrade(key: UpgradeKey) {
     openManageSheet();
@@ -233,6 +259,7 @@ export function ClubHub({
   }, [sheetOpen]);
 
   const canClaimNews = club.newsClaimable;
+  const newsLive = Boolean(club.activeNewsBooster);
   const milestoneInput = {
     coins: club.coins,
     stadiumLevel: club.stadiumLevel,
@@ -336,20 +363,34 @@ export function ClubHub({
                       locale={locale}
                     />
 
-                    {canClaimNews && (
-                      <button
-                        type="button"
-                        onClick={handleDailyNews}
-                        disabled={newsPending}
-                        aria-label={t("club.dailyNews")}
-                        className="game-icon-btn relative active:scale-90"
-                      >
-                        <HubIcon kind="news" size="md" />
+                    <button
+                      type="button"
+                      onClick={handleDailyNews}
+                      disabled={newsPending}
+                      aria-label={
+                        canClaimNews
+                          ? t("club.dailyNews")
+                          : newsLive
+                            ? t("news.liveNow")
+                            : t("club.dailyNews")
+                      }
+                      className={cn(
+                        "game-icon-btn relative active:scale-90",
+                        !canClaimNews && !newsLive && "opacity-70",
+                      )}
+                    >
+                      <HubIcon kind="news" size="md" />
+                      {canClaimNews ? (
                         <span className="absolute -inset-e-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
                           {toLocaleDigits(1, locale)}
                         </span>
-                      </button>
-                    )}
+                      ) : newsLive ? (
+                        <span
+                          aria-hidden
+                          className="absolute -inset-e-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_2px_rgba(0,0,0,0.35)]"
+                        />
+                      ) : null}
+                    </button>
                   </>
                 )}
 
@@ -448,7 +489,9 @@ export function ClubHub({
             key="newspaper"
             news={news.payload}
             state={news.state}
-            onClaim={() => setNews(null)}
+            claiming={newsPending}
+            onDismiss={dismissNews}
+            onClaim={confirmNewsClaim}
           />
         ) : null}
 

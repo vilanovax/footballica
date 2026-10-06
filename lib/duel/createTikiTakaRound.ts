@@ -1,9 +1,9 @@
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { buildAutoGridAxes, loadGridPlayers } from "@/lib/grid/puzzle";
-import { makeAxis } from "@/lib/grid/rules";
+import { loadGridPlayers } from "@/lib/grid/puzzle";
 import { prisma } from "@/lib/prisma";
+import { buildTikiTakaAxes } from "@/lib/duel/tikiTakaAxes";
 import {
   emptyTikiCells,
   type TikiTakaBoardJson,
@@ -18,43 +18,13 @@ export type TikiTakaRoundShell = {
   board: TikiTakaBoardJson;
 };
 
-function topValues(values: string[], n: number): string[] {
-  const counts = new Map<string, number>();
-  for (const v of values) {
-    const t = v.trim();
-    if (!t) continue;
-    counts.set(t, (counts.get(t) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, n)
-    .map(([v]) => v);
-}
-
 export async function tikiTakaRoundCreateData(opts: {
   duelId: string;
   attackerId: string;
   roundNumber: number;
 }): Promise<TikiTakaRoundShell> {
   const players = await loadGridPlayers(prisma);
-  const built = buildAutoGridAxes(players);
-  const axes =
-    built ??
-    (() => {
-      const leagues = topValues(
-        players.map((p) => p.league),
-        3,
-      );
-      while (leagues.length < 3) leagues.push(`League ${leagues.length + 1}`);
-      return {
-        rows: leagues
-          .slice(0, 3)
-          .map((v, i) => makeAxis(`r${i}`, "league", v)),
-        cols: ["FWD", "MID", "DEF"].map((v, i) =>
-          makeAxis(`c${i}`, "position", v),
-        ),
-      };
-    })();
+  const axes = buildTikiTakaAxes(players);
 
   void opts.duelId;
 

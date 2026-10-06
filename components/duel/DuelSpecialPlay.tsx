@@ -36,10 +36,13 @@ import { playSound } from "@/lib/audio/SoundManager";
 import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { GRID_SIZE, cellKey } from "@/lib/grid/types";
 import type { EvaluateMissionsResult } from "@/lib/game/missionTypes";
+import { DuelSpecialHelpSheet } from "@/components/duel/DuelSpecialHelpSheet";
 import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { MatchPitch } from "@/components/quiz/MatchPitch";
 import { GameChip } from "@/components/ui/game/GameChip";
+import { GameCta } from "@/components/ui/game/GameCta";
 import { GamePanel } from "@/components/ui/game/GamePanel";
+import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 type Props = {
@@ -113,6 +116,7 @@ export function DuelSpecialPlay({ duelId, duel, mode, onDone }: Props) {
   const [localDuel, setLocalDuel] = useState(duel);
   const [flash, setFlash] = useState<Flash>(null);
   const [, setFlashKey] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const isAttack = mode === "attack";
   const theme = useAttackTheme(isAttack);
@@ -373,149 +377,135 @@ export function DuelSpecialPlay({ duelId, duel, mode, onDone }: Props) {
     const max = board?.maxGuesses ?? 6;
     const used = log.guesses.length;
     const remaining = Math.max(0, max - used);
+    const attrLabels = [
+      t("mystery.colNation"),
+      t("mystery.colPos"),
+      t("mystery.colLeague"),
+      t("mystery.colClub"),
+      t("mystery.colAge"),
+      t("mystery.colShirt"),
+    ];
 
     return (
-      <SpecialArena
-        theme={theme}
-        badge={badge}
-        title={t("duel.special.mysteryTitle")}
-        subtitle={t("duel.special.mysterySub", {
-          n: toLocaleDigits(used, locale),
-          max: toLocaleDigits(max, locale),
-        })}
-        hudValue={remaining}
-        hudMax={max}
-        hudHint={t("duel.special.guessesLeft")}
-        flash={flash}
-        reduceMotion={Boolean(reduceMotion)}
-        dock={
-          <PlayerDock
-            theme={theme}
-            query={query}
-            options={options}
-            selectedId={selectedId}
-            selectedLabel={selectedLabel}
-            pending={pending || log.status !== "IN_PROGRESS"}
-            pickHint={t("duel.special.pickHint")}
-            submitLabel={t("duel.special.submitGuess")}
-            onQuery={runSearch}
-            onSelect={(id) => {
-              setSelectedId(id);
-              playSound("click");
-              haptic(HAPTIC.tap);
-            }}
-            onSubmit={() => {
-              if (!selectedId || pending) return;
-              startTransition(async () => {
-                const res = await guessDuelMystery(duelId, selectedId);
-                if (!res.ok) {
-                  toast.error(t("duel.errGeneric"));
-                  return;
-                }
-                setLocalDuel(res.duel);
-                setQuery("");
-                setSelectedId(null);
-                setOptions([]);
-                if (res.log.status === "SOLVED") {
-                  playSound("goal");
-                  haptic(HAPTIC.goal);
-                  pulse("goal", t("duel.special.flashSolved"));
-                } else if (res.log.status === "FAILED") {
-                  playSound("miss");
-                  haptic(HAPTIC.miss);
-                  pulse("miss", t("duel.special.flashFailed"));
-                } else {
-                  playSound("miss");
-                  haptic(HAPTIC.miss);
-                }
-                if (res.finished) {
-                  window.setTimeout(
-                    () => onDone(res.duel, res.missions),
-                    650,
-                  );
-                }
-              });
-            }}
-          />
-        }
-      >
-        {/* Attempt dots */}
-        <div className="mb-3 flex items-center justify-center gap-2">
-          {Array.from({ length: max }).map((_, i) => {
-            const g = log.guesses[i];
-            const next = i === used && log.status === "IN_PROGRESS";
-            let tone = "h-2.5 w-2.5 bg-white/20";
-            if (g?.isCorrect)
-              tone =
-                "h-3 w-3 bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]";
-            else if (g)
-              tone =
-                "h-2.5 w-2.5 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]";
-            else if (next) tone = "h-3 w-3 bg-white ring-2 ring-white/35";
-            return (
-              <motion.span
-                key={i}
-                animate={
-                  next && !reduceMotion ? { scale: [1, 1.2, 1] } : undefined
-                }
-                transition={
-                  next
-                    ? { duration: 1.2, repeat: Infinity, ease: "easeInOut" }
-                    : undefined
-                }
-                className={["rounded-full", tone].join(" ")}
-              />
-            );
+      <>
+        <SpecialArena
+          theme={theme}
+          badge={badge}
+          title={t("duel.special.mysteryTitle")}
+          subtitle={t("duel.special.mysterySub", {
+            n: toLocaleDigits(used, locale),
+            max: toLocaleDigits(max, locale),
           })}
-        </div>
+          hudValue={remaining}
+          hudMax={max}
+          hudHint={t("duel.special.guessesLeft")}
+          flash={flash}
+          reduceMotion={Boolean(reduceMotion)}
+          onHelp={() => {
+            playSound("click");
+            haptic(HAPTIC.tap);
+            setHelpOpen(true);
+          }}
+          helpAria={t("duel.special.mysteryHelpAria")}
+          dock={
+            <PlayerDock
+              theme={theme}
+              query={query}
+              options={options}
+              selectedId={selectedId}
+              selectedLabel={selectedLabel}
+              pending={pending || log.status !== "IN_PROGRESS"}
+              pickHint={t("duel.special.pickHint")}
+              submitLabel={t("duel.special.submitGuess")}
+              onQuery={runSearch}
+              onSelect={(id) => {
+                setSelectedId(id);
+                playSound("click");
+                haptic(HAPTIC.tap);
+              }}
+              onSubmit={() => {
+                if (!selectedId || pending) return;
+                startTransition(async () => {
+                  const res = await guessDuelMystery(duelId, selectedId);
+                  if (!res.ok) {
+                    toast.error(t("duel.errGeneric"));
+                    return;
+                  }
+                  setLocalDuel(res.duel);
+                  setQuery("");
+                  setSelectedId(null);
+                  setOptions([]);
+                  if (res.log.status === "SOLVED") {
+                    playSound("goal");
+                    haptic(HAPTIC.goal);
+                    pulse("goal", t("duel.special.flashSolved"));
+                  } else if (res.log.status === "FAILED") {
+                    playSound("miss");
+                    haptic(HAPTIC.miss);
+                    pulse("miss", t("duel.special.flashFailed"));
+                  } else {
+                    playSound("miss");
+                    haptic(HAPTIC.miss);
+                  }
+                  if (res.finished) {
+                    window.setTimeout(
+                      () => onDone(res.duel, res.missions),
+                      650,
+                    );
+                  }
+                });
+              }}
+            />
+          }
+        >
+          <div className="mx-auto flex w-full max-w-sm flex-col gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              <ClueLegend swatch="bg-emerald-500" label={t("mystery.legendCorrect")} />
+              <ClueLegend swatch="bg-amber-500" label={t("mystery.legendClose")} />
+              <ClueLegend swatch="bg-rose-600" label={t("mystery.legendWrong")} />
+              <ClueLegend swatch="bg-sky-500" label={`▲▼ ${t("mystery.colAge")}/${t("mystery.colShirt")}`} />
+            </div>
 
-        <div className="mx-auto flex w-full max-w-sm flex-col gap-2">
-          <div className="grid grid-cols-3 gap-1.5 px-0.5">
-            {[
-              t("mystery.colNation"),
-              t("mystery.colPos"),
-              t("mystery.colLeague"),
-              t("mystery.colClub"),
-              t("mystery.colAge"),
-              t("mystery.colShirt"),
-            ].map((label) => (
-              <span
-                key={label}
-                className="text-center font-display text-[9px] font-extrabold uppercase tracking-wider text-white/35"
-              >
-                {label}
-              </span>
-            ))}
-          </div>
-
-          {Array.from({ length: max }).map((_, i) => {
-            const guess = log.guesses[i];
-            if (guess) {
-              return <MysteryGuessRow key={`${guess.playerId}-${guess.at}`} guess={guess} />;
-            }
-            return (
-              <div
-                key={`empty-${i}`}
-                className={[
-                  "grid grid-cols-3 gap-1.5 rounded-2xl p-1.5",
-                  i === used
-                    ? "bg-white/10 ring-1 ring-white/25"
-                    : "bg-white/3",
-                ].join(" ")}
-              >
-                {Array.from({ length: 6 }).map((__, j) => (
-                  <div
-                    key={j}
-                    className="flex min-h-11 items-center justify-center rounded-xl bg-white/5 font-display text-xs font-bold text-white/15"
-                  >
-                    ·
-                  </div>
-                ))}
+            {used === 0 ? (
+              <div className="rounded-2xl bg-amber-400/10 p-2 shadow-[0_0_0_1px_rgba(251,191,36,0.4),0_3px_0_0_rgba(0,0,0,0.25)]">
+                <p className="mb-1.5 text-center font-display text-[11px] font-extrabold text-amber-100">
+                  {t("mystery.emptyBoard")}
+                </p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {attrLabels.map((label) => (
+                    <div
+                      key={label}
+                      className="flex min-h-12 items-center justify-center rounded-xl bg-black/35 font-display text-[11px] font-extrabold text-white/45 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
+                    >
+                      {label}
+                    </div>
+                  ))}
+                </div>
               </div>
-            );
-          })}
-        </div>
-      </SpecialArena>
+            ) : (
+              [...log.guesses]
+                .map((guess, i) => ({ guess, n: i + 1 }))
+                .reverse()
+                .map(({ guess, n }, i) => (
+                  <MysteryGuessRow
+                    key={`${guess.playerId}-${guess.at}`}
+                    guess={guess}
+                    index={n}
+                    labels={attrLabels}
+                    latest={i === 0}
+                  />
+                ))
+            )}
+          </div>
+        </SpecialArena>
+
+        <DuelSpecialHelpSheet
+          mode="mystery"
+          open={helpOpen}
+          onClose={() => setHelpOpen(false)}
+          tone="dark"
+        />
+      </>
     );
   }
 
@@ -717,6 +707,8 @@ function SpecialArena({
   reduceMotion,
   dock,
   children,
+  onHelp,
+  helpAria,
 }: {
   theme: AttackTheme;
   badge: string;
@@ -729,6 +721,8 @@ function SpecialArena({
   reduceMotion: boolean;
   dock: React.ReactNode;
   children: React.ReactNode;
+  onHelp?: () => void;
+  helpAria?: string;
 }) {
   const { locale } = useTranslation();
   const router = useRouter();
@@ -748,13 +742,13 @@ function SpecialArena({
       <header className="relative z-10 mx-3 mt-[max(0.5rem,env(safe-area-inset-top))]">
         <GamePanel
           tone={theme.panelTone}
-          className="bg-black/25 px-3 py-2.5"
+          className="bg-black/25 px-2.5 py-2"
         >
-          <div className="relative flex items-center gap-3">
+          <div className="relative flex items-center gap-2">
             <MatchLeaveControl
               onConfirmLeave={() => router.push("/play/duel")}
             />
-            <div className="relative h-17 w-17 shrink-0">
+            <div className="relative h-14 w-14 shrink-0">
               <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
                 <circle
                   cx="40"
@@ -780,11 +774,11 @@ function SpecialArena({
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-black/35">
                 <span
-                  className={`font-display text-xl font-black tabular-nums leading-none ${theme.score}`}
+                  className={`font-display text-lg font-black tabular-nums leading-none ${theme.score}`}
                 >
                   {toLocaleDigits(hudValue, locale)}
                 </span>
-                <span className="font-display text-[10px] font-bold text-white/45">
+                <span className="font-display text-[9px] font-bold text-white/45">
                   /{toLocaleDigits(hudMax, locale)}
                 </span>
               </div>
@@ -793,7 +787,7 @@ function SpecialArena({
             <div className="min-w-0 flex-1">
               <GameChip
                 tone={theme.panelTone === "amber" ? "amber" : "default"}
-                className="gap-1.5 uppercase tracking-wide"
+                className="gap-1 tracking-wide"
               >
                 <motion.span
                   className="h-1.5 w-1.5 rounded-full bg-current"
@@ -806,18 +800,33 @@ function SpecialArena({
                 />
                 {badge}
               </GameChip>
-              <h2 className="mt-1.5 font-display text-lg font-black leading-tight text-white">
+              <h2 className="mt-1 font-display text-base font-black leading-tight text-white">
                 {title}
               </h2>
-              <p className="mt-0.5 font-body text-xs font-semibold text-white/55">
+              <p className="mt-0.5 font-body text-[11px] font-semibold text-white/55">
                 {subtitle}
-              </p>
-              <p
-                className={`mt-0.5 font-display text-[11px] font-bold ${theme.accent}`}
-              >
-                {hudHint}
+                <span className={`ms-1 font-display font-bold ${theme.accent}`}>
+                  · {hudHint}
+                </span>
               </p>
             </div>
+
+            {onHelp ? (
+              <button
+                type="button"
+                aria-label={helpAria}
+                onClick={onHelp}
+                className="game-cta game-cta-ghost h-11 w-11 shrink-0 p-0 shadow-[0_0_0_1px_hsl(var(--arena-ring-amber)/0.4),0_3px_0_0_rgba(0,0,0,0.35)]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/help-gold.png"
+                  alt=""
+                  draggable={false}
+                  className="h-7 w-7 object-contain"
+                />
+              </button>
+            ) : null}
           </div>
         </GamePanel>
       </header>
@@ -883,8 +892,11 @@ function PlayerDock({
 }) {
   const { t, locale } = useTranslation();
   return (
-    <div className="rounded-bubble-lg border border-white/10 bg-[#0c1016]/95 px-2.5 pb-2.5 pt-2 shadow-[0_-12px_32px_rgba(0,0,0,0.55)] backdrop-blur-md">
-      <p className="mb-1.5 text-center font-display text-[11px] font-bold text-white/55">
+    <GamePanel
+      tone={theme.panelTone}
+      className="bg-black/40 px-2.5 pb-2.5 pt-2 shadow-[0_-8px_28px_rgba(0,0,0,0.5)]"
+    >
+      <p className="relative mb-1.5 text-center font-display text-[11px] font-bold text-white/65">
         {selectedLabel ? `✓ ${selectedLabel}` : pickHint}
       </p>
       <input
@@ -893,12 +905,12 @@ function PlayerDock({
         disabled={pending}
         onChange={(e) => void onQuery(e.target.value)}
         placeholder={t("mystery.searchPlaceholder")}
-        className={[
-          "min-h-12 w-full rounded-2xl bg-white/8 px-3 font-display text-sm font-bold text-white outline-none ring-1 ring-white/15 placeholder:text-white/35 focus:ring-2",
+        className={cn(
+          "game-input relative min-h-12 w-full px-3 font-display text-sm font-bold",
           theme.dockRing,
-        ].join(" ")}
+        )}
       />
-      <ul className="mt-1.5 max-h-32 overflow-y-auto rounded-2xl bg-black/30 ring-1 ring-white/10">
+      <ul className="relative mt-1.5 max-h-28 overflow-y-auto rounded-2xl bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]">
         {options.length === 0 ? (
           <li className="px-3 py-2.5 text-center font-display text-xs font-bold text-white/35">
             {query.trim().length < 2 ? t("duel.special.typeMore") : "…"}
@@ -912,12 +924,12 @@ function PlayerDock({
                   type="button"
                   disabled={pending}
                   onClick={() => onSelect(o.id)}
-                  className={[
+                  className={cn(
                     "flex w-full min-h-12 items-center justify-between gap-2 px-3 py-2 text-start font-display text-sm font-bold",
                     active
-                      ? "bg-amber-400/20 text-amber-100"
+                      ? "bg-amber-400/25 text-amber-50"
                       : "text-white/90 hover:bg-white/8",
-                  ].join(" ")}
+                  )}
                 >
                   <span className="truncate">
                     {locale === "fa" ? o.nameFa : o.nameEn}
@@ -931,18 +943,25 @@ function PlayerDock({
           })
         )}
       </ul>
-      <button
-        type="button"
+      <GameCta
+        variant={theme.panelTone === "amber" ? "accent" : "primary"}
+        block
         disabled={pending || !selectedId}
         onClick={onSubmit}
-        className={[
-          "game-cta mt-2 flex min-h-touch w-full items-center justify-center disabled:opacity-40",
-          theme.cta,
-        ].join(" ")}
+        className="relative mt-2 min-h-12"
       >
         {pending ? "…" : submitLabel}
-      </button>
-    </div>
+      </GameCta>
+    </GamePanel>
+  );
+}
+
+function ClueLegend({ swatch, label }: { swatch: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-black/35 px-2 py-1 font-display text-[10px] font-extrabold text-white/70 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]">
+      <span className={cn("h-2.5 w-2.5 rounded-sm", swatch)} />
+      {label}
+    </span>
   );
 }
 
@@ -964,8 +983,19 @@ function verdictGlyph(v: AttributeVerdict | CompareVerdict): string {
   return "✕";
 }
 
-function MysteryGuessRow({ guess }: { guess: MysteryGuessRecord }) {
+function MysteryGuessRow({
+  guess,
+  index,
+  labels,
+  latest,
+}: {
+  guess: MysteryGuessRecord;
+  index: number;
+  labels: string[];
+  latest: boolean;
+}) {
   const { locale } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const name = locale === "fa" ? guess.nameFa : guess.nameEn;
   const cells: { key: string; v: AttributeVerdict | CompareVerdict; label: string }[] =
     [
@@ -1007,29 +1037,46 @@ function MysteryGuessRow({ guess }: { guess: MysteryGuessRecord }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={reduceMotion ? false : { opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl bg-white/8 p-1.5 ring-1 ring-white/10"
+      transition={{ duration: 0.22, ease: "easeOut" }}
+      className={cn(
+        "rounded-2xl p-1.5",
+        latest
+          ? "bg-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.18),0_3px_0_0_rgba(0,0,0,0.3)]"
+          : "bg-white/5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]",
+      )}
     >
-      <p className="mb-1.5 truncate px-1 font-display text-xs font-extrabold text-white/70">
-        {name}
-      </p>
-      <div className="grid grid-cols-3 gap-1.5">
-        {cells.map((c) => (
-          <div
+      <div className="mb-1.5 flex items-center gap-1.5 px-1">
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-black/40 px-1 font-display text-[10px] font-black tabular-nums text-white/60">
+          {toLocaleDigits(index, locale)}
+        </span>
+        <p className="min-w-0 truncate font-display text-xs font-extrabold text-white/85">
+          {name}
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-1">
+        {cells.map((c, i) => (
+          <motion.div
             key={c.key}
-            className={[
-              "flex min-h-11 flex-col items-center justify-center rounded-xl px-1 shadow-[inset_0_-2px_0_rgba(0,0,0,0.28)]",
+            initial={latest && !reduceMotion ? { rotateX: 90, opacity: 0 } : false}
+            animate={{ rotateX: 0, opacity: 1 }}
+            transition={{ delay: latest ? 0.06 * i : 0, duration: 0.24 }}
+            className={cn(
+              "relative flex min-h-12 flex-col items-center justify-center rounded-xl px-1 pb-1 pt-3 shadow-[inset_0_-2px_0_rgba(0,0,0,0.28)]",
               verdictStyle(c.v),
-            ].join(" ")}
+            )}
           >
-            <span className="font-display text-[10px] font-black leading-none">
-              {verdictGlyph(c.v)}
+            <span className="absolute inset-x-1 top-0.5 truncate text-center font-display text-[9px] font-bold leading-tight opacity-80">
+              {labels[i]}
             </span>
-            <span className="mt-0.5 max-w-full truncate font-display text-[10px] font-extrabold">
-              {c.label}
+            <span className="flex max-w-full items-center gap-0.5 font-display text-[11px] font-extrabold leading-tight">
+              <span aria-hidden className="shrink-0 text-[10px] font-black">
+                {verdictGlyph(c.v)}
+              </span>
+              <span className="truncate">{c.label}</span>
             </span>
-          </div>
+          </motion.div>
         ))}
       </div>
     </motion.div>

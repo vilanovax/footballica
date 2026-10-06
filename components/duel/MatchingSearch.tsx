@@ -46,8 +46,8 @@ type MatchingSearchProps = {
 };
 
 /**
- * Matchmaking stage — Arena sheet, radar VS, scanning rivals, stakes.
- * Fills the pitch like DraftPicker (no dead floor).
+ * Matchmaking stage — one VS face-off, compact scout strip, stakes.
+ * Centered pitch; no stretched empty panels.
  */
 export function MatchingSearch({
   yourAvatar,
@@ -101,34 +101,17 @@ export function MatchingSearch({
     <section className="game-sheet relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-bubble-xl">
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
         <div className="game-sheet-wash absolute inset-x-0 top-0 h-36" />
-        <div className="absolute inset-x-0 top-0 h-28 bg-linear-to-b from-sky-500/18 to-transparent" />
-        <div className="absolute -inset-s-16 top-1/3 h-44 w-44 rounded-full bg-amber-400/14 blur-3xl" />
-        <div className="absolute -inset-e-12 bottom-1/4 h-40 w-40 rounded-full bg-emerald-400/12 blur-3xl" />
-        {!reduceMotion &&
-          [0, 1, 2, 3].map((i) => (
-            <motion.span
-              key={i}
-              className="absolute h-1.5 w-1.5 rounded-full bg-amber-300/75"
-              style={{
-                left: `${20 + i * 18}%`,
-                top: `${24 + (i % 3) * 16}%`,
-              }}
-              animate={{ y: [0, -12, 0], opacity: [0.25, 0.85, 0.25] }}
-              transition={{
-                repeat: Infinity,
-                duration: 2.1 + i * 0.3,
-                delay: i * 0.18,
-              }}
-            />
-          ))}
+        <div className="absolute inset-x-0 top-0 h-28 bg-linear-to-b from-sky-500/16 to-transparent" />
+        <div className="absolute -inset-s-16 top-1/3 h-40 w-40 rounded-full bg-amber-400/12 blur-3xl" />
+        <div className="absolute -inset-e-12 bottom-1/4 h-36 w-36 rounded-full bg-emerald-400/10 blur-3xl" />
       </div>
 
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-2.5 px-3 pb-3 pt-3">
-        {/* Compact live header */}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center gap-3 px-3 py-3">
+        {/* Header — one job: status */}
         <header className="shrink-0 text-center">
           <GameChip
             tone={found ? "emerald" : "amber"}
-            className="mx-auto uppercase tracking-wide"
+            className="mx-auto tracking-wide"
           >
             <motion.span
               className={cn(
@@ -144,13 +127,13 @@ export function MatchingSearch({
               }
               transition={{ repeat: Infinity, duration: 0.95 }}
             />
-            {found ? t("duel.matchedTitle") : t("duel.matchingBadge")}
+            {found ? t("duel.matchedBadge") : t("duel.matchingBadge")}
           </GameChip>
 
-          <h1 className="mt-2 font-display text-xl font-black leading-tight text-white drop-shadow-md">
+          <h1 className="mt-2.5 font-display text-xl font-black leading-tight text-white">
             {found ? t("duel.matchedTitle") : t("duel.matchingTitle")}
           </h1>
-          <p className="mx-auto mt-1 max-w-[20rem] font-display text-xs font-bold leading-snug text-white/70">
+          <p className="mx-auto mt-1 max-w-76 font-display text-xs font-bold leading-snug text-white/65">
             {found
               ? foundIsBot
                 ? t("duel.matchedBot")
@@ -159,66 +142,57 @@ export function MatchingSearch({
           </p>
         </header>
 
-        {/* VS stage grows into leftover pitch */}
+        {/* Face-off — tight, not a tall empty card */}
         <GamePanel
           tone={found ? "emerald" : "sky"}
-          className="flex min-h-0 flex-[1.35] flex-col items-center justify-center gap-3 bg-black/25 p-3"
+          className="mx-auto w-full max-w-sm shrink-0 bg-black/25 px-3 py-3.5"
         >
-          <div className="flex w-full items-center justify-center gap-2 sm:gap-3">
+          <div className="flex w-full items-start justify-center gap-2">
             <Fighter
               avatarKey={yourAvatar}
               name={yourName?.trim() || t("duel.you")}
               badge={t("duel.you")}
               ringClass="ring-emerald-400"
               glowClass="bg-emerald-400/30"
-              pulse={!reduceMotion}
+              pulse={!reduceMotion && !found}
             />
 
-            <div className="relative flex h-18 w-18 shrink-0 items-center justify-center sm:h-24 sm:w-24">
-              <svg
-                className="absolute inset-0 h-full w-full -rotate-90"
-                viewBox="0 0 80 80"
-                aria-hidden
-              >
-                <circle
-                  cx="40"
-                  cy="40"
-                  r="34"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.12)"
-                  strokeWidth="4"
-                />
-                <motion.circle
-                  cx="40"
-                  cy="40"
-                  r="34"
-                  fill="none"
-                  stroke={
-                    found
-                      ? "hsl(var(--arena-ring))"
-                      : "hsl(var(--arena-ring-amber))"
-                  }
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeDasharray={ring}
-                  initial={false}
-                  animate={{ strokeDashoffset: ring - dash }}
-                  transition={{ duration: 0.15, ease: "linear" }}
-                />
-              </svg>
-              {!found && !reduceMotion && (
-                <>
-                  <motion.span
-                    className="absolute inset-1 rounded-full shadow-[0_0_0_2px_hsl(var(--arena-ring-amber)/0.45)]"
-                    animate={{ scale: [1, 1.4], opacity: [0.6, 0] }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1.2,
-                      ease: "easeOut",
-                    }}
+            <div className="flex shrink-0 flex-col items-center gap-1.5 pt-1">
+              <div className="relative flex h-16 w-16 items-center justify-center">
+                <svg
+                  className="absolute inset-0 h-full w-full -rotate-90"
+                  viewBox="0 0 80 80"
+                  aria-hidden
+                >
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="34"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.12)"
+                    strokeWidth="4"
                   />
+                  <motion.circle
+                    cx="40"
+                    cy="40"
+                    r="34"
+                    fill="none"
+                    stroke={
+                      found
+                        ? "hsl(var(--arena-ring))"
+                        : "hsl(var(--arena-ring-amber))"
+                    }
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeDasharray={ring}
+                    initial={false}
+                    animate={{ strokeDashoffset: ring - dash }}
+                    transition={{ duration: 0.15, ease: "linear" }}
+                  />
+                </svg>
+                {!found && !reduceMotion ? (
                   <motion.span
-                    className="absolute inset-3 rounded-full border border-dashed border-amber-300/55"
+                    className="absolute inset-2 rounded-full border border-dashed border-amber-300/50"
                     animate={{ rotate: 360 }}
                     transition={{
                       repeat: Infinity,
@@ -226,53 +200,71 @@ export function MatchingSearch({
                       ease: "linear",
                     }}
                   />
-                </>
+                ) : null}
+                <motion.span
+                  className={cn(
+                    "relative z-10 font-display text-lg font-black",
+                    found ? "text-emerald-300" : "text-amber-300",
+                  )}
+                  animate={
+                    reduceMotion
+                      ? undefined
+                      : found
+                        ? { scale: [1, 1.15, 1] }
+                        : { scale: [1, 1.06, 1] }
+                  }
+                  transition={{
+                    repeat: Infinity,
+                    duration: found ? 0.75 : 1.1,
+                  }}
+                >
+                  VS
+                </motion.span>
+              </div>
+
+              {!found ? (
+                <p className="font-display text-[11px] font-black tabular-nums text-amber-200">
+                  {t("duel.matchingTimer", {
+                    s: toLocaleDigits(elapsedSec, locale),
+                  })}
+                </p>
+              ) : (
+                <p className="font-display text-[11px] font-extrabold text-emerald-300">
+                  {t("duel.matchingKickoff")}
+                </p>
               )}
-              <motion.span
-                className={cn(
-                  "relative z-10 font-display text-xl font-black sm:text-2xl",
-                  found ? "text-emerald-300" : "text-amber-300",
-                )}
-                animate={
-                  reduceMotion
-                    ? undefined
-                    : found
-                      ? { scale: [1, 1.2, 1] }
-                      : { scale: [1, 1.08, 1] }
-                }
-                transition={{ repeat: Infinity, duration: found ? 0.75 : 1.1 }}
-              >
-                VS
-              </motion.span>
             </div>
 
             <div className="relative flex min-w-0 flex-1 flex-col items-center gap-1.5">
-              <div className="relative h-18 w-18 sm:h-24 sm:w-24">
+              <div className="relative h-16 w-16">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={found ? "found" : rivalKey}
-                    initial={false}
+                    initial={
+                      reduceMotion ? false : { opacity: 0.4, scale: 0.92 }
+                    }
                     animate={{
                       scale: 1,
-                      opacity: found ? 1 : 0.92,
+                      opacity: found ? 1 : 0.95,
                     }}
-                    transition={{ type: "spring", stiffness: 380, damping: 24 }}
+                    exit={reduceMotion ? undefined : { opacity: 0, scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 26 }}
                     className="absolute inset-0"
                   >
                     <span
                       className={cn(
-                        "absolute -inset-2 rounded-full blur-lg",
+                        "absolute -inset-1.5 rounded-full blur-md",
                         found
                           ? foundIsBot
                             ? "bg-amber-400/35"
                             : "bg-sky-400/40"
-                          : "bg-white/10",
+                          : "bg-white/8",
                       )}
                     />
                     <AvatarImage
                       avatarKey={rivalKey}
                       className={cn(
-                        "relative h-full w-full rounded-full shadow-[0_6px_0_0_rgba(0,0,0,0.35)] ring-[3px]",
+                        "relative h-full w-full rounded-full shadow-[0_4px_0_0_rgba(0,0,0,0.35)] ring-[3px]",
                         found
                           ? foundIsBot
                             ? "ring-amber-400"
@@ -281,29 +273,18 @@ export function MatchingSearch({
                       )}
                       muted={!found}
                     />
-                    {!found && !reduceMotion && (
-                      <motion.span
-                        className="pointer-events-none absolute inset-x-1 top-0 h-1/2 rounded-full bg-linear-to-b from-sky-300/50 to-transparent"
-                        animate={{ y: [0, 48, 0], opacity: [0.25, 0.8, 0.25] }}
-                        transition={{
-                          repeat: Infinity,
-                          duration: 1.05,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    )}
-                    {found && !reduceMotion && (
+                    {found && !reduceMotion ? (
                       <motion.span
                         initial={{ scale: 0.7, opacity: 0.7 }}
                         animate={{ scale: 1.35, opacity: 0 }}
                         transition={{ duration: 0.65 }}
                         className="absolute inset-0 rounded-full ring-4 ring-emerald-300"
                       />
-                    )}
+                    ) : null}
                   </motion.div>
                 </AnimatePresence>
               </div>
-              <p className="max-w-22 truncate font-display text-xs font-extrabold text-white/90 sm:text-sm">
+              <p className="max-w-22 truncate text-center font-display text-xs font-extrabold text-white/90">
                 {found
                   ? foundIsBot
                     ? t("duel.vsBot")
@@ -313,30 +294,13 @@ export function MatchingSearch({
             </div>
           </div>
 
+          {/* Scout strip — inside the same panel, not a second tall card */}
           {!found ? (
-            <p className="font-display text-sm font-black tabular-nums text-amber-300">
-              {t("duel.matchingTimer", {
-                s: toLocaleDigits(elapsedSec, locale),
-              })}
-            </p>
-          ) : (
-            <p className="font-display text-sm font-extrabold text-emerald-300">
-              {t("duel.matchingKickoff")}
-            </p>
-          )}
-        </GamePanel>
-
-        {/* Scout ticker + stakes fill remaining height */}
-        <div className="flex min-h-0 flex-1 flex-col gap-2">
-          {!found && (
-            <GamePanel
-              tone="amber"
-              className="flex min-h-18 flex-1 flex-col justify-center gap-2 bg-black/30 px-3 py-2.5"
-            >
-              <p className="text-start font-display text-[10px] font-extrabold uppercase tracking-[0.14em] text-amber-100/80">
+            <div className="mt-3 border-t border-white/8 pt-2.5">
+              <p className="mb-2 text-center font-display text-[10px] font-extrabold tracking-wide text-amber-100/70">
                 {t("duel.matchingScanning")}
               </p>
-              <div className="flex justify-center gap-2.5">
+              <div className="flex items-center justify-center gap-2">
                 {[-2, -1, 0, 1, 2].map((offset) => {
                   const idx =
                     (scanIndex + offset + scanKeys.length) % scanKeys.length;
@@ -346,20 +310,23 @@ export function MatchingSearch({
                     <motion.div
                       key={`${key}-${offset}`}
                       animate={{
-                        scale: active ? 1.12 : 0.82,
-                        opacity: active ? 1 : 0.35,
-                        y: active ? -2 : 0,
+                        scale: active ? 1.1 : 0.85,
+                        opacity: active ? 1 : 0.32,
                       }}
-                      transition={{ type: "spring", stiffness: 360, damping: 22 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 380,
+                        damping: 24,
+                      }}
                       className="shrink-0"
                     >
                       <AvatarImage
                         avatarKey={key}
                         className={cn(
-                          "h-11 w-11 rounded-full",
+                          "h-9 w-9 rounded-full",
                           active
-                            ? "ring-2 ring-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.4)]"
-                            : "ring-1 ring-white/20",
+                            ? "shadow-[0_2px_0_0_rgba(0,0,0,0.35)] ring-2 ring-amber-300"
+                            : "ring-1 ring-white/15",
                         )}
                         muted={!active}
                       />
@@ -367,32 +334,33 @@ export function MatchingSearch({
                   );
                 })}
               </div>
-            </GamePanel>
-          )}
+            </div>
+          ) : null}
+        </GamePanel>
 
-          <div className="flex flex-wrap items-center justify-center gap-1.5">
-            <StakeChip
-              icon="/icons/xp.png"
-              label={t("duel.matchingStakeXp", {
-                n: toLocaleDigits(weeklyXp, locale),
-              })}
-              highlight
-            />
-            <StakeChip
-              icon="/icons/energy.png"
-              label={t("duel.matchingStakeEnergy", {
-                n: toLocaleDigits(staminaCost, locale),
-              })}
-            />
-            <StakeChip
-              icon="/icons/trophy.png"
-              label={t("duel.matchingStakeGlory")}
-            />
-          </div>
+        {/* Stakes — one row, no nested panel */}
+        <div className="mx-auto flex w-full max-w-sm flex-wrap items-center justify-center gap-1.5">
+          <StakeChip
+            icon="/icons/xp.png"
+            label={t("duel.matchingStakeXp", {
+              n: toLocaleDigits(weeklyXp, locale),
+            })}
+            highlight
+          />
+          <StakeChip
+            icon="/icons/energy.png"
+            label={t("duel.matchingStakeEnergy", {
+              n: toLocaleDigits(staminaCost, locale),
+            })}
+          />
+          <StakeChip
+            icon="/icons/trophy.png"
+            label={t("duel.matchingStakeGlory")}
+          />
         </div>
 
-        <p className="shrink-0 text-center font-display text-[11px] font-bold leading-snug text-white/55">
-          {t("duel.summaryAutoRefresh")}
+        <p className="shrink-0 text-center font-display text-[11px] font-bold leading-snug text-white/45">
+          {t("duel.matchingWaitNote")}
         </p>
       </div>
     </section>
@@ -417,25 +385,25 @@ function Fighter({
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
       <div className="relative">
-        {pulse && (
+        {pulse ? (
           <motion.span
             className={cn("absolute -inset-2 rounded-full blur-lg", glowClass)}
             animate={{ opacity: [0.35, 0.7, 0.35] }}
             transition={{ repeat: Infinity, duration: 1.55 }}
           />
-        )}
+        ) : null}
         <AvatarImage
           avatarKey={avatarKey}
           className={cn(
-            "relative h-18 w-18 rounded-full shadow-[0_6px_0_0_rgba(0,0,0,0.35)] ring-[3px] sm:h-24 sm:w-24",
+            "relative h-16 w-16 rounded-full shadow-[0_4px_0_0_rgba(0,0,0,0.35)] ring-[3px]",
             ringClass,
           )}
         />
-        <span className="absolute -bottom-1 inset-s-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-0.5 font-display text-[9px] font-black text-white shadow-md">
+        <span className="absolute -bottom-1 inset-s-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-0.5 font-display text-[9px] font-black text-white shadow-[0_2px_0_0_rgba(0,0,0,0.3)]">
           {badge}
         </span>
       </div>
-      <p className="mt-1 max-w-22 truncate font-display text-xs font-extrabold text-white sm:text-sm">
+      <p className="mt-0.5 max-w-22 truncate text-center font-display text-xs font-extrabold text-white">
         {name}
       </p>
     </div>

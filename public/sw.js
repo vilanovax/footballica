@@ -78,12 +78,23 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+async function putOk(cache, request, response) {
+  // Cache API rejects partial (206) and opaque responses. response.ok is true
+  // for 206, so status must be checked explicitly (media Range requests).
+  if (!response || response.status !== 200) return;
+  try {
+    await cache.put(request, response.clone());
+  } catch {
+    /* uncacheable body — serve without storing */
+  }
+}
+
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
   if (cached) return cached;
   const response = await fetch(request);
-  if (response && response.ok) cache.put(request, response.clone());
+  await putOk(cache, request, response);
   return response;
 }
 
@@ -91,8 +102,8 @@ async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
   const network = fetch(request)
-    .then((response) => {
-      if (response && response.ok) cache.put(request, response.clone());
+    .then(async (response) => {
+      await putOk(cache, request, response);
       return response;
     })
     .catch(() => cached);
@@ -103,7 +114,7 @@ async function networkFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   try {
     const response = await fetch(request);
-    if (response && response.ok) cache.put(request, response.clone());
+    await putOk(cache, request, response);
     return response;
   } catch {
     const cached = await cache.match(request);

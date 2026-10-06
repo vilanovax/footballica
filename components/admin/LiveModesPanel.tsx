@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Brain,
+  ContactRound,
   ExternalLink,
   Grid3x3,
   Route,
   Save,
   Search,
+  Settings2,
   Swords,
 } from "lucide-react";
 import {
@@ -30,13 +32,53 @@ import {
 import { Button } from "@/components/ui/button";
 import { AdminHelpTip } from "@/components/admin/AdminHelpTip";
 
-const CONTENT_HREF: Record<LiveModeId, string> = {
-  mystery: "/admin/mystery",
-  grid: "/admin/grid",
-  starPath: "/admin/star-path",
-  memory: "/admin/memory",
-  tikiTaka: "/admin/grid",
+type ModeLink = {
+  href: string;
+  label: string;
+  icon: "content" | "players" | "settings";
 };
+
+/** Per-mode shortcuts: content panel, player bank, game config. */
+const MODE_LINKS: Record<LiveModeId, ModeLink[]> = {
+  mystery: [
+    { href: "/admin/mystery", label: "Puzzles", icon: "content" },
+    { href: "/admin/players", label: "Players", icon: "players" },
+    { href: "/admin/config", label: "Settings", icon: "settings" },
+  ],
+  grid: [
+    { href: "/admin/grid", label: "Puzzles", icon: "content" },
+    { href: "/admin/players", label: "Players", icon: "players" },
+    { href: "/admin/config", label: "Settings", icon: "settings" },
+  ],
+  starPath: [
+    { href: "/admin/star-path", label: "Puzzles", icon: "content" },
+    { href: "/admin/players", label: "Players", icon: "players" },
+    { href: "/admin/config", label: "Settings", icon: "settings" },
+  ],
+  memory: [
+    { href: "/admin/memory", label: "Pairs", icon: "content" },
+    { href: "/admin/players", label: "Players", icon: "players" },
+    { href: "/admin/config", label: "Settings", icon: "settings" },
+  ],
+  // Panel explains no puzzle bank; axes auto-built from Players at duel start.
+  tikiTaka: [
+    { href: "/admin/tiki-taka", label: "Panel", icon: "content" },
+    { href: "/admin/players", label: "Players", icon: "players" },
+    { href: "/admin/config", label: "Settings", icon: "settings" },
+  ],
+};
+
+function ModeLinkIcon({
+  kind,
+  className,
+}: {
+  kind: ModeLink["icon"];
+  className?: string;
+}) {
+  if (kind === "players") return <ContactRound className={className} />;
+  if (kind === "settings") return <Settings2 className={className} />;
+  return <ExternalLink className={className} />;
+}
 
 const MODE_ICON: Record<
   LiveModeId,
@@ -54,7 +96,7 @@ const MODE_BLURB: Record<LiveModeId, string> = {
   grid: "Fill Immortal Grid cells · daily puzzle",
   starPath: "Follow the club trail to the player",
   memory: "Match footballer ↔ country pairs",
-  tikiTaka: "PvP 3×3 claim board · duel special",
+  tikiTaka: "PvP 3×3 claim board · axes from Players bank",
 };
 
 const MODE_ACCENT: Record<
@@ -269,39 +311,46 @@ export function LiveModesPanel({
                   : "border-dashed border-slate-300 opacity-75",
               ].join(" ")}
             >
-              <div className="mb-2.5 flex items-start justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <span
-                    className={[
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1",
-                      live
-                        ? `${accent.icon} ${accent.ring}`
-                        : "bg-white text-slate-700 ring-slate-200",
-                    ].join(" ")}
-                  >
-                    <Icon className="h-4 w-4" strokeWidth={2} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">
-                      {labels.en}
-                      <span className="ms-1.5 font-medium text-slate-600" dir="auto">
-                        · {labels.fa}
-                      </span>
-                    </p>
-                    <p className="truncate text-[11px] font-medium text-slate-600">
-                      {MODE_BLURB[id]}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href={CONTENT_HREF[id]}
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-700 transition hover:bg-white hover:text-emerald-800 ring-1 ring-transparent hover:ring-slate-200"
-                  title="Open content panel"
-                  aria-label={`Open ${labels.en} panel`}
+              <div className="mb-2.5 flex items-start gap-2.5">
+                <span
+                  className={[
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1",
+                    live
+                      ? `${accent.icon} ${accent.ring}`
+                      : "bg-white text-slate-700 ring-slate-200",
+                  ].join(" ")}
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
+                  <Icon className="h-4 w-4" strokeWidth={2} />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">
+                    {labels.en}
+                    <span className="ms-1.5 font-medium text-slate-600" dir="auto">
+                      · {labels.fa}
+                    </span>
+                  </p>
+                  <p className="truncate text-[11px] font-medium text-slate-600">
+                    {MODE_BLURB[id]}
+                  </p>
+                </div>
               </div>
+
+              <nav
+                aria-label={`${labels.en} shortcuts`}
+                className="mb-2.5 flex flex-wrap gap-1"
+              >
+                {MODE_LINKS[id].map((link) => (
+                  <Link
+                    key={`${id}-${link.href}-${link.label}`}
+                    href={link.href}
+                    className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[11px] font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-white hover:text-emerald-800 hover:ring-emerald-200"
+                    title={`${link.label} · ${labels.en}`}
+                  >
+                    <ModeLinkIcon kind={link.icon} className="h-3 w-3" />
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
 
               <div className="mt-auto grid grid-cols-2 gap-1.5">
                 <Switch

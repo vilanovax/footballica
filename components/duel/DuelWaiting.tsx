@@ -27,6 +27,8 @@ export function DuelWaiting({
   yourAvatar,
   yourName,
   matchFound = false,
+  pending,
+  onRefresh,
 }: DuelWaitingProps) {
   if (mode === "matching") {
     return (
@@ -40,6 +42,12 @@ export function DuelWaiting({
   }
 
   return (
-    <DuelSummary duel={duel} yourAvatar={yourAvatar} yourName={yourName} />
+    <DuelSummary
+      duel={duel}
+      yourAvatar={yourAvatar}
+      yourName={yourName}
+      pending={pending}
+      onRefresh={onRefresh}
+    />
   );
 }

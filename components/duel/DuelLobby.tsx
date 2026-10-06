@@ -36,6 +36,36 @@ type DuelLobbyProps = {
 
 type Translate = (k: string, vars?: Record<string, string | number>) => string;
 
+type FixtureAction = "attack" | "defend" | "act" | "waiting" | "matching";
+
+function fixtureAction(d: DuelSnapshot): FixtureAction {
+  if (d.status === "MATCHING") return "matching";
+  if (
+    d.status === "COMPLETED" ||
+    d.status === "EXPIRED" ||
+    d.status === "FORFEIT"
+  ) {
+    return "waiting";
+  }
+
+  const yourTurn =
+    d.canAct ||
+    (d.status === "WAITING_A" && d.youAre === "challenger") ||
+    (d.status === "WAITING_B" && d.youAre === "opponent");
+
+  if (!yourTurn) return "waiting";
+  if (d.status === "A_ATTACKING" || d.status === "B_ATTACKING") return "attack";
+  if (
+    d.status === "A_DEFENDING" ||
+    d.status === "B_DEFENDING" ||
+    d.status === "WAITING_A" ||
+    d.status === "WAITING_B"
+  ) {
+    return "defend";
+  }
+  return "act";
+}
+
 function statusLabel(d: DuelSnapshot, t: Translate): string {
   if (
     d.status === "COMPLETED" ||
@@ -51,27 +81,22 @@ function statusLabel(d: DuelSnapshot, t: Translate): string {
   }
   if (d.status === "MATCHING") return t("duel.matchingBadge");
 
-  const yourTurn =
-    d.canAct ||
-    (d.status === "WAITING_A" && d.youAre === "challenger") ||
-    (d.status === "WAITING_B" && d.youAre === "opponent");
-
-  if (yourTurn) {
-    if (d.status === "A_ATTACKING" || d.status === "B_ATTACKING") {
-      return t("duel.inboxActionAttack");
-    }
-    if (
-      d.status === "A_DEFENDING" ||
-      d.status === "B_DEFENDING" ||
-      d.status === "WAITING_A" ||
-      d.status === "WAITING_B"
-    ) {
-      return t("duel.inboxActionDefend");
-    }
-    return t("duel.yourTurn");
-  }
-
+  const action = fixtureAction(d);
+  if (action === "attack") return t("duel.inboxActionAttack");
+  if (action === "defend") return t("duel.inboxActionDefend");
+  if (action === "act") return t("duel.yourTurn");
   return t("duel.inboxWaitingRival");
+}
+
+/** Soonest deadline first — critical fixtures rise to the top. */
+function byDeadlineAsc(a: DuelSnapshot, b: DuelSnapshot): number {
+  const ta = a.turnDeadlineAt
+    ? new Date(a.turnDeadlineAt).getTime()
+    : Number.POSITIVE_INFINITY;
+  const tb = b.turnDeadlineAt
+    ? new Date(b.turnDeadlineAt).getTime()
+    : Number.POSITIVE_INFINITY;
+  return ta - tb;
 }
 
 function deadlineMeta(
@@ -145,13 +170,19 @@ export function DuelLobby({
     });
   }
 
-  const yourTurnList = yourTurn.filter((d) => !isDuelTerminal(d.status));
-  const waitingList = duels.filter(
-    (d) =>
-      !isDuelTerminal(d.status) &&
-      !d.canAct &&
-      !yourTurnList.some((y) => y.id === d.id),
-  );
+  const yourTurnList = yourTurn
+    .filter((d) => !isDuelTerminal(d.status))
+    .slice()
+    .sort(byDeadlineAsc);
+  const waitingList = duels
+    .filter(
+      (d) =>
+        !isDuelTerminal(d.status) &&
+        !d.canAct &&
+        !yourTurnList.some((y) => y.id === d.id),
+    )
+    .slice()
+    .sort(byDeadlineAsc);
   const finishedList = history;
   const turnCount = yourTurnList.length;
   const activeCount = yourTurnList.length + waitingList.length;
@@ -170,6 +201,7 @@ export function DuelLobby({
     duel: d,
     locale,
     badge: statusLabel(d, t),
+    action: fixtureAction(d),
     vsLabel: d.isBotOpponent ? t("duel.vsBot") : t("duel.vsRival"),
     youLabel: t("duel.you"),
     deadline: deadlineMeta(d.turnDeadlineAt, locale, t, now),
@@ -178,7 +210,7 @@ export function DuelLobby({
   return (
     <section
       className={cn(
-        "relative flex flex-col gap-2.5 pb-2",
+        "relative flex flex-col gap-2 pb-2",
         centerSparse &&
           "min-h-[calc(100dvh-8.25rem-env(safe-area-inset-bottom,0px))] justify-center",
       )}
@@ -220,7 +252,6 @@ export function DuelLobby({
               {...fixtureProps(d)}
               index={i}
               urgent
-              ctaLabel={t("duel.inboxPlayCta")}
             />
           ))}
         </InboxSection>
@@ -313,18 +344,18 @@ function LobbyHeroWithKickoff({
 }) {
   const { t } = useTranslation();
   return (
-    <GamePanel tone="amber" className="p-3">
-      <div className="relative flex items-center gap-2.5">
+    <GamePanel tone="amber" className="p-2.5">
+      <div className="relative flex items-center gap-2">
         <GameIconWell
           size="md"
           amber
           src="/icons/trophy.png"
-          className="h-11 w-11"
-          iconClassName="h-6 w-6"
+          className="h-10 w-10"
+          iconClassName="h-5 w-5"
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="truncate font-display text-base font-black text-white">
+          <div className="flex items-center gap-1.5">
+            <h1 className="truncate font-display text-[15px] font-black text-white">
               {t("duel.lobbyTitle")}
             </h1>
             <button
@@ -334,14 +365,17 @@ function LobbyHeroWithKickoff({
                 onHowTo();
               }}
               aria-label={t("duel.lobbyHowTo")}
-              className="shrink-0 font-display text-[10px] font-black text-amber-100/75 underline-offset-2 hover:underline"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-display text-[11px] font-black text-amber-100/80 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]"
             >
               ؟
             </button>
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <div className="mt-0.5 flex flex-wrap items-center gap-1">
             {turnCount > 0 ? (
-              <GameChip tone="amber" className="gap-1.5 tracking-normal">
+              <GameChip
+                tone="amber"
+                className="gap-1 px-1.5 py-0.5 text-[10px] tracking-normal"
+              >
                 <motion.span
                   className="h-1.5 w-1.5 rounded-full bg-accent"
                   animate={{ opacity: [1, 0.35, 1] }}
@@ -352,31 +386,34 @@ function LobbyHeroWithKickoff({
                 })}
               </GameChip>
             ) : (
-              <GameChip tone="emerald">
-                <span className="relative flex h-2 w-2">
+              <GameChip
+                tone="emerald"
+                className="gap-1 px-1.5 py-0.5 text-[10px]"
+              >
+                <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300/70 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300" />
                 </span>
                 {t("duel.lobbyAllWaiting")}
               </GameChip>
             )}
-            <GameChip className="tabular-nums">
+            <GameChip className="px-1.5 py-0.5 text-[10px] tabular-nums">
               {toLocaleDigits(activeCount, locale)} {t("duel.lobbyActive")}
             </GameChip>
           </div>
         </div>
       </div>
 
-      <div className="relative mt-3 flex items-center gap-2.5 border-t border-white/10 pt-3">
-        <div className="flex shrink-0 items-center -space-x-2.5 rtl:space-x-reverse">
+      <div className="relative mt-2 flex items-center gap-2 border-t border-white/10 pt-2">
+        <div className="flex shrink-0 items-center -space-x-2 rtl:space-x-reverse">
           <AvatarRing size="sm" avatarKey={yourAvatar} />
           <AvatarRing size="sm" mystery />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-sm font-black text-white">
+          <p className="truncate font-display text-[13px] font-black text-white">
             {anotherLabel}
           </p>
-          <p className="truncate font-display text-[11px] font-bold text-amber-100/70">
+          <p className="truncate font-display text-[10px] font-bold text-amber-100/65">
             {hint}
           </p>
         </div>
@@ -384,7 +421,7 @@ function LobbyHeroWithKickoff({
           variant="accent"
           disabled={pending}
           onClick={onStart}
-          className="shrink-0 px-3.5 text-sm"
+          className="min-h-11 shrink-0 px-3 text-[13px]"
         >
           {pending ? startingLabel : startLabel}
         </GameCta>
@@ -557,13 +594,13 @@ function InboxSection({
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between gap-2 px-0.5">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <h2
               className={cn(
-                "font-display text-sm font-black",
+                "font-display text-[13px] font-black",
                 hot ? "text-amber-200" : "text-white/85",
               )}
             >
@@ -572,20 +609,20 @@ function InboxSection({
             {badge ? (
               <GameChip
                 tone={hot ? "amber" : "emerald"}
-                className="min-h-6 min-w-6 justify-center bg-arena/90 tabular-nums text-white"
+                className="min-h-5 min-w-5 justify-center px-1.5 py-0 text-[10px] tabular-nums text-white"
               >
                 {badge}
               </GameChip>
             ) : null}
           </div>
           {hint ? (
-            <p className="mt-0.5 font-display text-[11px] font-bold text-white/55">
+            <p className="mt-0.5 font-display text-[10px] font-bold text-white/50">
               {hint}
             </p>
           ) : null}
         </div>
       </div>
-      <div className="flex flex-col gap-2">{children}</div>
+      <div className="flex flex-col gap-1.5">{children}</div>
     </div>
   );
 }
@@ -601,8 +638,8 @@ function AvatarRing({
   avatarKey?: string | null;
   size?: "sm" | "md";
 }) {
-  const dim = size === "sm" ? "h-10 w-10" : "h-14 w-14";
-  const ring = size === "sm" ? "ring-[3px]" : "ring-4";
+  const dim = size === "sm" ? "h-9 w-9" : "h-14 w-14";
+  const ring = size === "sm" ? "ring-2" : "ring-4";
 
   return (
     <div className="relative">
@@ -647,10 +684,10 @@ function FixtureCard({
   index,
   locale,
   badge,
+  action,
   urgent,
   waiting,
   finished,
-  ctaLabel,
   vsLabel,
   youLabel,
   deadline,
@@ -659,14 +696,15 @@ function FixtureCard({
   index: number;
   locale: Locale;
   badge: string;
+  action: FixtureAction;
   urgent: boolean;
   waiting?: boolean;
   finished?: boolean;
-  ctaLabel?: string;
   vsLabel: string;
   youLabel: string;
   deadline?: { label: string; tone: "critical" | "warn" | "ok" } | null;
 }) {
+  const { t } = useTranslation();
   const { you, them } = viewerMatchScore(d);
   const youParty =
     d.youAre === "challenger" ? d.challenger : d.opponent;
@@ -679,6 +717,7 @@ function FixtureCard({
     d.status === "FORFEIT";
   const outcome = isFinished ? duelViewerOutcome(d) : null;
   const themLost = outcome === "WIN";
+  const critical = urgent && deadline?.tone === "critical";
 
   const panelTone: GamePanelTone = urgent
     ? "amber"
@@ -692,13 +731,18 @@ function FixtureCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(0.2, 0.04 + index * 0.04) }}
+      transition={{ delay: Math.min(0.16, 0.03 + index * 0.03) }}
     >
       <Link
         href={`/play/duel/${d.id}`}
         className="group block"
+        aria-label={
+          urgent
+            ? `${t("duel.inboxPlayCta")} — ${themParty?.name ?? vsLabel}`
+            : undefined
+        }
         onClick={() => {
           playSound("click");
           haptic(HAPTIC.tap);
@@ -707,139 +751,163 @@ function FixtureCard({
         <GamePanel
           tone={panelTone}
           className={cn(
-            "flex min-h-18 items-center gap-3 bg-black/35 p-3 transition-transform active:scale-[0.985]",
-            urgent && "ring-2 ring-arena-amber",
-            deadline?.tone === "critical" &&
-              urgent &&
-              "shadow-[0_0_20px_rgba(244,63,94,0.28)]",
+            "flex min-h-14 items-center gap-2.5 bg-black/35 px-2.5 py-2 transition-transform active:scale-[0.985]",
+            urgent && "ring-1 ring-arena-amber/70",
+            critical && "shadow-[0_0_16px_rgba(244,63,94,0.3)] ring-rose-400/55",
             isFinished && "opacity-90",
           )}
         >
-          {urgent && (
+          {urgent ? (
             <motion.span
               aria-hidden
-              className="absolute inset-y-0 inset-s-0 w-1 bg-accent"
+              className={cn(
+                "absolute inset-y-1.5 inset-s-0 w-1 rounded-full",
+                critical ? "bg-rose-400" : "bg-accent",
+              )}
               animate={{ opacity: [0.55, 1, 0.55] }}
               transition={{ repeat: Infinity, duration: 1.35 }}
             />
-          )}
+          ) : null}
 
-          <div className="relative flex shrink-0 items-center -space-x-2.5 ps-0.5 rtl:space-x-reverse">
+          <div className="relative flex shrink-0 items-center -space-x-2 ps-1 rtl:space-x-reverse">
             <AvatarImage
               avatarKey={youParty?.avatar}
-              className="h-11 w-11 rounded-full ring-2 ring-sky-300/70"
+              className="h-9 w-9 rounded-full ring-2 ring-sky-300/65"
               muted={!youParty?.avatar}
             />
             <div className="relative z-1">
               <AvatarImage
                 avatarKey={themParty?.avatar}
                 className={cn(
-                  "h-11 w-11 rounded-full ring-2",
+                  "h-9 w-9 rounded-full ring-2",
                   urgent ? "ring-amber-300/70" : "ring-white/25",
                 )}
                 muted={!themParty?.avatar || themLost}
               />
-              {d.isBotOpponent && !d.shadowBotActive && (
-                <span className="absolute -bottom-0.5 -inset-e-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 font-display text-[8px] font-black text-accent-foreground shadow-sm ring-2 ring-arena">
+              {d.isBotOpponent && !d.shadowBotActive ? (
+                <span className="absolute -bottom-0.5 -inset-e-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-0.5 font-display text-[7px] font-black text-accent-foreground shadow-sm ring-1 ring-arena">
                   BOT
                 </span>
-              )}
+              ) : null}
             </div>
           </div>
 
           <div className="relative min-w-0 flex-1 text-start">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <p className="truncate font-display text-[15px] font-black text-white">
+            <div className="flex items-center gap-1.5">
+              <p className="min-w-0 truncate font-display text-[13px] font-black leading-tight text-white">
                 {themParty?.name ?? vsLabel}
               </p>
-              <GameChip className="tabular-nums">
-                <span>{toLocaleDigits(you, locale)}</span>
+              <span
+                dir="ltr"
+                className="shrink-0 rounded-md bg-black/40 px-1.5 py-0.5 font-display text-[11px] font-black tabular-nums text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
+              >
+                {toLocaleDigits(you, locale)}
                 <span className="text-white/40">–</span>
-                <span>{toLocaleDigits(them, locale)}</span>
-              </GameChip>
+                {toLocaleDigits(them, locale)}
+              </span>
             </div>
 
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <div className="mt-1 flex flex-wrap items-center gap-1">
               <StatusChip
+                action={action}
                 urgent={urgent}
                 waiting={Boolean(waiting)}
                 outcome={outcome}
                 label={badge}
               />
               {deadline && !isFinished ? (
-                <GameChip
-                  tone={
-                    deadline.tone === "critical"
-                      ? "amber"
-                      : deadline.tone === "warn"
-                        ? "amber"
-                        : "default"
-                  }
+                <span
                   className={cn(
-                    "gap-1",
-                    deadline.tone === "critical" &&
-                      "bg-rose-500/35 text-rose-50 ring-1 ring-rose-300/50",
+                    "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 font-display text-[10px] font-bold",
+                    deadline.tone === "critical"
+                      ? "bg-rose-500/35 text-rose-50 shadow-[inset_0_0_0_1px_rgba(251,113,133,0.45)]"
+                      : deadline.tone === "warn"
+                        ? "bg-amber-500/25 text-amber-50 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.35)]"
+                        : "bg-black/35 text-white/70 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]",
                   )}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/icons/timer.png"
                     alt=""
-                    className="h-3.5 w-3.5 object-contain"
+                    className="h-3 w-3 object-contain opacity-90"
                     draggable={false}
                   />
                   {deadline.label}
-                </GameChip>
+                </span>
               ) : isFinished ? (
-                <span className="truncate font-display text-[11px] font-bold text-white/55">
+                <span className="truncate font-display text-[10px] font-bold text-white/50">
                   {youLabel}
                   {youParty?.name ? ` · ${youParty.name}` : ""}
                 </span>
               ) : null}
             </div>
-
-            {urgent && ctaLabel ? (
-              <span className="mt-2 inline-flex min-h-9 items-center justify-center rounded-full bg-accent px-3.5 font-display text-xs font-black text-accent-foreground shadow-[0_3px_0_0_hsl(var(--accent-deep))]">
-                ▶ {ctaLabel}
-              </span>
-            ) : null}
           </div>
 
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/icons/back.png"
-            alt=""
-            aria-hidden
-            className="relative h-5 w-5 shrink-0 object-contain opacity-55 transition-transform group-active:-translate-x-0.5 rtl:rotate-180"
-          />
+          {urgent ? (
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-[0_3px_0_0_hsl(var(--accent-deep))] transition-transform group-active:translate-y-0.5 group-active:shadow-[0_1px_0_0_hsl(var(--accent-deep))]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/target.png"
+                alt=""
+                aria-hidden
+                className="h-5 w-5 object-contain"
+                draggable={false}
+              />
+            </span>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/icons/back.png"
+              alt=""
+              aria-hidden
+              className="relative h-4 w-4 shrink-0 object-contain opacity-45 transition-transform group-active:-translate-x-0.5 rtl:rotate-180"
+            />
+          )}
         </GamePanel>
       </Link>
     </motion.div>
   );
 }
 
-/** High-contrast status — never wash text into the panel wash. */
+/** Status chip — attack/defend tones differ from the play CTA. */
 function StatusChip({
+  action,
   urgent,
   waiting,
   outcome,
   label,
 }: {
+  action: FixtureAction;
   urgent: boolean;
   waiting: boolean;
   outcome: "WIN" | "LOSE" | "DRAW" | null;
   label: string;
 }) {
+  if (urgent && action === "attack") {
+    return (
+      <span className="inline-flex items-center rounded-md bg-orange-500/40 px-1.5 py-0.5 font-display text-[10px] font-black text-orange-50 shadow-[inset_0_0_0_1px_rgba(251,146,60,0.55)]">
+        {label}
+      </span>
+    );
+  }
+  if (urgent && action === "defend") {
+    return (
+      <span className="inline-flex items-center rounded-md bg-sky-500/35 px-1.5 py-0.5 font-display text-[10px] font-black text-sky-50 shadow-[inset_0_0_0_1px_rgba(56,189,248,0.5)]">
+        {label}
+      </span>
+    );
+  }
   if (urgent) {
     return (
-      <span className="inline-flex items-center rounded-md bg-accent px-2 py-0.5 font-display text-[10px] font-black uppercase tracking-wide text-accent-foreground shadow-[0_2px_0_0_hsl(var(--accent-deep))]">
+      <span className="inline-flex items-center rounded-md bg-accent/90 px-1.5 py-0.5 font-display text-[10px] font-black text-accent-foreground shadow-[0_2px_0_0_hsl(var(--accent-deep))]">
         {label}
       </span>
     );
   }
   if (waiting) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md bg-black/45 px-2 py-0.5 font-display text-[10px] font-black text-sky-100 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.45)]">
+      <span className="inline-flex items-center gap-1 rounded-md bg-black/45 px-1.5 py-0.5 font-display text-[10px] font-black text-sky-100 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.45)]">
         <span className="h-1.5 w-1.5 rounded-full bg-sky-300" aria-hidden />
         {label}
       </span>
@@ -847,20 +915,20 @@ function StatusChip({
   }
   if (outcome === "WIN") {
     return (
-      <span className="inline-flex items-center rounded-md bg-emerald-500/30 px-2 py-0.5 font-display text-[10px] font-black text-emerald-100 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.5)]">
+      <span className="inline-flex items-center rounded-md bg-emerald-500/30 px-1.5 py-0.5 font-display text-[10px] font-black text-emerald-100 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.5)]">
         {label}
       </span>
     );
   }
   if (outcome === "LOSE") {
     return (
-      <span className="inline-flex items-center rounded-md bg-rose-500/30 px-2 py-0.5 font-display text-[10px] font-black text-rose-100 shadow-[inset_0_0_0_1px_rgba(251,113,133,0.5)]">
+      <span className="inline-flex items-center rounded-md bg-rose-500/30 px-1.5 py-0.5 font-display text-[10px] font-black text-rose-100 shadow-[inset_0_0_0_1px_rgba(251,113,133,0.5)]">
         {label}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-md bg-black/40 px-2 py-0.5 font-display text-[10px] font-black text-white/80 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)]">
+    <span className="inline-flex items-center rounded-md bg-black/40 px-1.5 py-0.5 font-display text-[10px] font-black text-white/80 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)]">
       {label}
     </span>
   );

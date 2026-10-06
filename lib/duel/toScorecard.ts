@@ -52,8 +52,9 @@ function matchStatus(duel: DuelSnapshot): ScorecardMatchStatus {
 
   const yourTurn =
     duel.canAct ||
-    (duel.status === "WAITING_A" && duel.youAre === "challenger") ||
-    (duel.status === "WAITING_B" && duel.youAre === "opponent");
+    (!duel.youTimedOut &&
+      ((duel.status === "WAITING_A" && duel.youAre === "challenger") ||
+        (duel.status === "WAITING_B" && duel.youAre === "opponent")));
 
   return yourTurn ? "YOUR_TURN" : "WAITING";
 }

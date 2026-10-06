@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 type NewspaperModalProps = {
   news: NewsPayload | null;
   state: NewsState;
+  claiming?: boolean;
+  onDismiss: () => void;
   onClaim: () => void;
 };
 
@@ -197,22 +199,27 @@ function PaperCta({
   children,
   onClick,
   variant = "ink",
+  disabled = false,
 }: {
   children: ReactNode;
   onClick: () => void;
   variant?: "ink" | "accent" | "ghost";
+  disabled?: boolean;
 }) {
   return (
     <motion.button
       type="button"
-      whileTap={{ y: 2, scale: 0.985 }}
+      disabled={disabled}
+      whileTap={disabled ? undefined : { y: 2, scale: 0.985 }}
       onClick={() => {
+        if (disabled) return;
         playSound("click");
         haptic(HAPTIC.tap);
         onClick();
       }}
       className={cn(
         "mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl font-display text-base font-black transition-colors",
+        disabled && "pointer-events-none opacity-60",
         variant === "accent" &&
           "bg-accent text-accent-foreground shadow-[0_4px_0_0_hsl(var(--accent-deep))]",
         variant === "ink" &&
@@ -317,14 +324,21 @@ function BoostSeal({
   );
 }
 
-export function NewspaperModal({ news, state, onClaim }: NewspaperModalProps) {
+export function NewspaperModal({
+  news,
+  state,
+  claiming = false,
+  onDismiss,
+  onClaim,
+}: NewspaperModalProps) {
   const { t, locale } = useTranslation();
   const dateLabel = editionDate(locale);
   const reduceMotion = useReducedMotion();
   const dismiss = () => {
+    if (claiming) return;
     playSound("click");
     haptic(HAPTIC.tap);
-    onClaim();
+    onDismiss();
   };
 
   // Cooldown: today's claim is spent and nothing is running.
@@ -383,14 +397,15 @@ export function NewspaperModal({ news, state, onClaim }: NewspaperModalProps) {
           </p>
         </div>
 
-        <PaperCta variant="ghost" onClick={onClaim}>
+        <PaperCta variant="ghost" onClick={onDismiss}>
           {t("common.ok")}
         </PaperCta>
       </PaperSheet>
     );
   }
 
-  const alreadyActive = state === "active";
+  const claimable = state === "preview";
+  const alreadyActive = state === "active" || state === "fresh";
   const isCoin = news.type === "COIN_BOOST";
   const multLabel = formatMultiplier(news.multiplier);
   const multDisplay = toLocaleDigits(multLabel, locale);
@@ -414,7 +429,7 @@ export function NewspaperModal({ news, state, onClaim }: NewspaperModalProps) {
         desk={t("news.sportsDesk")}
       />
 
-      {!alreadyActive ? (
+      {claimable ? (
         <motion.p
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -492,10 +507,15 @@ export function NewspaperModal({ news, state, onClaim }: NewspaperModalProps) {
       </p>
 
       <PaperCta
-        variant={alreadyActive ? "ghost" : "accent"}
-        onClick={onClaim}
+        variant={claimable ? "accent" : "ghost"}
+        onClick={claimable ? onClaim : onDismiss}
+        disabled={claiming}
       >
-        {alreadyActive ? t("common.nice") : t("news.claim")}
+        {claimable
+          ? claiming
+            ? "…"
+            : t("news.claim")
+          : t("common.nice")}
       </PaperCta>
     </PaperSheet>
   );

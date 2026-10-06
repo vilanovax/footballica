@@ -10,20 +10,30 @@ type DuelSummaryProps = {
   /** Fallback when snapshot parties aren't hydrated yet. */
   yourAvatar?: string | null;
   yourName?: string | null;
+  /** Arena state reload — `router.refresh()` alone keeps stale client phase. */
+  onRefresh?: () => void;
+  pending?: boolean;
 };
 
 /**
  * In-progress duel board (wait / your-turn). Same Scorecard as the result
  * screen — only `matchStatus` + CTAs differ.
  */
-export function DuelSummary({ duel, yourAvatar, yourName }: DuelSummaryProps) {
+export function DuelSummary({
+  duel,
+  yourAvatar,
+  yourName,
+  onRefresh,
+  pending,
+}: DuelSummaryProps) {
   const router = useRouter();
   const data = toScorecard(duel, { yourAvatar, yourName });
 
   return (
     <DuelScorecard
       data={data}
-      onPrimaryAction={() => router.refresh()}
+      primaryPending={pending}
+      onPrimaryAction={() => (onRefresh ? onRefresh() : router.refresh())}
       onSecondaryAction={() => router.push("/play/duel")}
     />
   );

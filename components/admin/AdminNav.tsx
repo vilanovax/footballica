@@ -53,6 +53,7 @@ const GROUPS: NavGroup[] = [
       { href: "/admin/grid", label: "Grid", icon: Grid3x3 },
       { href: "/admin/star-path", label: "Star Path", icon: Route },
       { href: "/admin/memory", label: "Memory", icon: Brain },
+      { href: "/admin/tiki-taka", label: "Tiki-Taka", icon: Swords },
       { href: "/admin/missions", label: "Missions", icon: Target },
       { href: "/admin/challenges", label: "Challenges", icon: Trophy },
       { href: "/admin/badges", label: "Badges", icon: Medal },

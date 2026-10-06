@@ -24,6 +24,7 @@ type DuelScorecardProps = {
   data: ScorecardData;
   onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
+  primaryPending?: boolean;
   /** When embedded in a result shell, omit sticky CTAs. */
   hideFooter?: boolean;
   /** Parent already shows Win/Lose — skip the inner banner. */
@@ -39,6 +40,7 @@ export function DuelScorecard({
   data,
   onPrimaryAction,
   onSecondaryAction,
+  primaryPending = false,
   hideFooter = false,
   hideOutcomeBanner = false,
   variant = "live",
@@ -106,30 +108,27 @@ export function DuelScorecard({
         >
           <GamePanel
             tone="emerald"
-            className={cn(
-              "bg-black/25",
-              isResult ? "px-3 py-4" : "px-3 py-4",
-            )}
+            className={cn("bg-black/25", isResult ? "px-3 py-3" : "px-3 py-4")}
           >
           {!hideOutcomeBanner && (
             <OutcomeBanner status={status} outcome={outcome} />
           )}
 
           {isResult && (
-            <div className="relative mb-3 flex justify-center">
+            <div className="relative mb-2.5 flex justify-center">
               <StatusBadge status={status} label={statusCopy} />
             </div>
           )}
 
-          <div className="relative flex items-center justify-between gap-2">
+          <div className="relative flex items-start justify-between gap-2">
             <PlayerBlock
               player={you}
               you
               muted={status === "COMPLETED" && outcome === "LOSE"}
               compact={isResult}
             />
-            <div className="flex shrink-0 flex-col items-center px-1">
-              <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
+            <div className="flex shrink-0 flex-col items-center px-1 pt-1">
+              <p className="font-display text-[10px] font-bold tracking-wide text-white/45">
                 {t("duel.scorecard.roundsWon")}
               </p>
               <motion.p
@@ -137,15 +136,15 @@ export function DuelScorecard({
                 initial={{ scale: 0.92, opacity: 0.7 }}
                 animate={{ scale: 1, opacity: 1 }}
                 className={cn(
-                  "font-display font-black tabular-nums tracking-tight text-white drop-shadow-md",
-                  isResult ? "text-5xl" : "text-4xl",
+                  "mt-0.5 font-display font-black tabular-nums tracking-tight text-white drop-shadow-md",
+                  isResult ? "text-4xl" : "text-4xl",
                 )}
               >
                 {toLocaleDigits(youScore, locale)}
-                <span className="mx-1.5 text-white/35">–</span>
+                <span className="mx-1 text-white/35">–</span>
                 {toLocaleDigits(themScore, locale)}
               </motion.p>
-              <GameChip tone="amber" className="mt-1 uppercase tracking-[0.2em]">
+              <GameChip tone="amber" className="mt-1.5 px-2 py-0.5 text-[10px] font-black tracking-[0.18em]">
                 VS
               </GameChip>
             </div>
@@ -159,17 +158,34 @@ export function DuelScorecard({
         </motion.header>
 
         <div className="relative flex min-h-0 flex-1 flex-col gap-2">
-          <div className="flex shrink-0 items-center justify-between px-0.5">
-            <p className="font-display text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/70">
+          {!isResult ? (
+            <div className="flex shrink-0 items-center justify-between px-0.5">
+              <p className="font-display text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/70">
+                {t("duel.scorecard.board")}
+              </p>
+              <p className="font-display text-[10px] font-bold text-white/40">
+                {t("duel.scorecard.boardHint")}
+              </p>
+            </div>
+          ) : (
+            <p className="shrink-0 px-0.5 font-display text-[11px] font-extrabold text-white/55">
               {t("duel.scorecard.board")}
             </p>
-            <p className="font-display text-[10px] font-bold text-white/40">
-              {t("duel.scorecard.boardHint")}
-            </p>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-2">
+          )}
+          <div
+            className={cn(
+              "flex min-h-0 flex-col gap-2",
+              isResult ? "shrink-0" : "flex-1",
+            )}
+          >
             {rounds.map((round, i) => (
-              <RoundRow key={round.roundNumber} round={round} index={i} grow />
+              <RoundRow
+                key={round.roundNumber}
+                round={round}
+                index={i}
+                grow={!isResult}
+                stacked={isResult}
+              />
             ))}
           </div>
         </div>
@@ -186,14 +202,15 @@ export function DuelScorecard({
               <GameCta
                 variant="primary"
                 block
+                disabled={primaryPending}
                 onClick={onPrimaryAction}
                 className="font-display text-base font-black"
               >
-                {primaryLabel}
+                {primaryPending ? "…" : primaryLabel}
               </GameCta>
             )}
 
-            {(status === "COMPLETED" || status === "WAITING") && (
+            {onSecondaryAction && (
               <GameCta
                 variant={status === "COMPLETED" ? "accent" : "ghost"}
                 block
@@ -325,7 +342,7 @@ function PlayerBlock({
     muted || !you ? undefined : clubAccentRingStyle(player.colorKey);
   const themAccent =
     !you && player.colorKey ? getClubColor(player.colorKey) : null;
-  const size = compact ? "h-16 w-16" : "h-18 w-18";
+  const size = compact ? "h-14 w-14" : "h-18 w-18";
 
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
@@ -340,11 +357,11 @@ function PlayerBlock({
       >
         <motion.span
           aria-hidden
-          className={[
+          className={cn(
             "absolute -inset-2 rounded-full blur-md",
             you ? "bg-primary/35" : "bg-secondary/30",
-            muted ? "opacity-0" : "",
-          ].join(" ")}
+            muted && "opacity-0",
+          )}
           animate={muted ? undefined : { opacity: [0.35, 0.7, 0.35] }}
           transition={{ repeat: Infinity, duration: 1.8 }}
         />
@@ -352,32 +369,32 @@ function PlayerBlock({
           avatarKey={player.avatarKey}
           colorKey={player.colorKey}
           muted={muted}
-          className={[
-            "relative rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.45)]",
+          className={cn(
+            "relative rounded-full shadow-[0_6px_16px_rgba(0,0,0,0.45)]",
             size,
-            muted ? "opacity-70 ring-3 ring-white/15" : "",
-            !you && !player.colorKey && !muted ? "ring-3 ring-white/25" : "",
-          ].join(" ")}
+            muted && "opacity-70 ring-2 ring-white/15",
+            !you && !player.colorKey && !muted && "ring-2 ring-white/25",
+          )}
         />
-        <span className="absolute -bottom-1 left-1/2 flex h-6 min-w-6 -translate-x-1/2 items-center justify-center rounded-full bg-amber-400 px-1.5 font-display text-[11px] font-black text-amber-950 shadow-md ring-2 ring-[#121820]">
+        <span className="absolute -bottom-1 inset-s-1/2 flex h-5 min-w-5 -translate-x-1/2 items-center justify-center rounded-full bg-amber-400 px-1 font-display text-[10px] font-black text-amber-950 shadow-md ring-2 ring-arena">
           {player.level}
         </span>
-        {player.isBot && (
-          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#1a2433] text-sm shadow ring-2 ring-amber-300/50">
+        {player.isBot ? (
+          <span className="absolute -inset-e-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-arena text-[11px] shadow ring-2 ring-amber-300/50">
             🤖
           </span>
-        )}
-        {you && (
+        ) : null}
+        {you ? (
           <span className="absolute -inset-s-1 -top-1 rounded-full bg-primary px-1.5 py-0.5 font-display text-[9px] font-black text-primary-foreground shadow">
             {t("duel.you")}
           </span>
-        )}
+        ) : null}
       </div>
       <p
-        className={[
-          "max-w-26 truncate font-display text-xs font-bold",
+        className={cn(
+          "w-full max-w-23 truncate text-center font-display text-xs font-bold leading-tight",
           muted ? "text-white/40" : "text-white",
-        ].join(" ")}
+        )}
       >
         {player.name}
       </p>
@@ -388,23 +405,28 @@ function PlayerBlock({
 function RoundRow({
   round,
   grow = false,
+  stacked = false,
 }: {
   round: ScorecardRound;
   index?: number;
   grow?: boolean;
+  /** Result page: stacked meta + score strip (no vertical stretch). */
+  stacked?: boolean;
 }) {
   const { t, locale } = useTranslation();
   const cat =
     locale === "fa" ? round.categoryNameFa : round.categoryNameEn;
   const isMemory = round.roundType === "MEMORY";
-  const growCls = grow ? "flex min-h-[3.75rem] flex-1 flex-col justify-center" : "";
+  const growCls = grow
+    ? "flex min-h-[3.75rem] flex-1 flex-col justify-center"
+    : "";
 
   if (round.locked) {
     return (
       <GamePanel
         tone="amber"
         className={cn(
-          "border-dashed bg-black/20 px-3 py-3 text-center opacity-70",
+          "border-dashed bg-black/20 px-3 py-2.5 text-center opacity-70",
           growCls,
         )}
       >
@@ -442,6 +464,13 @@ function RoundRow({
           ? ("rose" as const)
           : ("sky" as const);
 
+  const resultLabel =
+    lead === "you"
+      ? t("duel.scorecard.roundWin")
+      : lead === "them"
+        ? t("duel.scorecard.roundLoss")
+        : t("duel.scorecard.roundDraw");
+
   return (
     <motion.div
       initial={false}
@@ -451,103 +480,137 @@ function RoundRow({
       <GamePanel
         tone={tone}
         className={cn(
-          "relative w-full bg-black/30 px-3 py-3",
+          "relative w-full bg-black/30",
+          stacked ? "px-2.5 py-2.5" : "px-3 py-3",
           grow && "flex min-h-0 flex-1 flex-col justify-center",
         )}
       >
-      {lead === "you" && (
-        <span
-          aria-hidden
-          className="absolute inset-y-0 inset-s-0 w-1 bg-emerald-400"
-        />
-      )}
-      {lead === "them" && (
-        <span
-          aria-hidden
-          className="absolute inset-y-0 inset-e-0 w-1 bg-rose-400"
-        />
-      )}
-
-      <div className="mb-2.5 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 font-display text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
-            {t("duel.scorecard.round", {
-              n: toLocaleDigits(round.roundNumber, locale),
-            })}
-          </span>
+        {lead === "you" ? (
           <span
-            className={[
-              "shrink-0 rounded-full px-2 py-0.5 font-display text-[10px] font-bold ring-1",
-              isMemory
-                ? "bg-violet-400/15 text-violet-200 ring-violet-300/35"
-                : "bg-sky-400/15 text-sky-200 ring-sky-300/35",
-            ].join(" ")}
-          >
-            {isMemory
-              ? t("duel.scorecard.memoryTag")
-              : t("duel.scorecard.quizTag")}
-          </span>
-          <span className="truncate font-display text-xs font-black text-white">
-            {cat || "—"}
-          </span>
-        </div>
-        {!round.waitingOnThem && (
-          <span
-            className={[
-              "shrink-0 font-display text-[11px] font-black",
-              lead === "you"
-                ? "text-emerald-300"
-                : lead === "them"
-                  ? "text-rose-300"
-                  : "text-white/55",
-            ].join(" ")}
-          >
-            {lead === "you"
-              ? t("duel.scorecard.roundWin")
-              : lead === "them"
-                ? t("duel.scorecard.roundLoss")
-                : t("duel.scorecard.roundDraw")}
-          </span>
-        )}
-      </div>
-
-      {isMemory ? (
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-          <PairMeter
-            found={youGoals}
-            total={totalSlots}
-            align="end"
-            delay={0}
+            aria-hidden
+            className="absolute inset-y-2 inset-s-0 w-1 rounded-full bg-emerald-400"
           />
-          <span className="px-1 font-display text-sm font-black tabular-nums text-white/80">
-            {toLocaleDigits(youGoals, locale)}–
-            {toLocaleDigits(themGoals, locale)}
-          </span>
-          {round.waitingOnThem ? (
-            <WaitingChip />
-          ) : (
+        ) : null}
+        {lead === "them" ? (
+          <span
+            aria-hidden
+            className="absolute inset-y-2 inset-e-0 w-1 rounded-full bg-rose-400"
+          />
+        ) : null}
+
+        {stacked ? (
+          <>
+            <div className="mb-2 flex items-center gap-1.5">
+              <span className="shrink-0 rounded-lg bg-amber-400/15 px-2 py-0.5 font-display text-[10px] font-extrabold text-amber-200 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.35)]">
+                {t("duel.scorecard.round", {
+                  n: toLocaleDigits(round.roundNumber, locale),
+                })}
+              </span>
+              <span
+                className={cn(
+                  "shrink-0 rounded-lg px-2 py-0.5 font-display text-[10px] font-bold",
+                  isMemory
+                    ? "bg-violet-400/15 text-violet-200 shadow-[inset_0_0_0_1px_rgba(167,139,250,0.35)]"
+                    : "bg-sky-400/15 text-sky-200 shadow-[inset_0_0_0_1px_rgba(56,189,248,0.35)]",
+                )}
+              >
+                {isMemory
+                  ? t("duel.scorecard.memoryTag")
+                  : t("duel.scorecard.quizTag")}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-center font-display text-xs font-black text-white">
+                {cat || "—"}
+              </span>
+              {!round.waitingOnThem ? (
+                <span
+                  className={cn(
+                    "shrink-0 rounded-lg px-2 py-0.5 font-display text-[10px] font-black",
+                    lead === "you" && "bg-emerald-500/20 text-emerald-200",
+                    lead === "them" && "bg-rose-500/20 text-rose-200",
+                    lead === "draw" && "bg-white/10 text-white/60",
+                  )}
+                >
+                  {resultLabel}
+                </span>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <div className="mb-2.5 flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 font-display text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
+                {t("duel.scorecard.round", {
+                  n: toLocaleDigits(round.roundNumber, locale),
+                })}
+              </span>
+              <span
+                className={cn(
+                  "shrink-0 rounded-full px-2 py-0.5 font-display text-[10px] font-bold ring-1",
+                  isMemory
+                    ? "bg-violet-400/15 text-violet-200 ring-violet-300/35"
+                    : "bg-sky-400/15 text-sky-200 ring-sky-300/35",
+                )}
+              >
+                {isMemory
+                  ? t("duel.scorecard.memoryTag")
+                  : t("duel.scorecard.quizTag")}
+              </span>
+              <span className="truncate font-display text-xs font-black text-white">
+                {cat || "—"}
+              </span>
+            </div>
+            {!round.waitingOnThem ? (
+              <span
+                className={cn(
+                  "shrink-0 font-display text-[11px] font-black",
+                  lead === "you" && "text-emerald-300",
+                  lead === "them" && "text-rose-300",
+                  lead === "draw" && "text-white/55",
+                )}
+              >
+                {resultLabel}
+              </span>
+            ) : null}
+          </div>
+        )}
+
+        {isMemory ? (
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
             <PairMeter
-              found={themGoals}
+              found={youGoals}
               total={totalSlots}
-              align="start"
-              delay={0.08}
+              align="end"
+              delay={0}
             />
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-          <AnswerStrip answers={round.youAnswers} align="end" />
-          <span className="px-1 font-display text-sm font-black tabular-nums text-white/80">
-            {toLocaleDigits(youGoals, locale)}–
-            {toLocaleDigits(themGoals, locale)}
-          </span>
-          {round.waitingOnThem ? (
-            <WaitingChip />
-          ) : (
-            <AnswerStrip answers={round.themAnswers} align="start" />
-          )}
-        </div>
-      )}
+            <span className="px-1 font-display text-sm font-black tabular-nums text-white/80">
+              {toLocaleDigits(youGoals, locale)}–
+              {toLocaleDigits(themGoals, locale)}
+            </span>
+            {round.waitingOnThem ? (
+              <WaitingChip />
+            ) : (
+              <PairMeter
+                found={themGoals}
+                total={totalSlots}
+                align="start"
+                delay={0.08}
+              />
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5">
+            <AnswerStrip answers={round.youAnswers} align="end" />
+            <span className="min-w-11 text-center font-display text-sm font-black tabular-nums text-white/85">
+              {toLocaleDigits(youGoals, locale)}–
+              {toLocaleDigits(themGoals, locale)}
+            </span>
+            {round.waitingOnThem ? (
+              <WaitingChip />
+            ) : (
+              <AnswerStrip answers={round.themAnswers} align="start" />
+            )}
+          </div>
+        )}
       </GamePanel>
     </motion.div>
   );

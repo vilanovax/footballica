@@ -80,7 +80,7 @@ export function BottomNav() {
             onClick: () => router.push(href),
           },
         });
-        haptic(HAPTIC.tap);
+        // No haptic here — poll/toast runs without a user gesture; Chrome blocks it.
       }
       prev = res.count;
       sessionStorage.setItem("fb_duel_inbox", String(res.count));

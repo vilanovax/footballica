@@ -111,6 +111,9 @@ function derivePhase(
 
   if (duel.status === "MATCHING") return { kind: "matching" };
 
+  // Shadow Bot took this viewer's turn — never reopen quiz/memory for them.
+  if (duel.youTimedOut) return { kind: "wait" };
+
   const waitingForThem =
     (duel.status === "WAITING_B" && duel.youAre === "challenger") ||
     (duel.status === "WAITING_A" && duel.youAre === "opponent");
@@ -129,8 +132,8 @@ function derivePhase(
   const needsDefend =
     (duel.status === "WAITING_A" && duel.youAre === "challenger") ||
     (duel.status === "WAITING_B" && duel.youAre === "opponent") ||
-    duel.status === "A_DEFENDING" ||
-    duel.status === "B_DEFENDING";
+    ((duel.status === "A_DEFENDING" || duel.status === "B_DEFENDING") &&
+      duel.canAct);
 
   if (needsDefend) {
     if (isTiki) return { kind: "tiki" };
@@ -348,11 +351,13 @@ export function DuelArena({
   useEffect(() => {
     const round = activeRound(duel);
     if (round?.roundType === "MEMORY") return;
+    if (duel.youTimedOut) return;
 
     const needsBegin =
       (duel.status === "WAITING_A" && duel.youAre === "challenger") ||
       (duel.status === "WAITING_B" && duel.youAre === "opponent") ||
       ((duel.status === "A_DEFENDING" || duel.status === "B_DEFENDING") &&
+        duel.canAct &&
         (!questions || questions.length === 0));
 
     if (!needsBegin) return;
@@ -554,45 +559,62 @@ export function DuelArena({
     if (next.status === "COMPLETED") playSound("whistle");
   }
 
-  function handleAttackDone(answers: DuelAnswerSubmission[]) {
-    startTransition(async () => {
-      const res = await submitDuelAttack(duelId, answers);
-      if (!res.ok) {
-        toast.error(t("duel.errGeneric"));
-        return;
-      }
-      setDuel(res.duel);
-      setQuestions(null);
-      setMemoryBoard(null);
-      setMemoryEndsAt(null);
-      setPhase(derivePhase(res.duel, null, { board: null, endsAt: null, revealMs: memoryRevealMs }));
+  function leaveQuiz(next: DuelSnapshot, board: MemoryBoardJson | null) {
+    setDuel(next);
+    setQuestions(null);
+    setMemoryBoard(board);
+    setMemoryEndsAt(null);
+    const nextPhase = derivePhase(next, null, {
+      board,
+      endsAt: null,
+      revealMs: memoryRevealMs,
     });
+    // Submitted answers must never remount the same quiz (finishing overlay).
+    setPhase(nextPhase.kind === "quiz" ? { kind: "wait" } : nextPhase);
+    if (next.status === "COMPLETED") playSound("whistle");
   }
 
-  function handleDefendDone(answers: DuelAnswerSubmission[]) {
-    startTransition(async () => {
-      const res = await submitDuelDefend(duelId, answers);
-      if (!res.ok) {
-        toast.error(t("duel.errGeneric"));
-        return;
+  async function recoverAfterQuizSubmit(): Promise<boolean> {
+    const again = await getDuel(duelId, { skipJobs: true });
+    if (!again.ok) return false;
+    leaveQuiz(again.duel, again.memoryBoard ?? null);
+    return true;
+  }
+
+  async function handleAttackDone(answers: DuelAnswerSubmission[]) {
+    const res = await submitDuelAttack(duelId, answers);
+    if (!res.ok) {
+      if (
+        res.error === "already_submitted" ||
+        res.error === "not_your_turn"
+      ) {
+        if (await recoverAfterQuizSubmit()) return;
       }
-      setDuel(res.duel);
-      setQuestions(null);
-      if (res.missions) setMissionFeedback(res.missions);
-      // Round 2 MEMORY shell may already be on the snapshot.
-      const r2 = res.duel.rounds.find((r) => r.roundNumber === 2);
-      const board = r2?.board ?? null;
-      setMemoryBoard(board);
-      setMemoryEndsAt(null);
-      setPhase(
-        derivePhase(res.duel, null, {
-          board,
-          endsAt: null,
-          revealMs: memoryRevealMs,
-        }),
+      toast.error(
+        res.error === "not_your_turn" ? t("duel.errTurn") : t("duel.errGeneric"),
       );
-      if (res.duel.status === "COMPLETED") playSound("whistle");
-    });
+      throw new Error(res.error);
+    }
+    leaveQuiz(res.duel, null);
+  }
+
+  async function handleDefendDone(answers: DuelAnswerSubmission[]) {
+    const res = await submitDuelDefend(duelId, answers);
+    if (!res.ok) {
+      if (
+        res.error === "already_submitted" ||
+        res.error === "not_your_turn"
+      ) {
+        if (await recoverAfterQuizSubmit()) return;
+      }
+      toast.error(
+        res.error === "not_your_turn" ? t("duel.errTurn") : t("duel.errGeneric"),
+      );
+      throw new Error(res.error);
+    }
+    if (res.missions) setMissionFeedback(res.missions);
+    const r2 = res.duel.rounds.find((r) => r.roundNumber === 2);
+    leaveQuiz(res.duel, r2?.board ?? null);
   }
 
   function handleMemoryDone(attempt: MemoryAttemptSubmission) {

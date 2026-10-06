@@ -9,6 +9,7 @@ import {
   newspaperEventById,
   pickRandomEvent,
   type BoosterType,
+  type NewspaperEvent,
 } from "@/lib/boosters/boosters";
 
 export type NewsPayload = {
@@ -21,22 +22,87 @@ export type NewsPayload = {
 };
 
 /**
- * - `fresh`   → a new booster was just granted.
- * - `active`  → today's booster is still running; re-displayed (no new claim).
- * - `cooldown`→ already claimed today, nothing active; come back tomorrow.
+ * - `preview` → claimable edition shown; nothing written yet.
+ * - `fresh`   → booster just granted this session.
+ * - `active`  → today's booster is still running; re-display only.
+ * - `cooldown`→ already claimed today, nothing active.
  */
-export type NewsState = "fresh" | "active" | "cooldown";
+export type NewsState = "preview" | "fresh" | "active" | "cooldown";
 
 export type ClaimNewsResult =
   | { ok: true; state: NewsState; news: NewsPayload | null }
   | { ok: false; error: string };
 
+function projectedExpiry(now: Date): string {
+  return new Date(
+    now.getTime() + BOOSTER_DURATION_HOURS * 60 * 60 * 1000,
+  ).toISOString();
+}
+
+function payloadFromEvent(event: NewspaperEvent, expiresAt: string): NewsPayload {
+  return {
+    type: event.type,
+    multiplier: event.multiplier,
+    emoji: event.emoji,
+    headline: event.id,
+    expiresAt,
+  };
+}
+
 /**
- * Daily Newspaper claim. One booster per calendar day. If a booster is already
- * running we re-show it (never stack); if today's claim is spent we return a
- * cooldown so the UI can say "come back tomorrow".
+ * Open the newspaper without granting. Safe to dismiss — claim stays available.
  */
-export async function claimDailyNews(): Promise<ClaimNewsResult> {
+export async function peekDailyNews(): Promise<ClaimNewsResult> {
+  try {
+    const pair = await requireUserClub();
+    if (!pair) return { ok: false, error: "Not authenticated." };
+
+    const { club } = pair;
+    const now = new Date();
+
+    const existing = await prisma.activeBooster.findFirst({
+      where: { clubId: club.id, expiresAt: { gt: now } },
+      orderBy: { expiresAt: "desc" },
+    });
+
+    if (existing) {
+      const catalog = newspaperEventById(existing.headline);
+      return {
+        ok: true,
+        state: "active",
+        news: {
+          type: existing.type as BoosterType,
+          multiplier: existing.multiplier,
+          emoji: catalog?.emoji ?? "📰",
+          headline: existing.headline,
+          expiresAt: existing.expiresAt.toISOString(),
+        },
+      };
+    }
+
+    if (!canClaimNews(club.lastNewsClaim, now)) {
+      return { ok: true, state: "cooldown", news: null };
+    }
+
+    const event = pickRandomEvent();
+    return {
+      ok: true,
+      state: "preview",
+      news: payloadFromEvent(event, projectedExpiry(now)),
+    };
+  } catch (err) {
+    console.error("peekDailyNews failed", err);
+    return { ok: false, error: "Could not fetch today's news." };
+  }
+}
+
+/**
+ * Grant today's Newspaper booster. Pass the preview `headline` (catalog id) so
+ * the claimed boost matches what the player saw. Dismiss without calling this.
+ */
+export async function claimDailyNews(
+  eventId?: string,
+): Promise<ClaimNewsResult> {
   try {
     const result = await prisma.$transaction(
       async (tx): Promise<{ state: NewsState; news: NewsPayload | null }> => {
@@ -70,7 +136,9 @@ export async function claimDailyNews(): Promise<ClaimNewsResult> {
           return { state: "cooldown", news: null };
         }
 
-        const event = pickRandomEvent();
+        const event =
+          (eventId ? newspaperEventById(eventId) : undefined) ??
+          pickRandomEvent();
         const expiresAt = new Date(
           now.getTime() + BOOSTER_DURATION_HOURS * 60 * 60 * 1000,
         );

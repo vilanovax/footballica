@@ -97,19 +97,18 @@ async function ensureClubBatch(
   batchId: string,
   missionIds: string[],
 ): Promise<void> {
-  await db.clubMissionBatch.upsert({
-    where: { clubId_batchId: { clubId, batchId } },
-    update: {},
-    create: { clubId, batchId },
+  // skipDuplicates (ON CONFLICT DO NOTHING) — Prisma upsert races on the
+  // compound unique when two hub loads seed the same club+batch at once.
+  await db.clubMissionBatch.createMany({
+    data: [{ clubId, batchId }],
+    skipDuplicates: true,
   });
 
-  for (const missionId of missionIds) {
-    await db.clubMission.upsert({
-      where: { clubId_missionId: { clubId, missionId } },
-      update: {},
-      create: { clubId, missionId },
-    });
-  }
+  if (missionIds.length === 0) return;
+  await db.clubMission.createMany({
+    data: missionIds.map((missionId) => ({ clubId, missionId })),
+    skipDuplicates: true,
+  });
 }
 
 /**

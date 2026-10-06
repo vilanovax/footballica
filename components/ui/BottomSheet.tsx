@@ -179,8 +179,10 @@ function BottomSheetFrame({
                 {subtitle && (
                   <p
                     className={cn(
-                      "mt-0.5 font-body text-xs font-semibold",
-                      dark ? "text-arena-muted" : "text-muted-foreground",
+                      "mt-0.5 text-xs font-bold",
+                      dark
+                        ? "font-display text-arena-muted"
+                        : "font-body font-semibold text-muted-foreground",
                     )}
                   >
                     {subtitle}

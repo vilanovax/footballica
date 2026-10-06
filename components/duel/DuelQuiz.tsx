@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { QuizQuestion } from "@/lib/quiz/types";
 import { useLanguageStore } from "@/stores/languageStore";
@@ -11,6 +11,7 @@ import { haptic, HAPTIC } from "@/lib/audio/haptics";
 import { AnswerButton } from "@/components/quiz/AnswerButton";
 import { ExplanationFact } from "@/components/quiz/ExplanationFact";
 import { GoalBurst } from "@/components/quiz/GoalBurst";
+import { MissedPopup } from "@/components/quiz/MissedPopup";
 import { MatchLeaveControl } from "@/components/quiz/MatchLeaveControl";
 import { MatchPitch } from "@/components/quiz/MatchPitch";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
@@ -31,7 +32,7 @@ type DuelQuizProps = {
   pending?: boolean;
   /** Optional club stadium wash — defaults to ruined ground. */
   stadiumLevel?: number;
-  onComplete: (answers: DuelAnswerSubmission[]) => void;
+  onComplete: (answers: DuelAnswerSubmission[]) => void | Promise<void>;
 };
 
 /**
@@ -51,7 +52,7 @@ export function DuelQuiz({
   const { t, locale } = useTranslation();
   const lang = useLanguageStore((s) => s.locale);
   const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState<DuelAnswerSubmission[]>([]);
+  const answersRef = useRef<DuelAnswerSubmission[]>([]);
   const [results, setResults] = useState<(boolean | null)[]>(() =>
     Array.from({ length: questions.length }, () => null),
   );
@@ -60,21 +61,90 @@ export function DuelQuiz({
     null,
   );
   const [locked, setLocked] = useState(false);
+  const [finishing, setFinishing] = useState(false);
   const [shake, setShake] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [qStartedAt, setQStartedAt] = useState(() => performance.now());
+  const advanceTimerRef = useRef<number | null>(null);
+  const finishAttemptedRef = useRef(false);
+  const lockedRef = useRef(false);
+  const indexRef = useRef(0);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  indexRef.current = index;
+
+  useEffect(() => {
+    return () => {
+      if (advanceTimerRef.current != null) {
+        window.clearTimeout(advanceTimerRef.current);
+      }
+    };
+  }, []);
 
   const q = questions[index];
-  if (!q) return null;
-
-  const content = q.content[lang] ?? q.content.en;
   const total = questions.length;
   const goals = results.filter((r) => r === true).length;
   const isAttack = mode === "attack";
   const panelTone = isAttack ? ("amber" as const) : ("sky" as const);
+  const showFinishing =
+    finishing || (Boolean(pending) && locked && index + 1 >= total);
+
+  function answersForSubmit(): DuelAnswerSubmission[] {
+    const byId = new Map<string, DuelAnswerSubmission>();
+    for (const entry of answersRef.current) {
+      if (!byId.has(entry.questionId)) byId.set(entry.questionId, entry);
+    }
+    return questions
+      .map((item) => byId.get(item.id))
+      .filter((entry): entry is DuelAnswerSubmission => Boolean(entry));
+  }
+
+  function clearAdvanceTimer() {
+    if (advanceTimerRef.current != null) {
+      window.clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  }
+
+  function goNextQuestion() {
+    lockedRef.current = false;
+    setIndex((i) => i + 1);
+    setSelectedIndex(null);
+    setRevealResult(null);
+    setLocked(false);
+    setQStartedAt(performance.now());
+  }
+
+  function finishQuiz() {
+    if (finishAttemptedRef.current) return;
+    finishAttemptedRef.current = true;
+    lockedRef.current = true;
+    setFinishing(true);
+    setLocked(true);
+    const payload = answersForSubmit();
+    void (async () => {
+      try {
+        await onCompleteRef.current(payload);
+      } catch {
+        // Stay on finishing overlay unless the parent never left this screen.
+        finishAttemptedRef.current = false;
+        setFinishing(false);
+      }
+    })();
+  }
+
+  function advanceAfterReveal() {
+    clearAdvanceTimer();
+    if (indexRef.current + 1 >= total) {
+      finishQuiz();
+      return;
+    }
+    goNextQuestion();
+  }
 
   function handleSelect(picked: number) {
-    if (locked || pending || !q) return;
+    if (lockedRef.current || locked || pending || finishing || !q) return;
+    lockedRef.current = true;
     setLocked(true);
     const correct = picked === q.correctIndex;
     const entry: DuelAnswerSubmission = {
@@ -82,8 +152,10 @@ export function DuelQuiz({
       selectedIndex: picked,
       ms: Math.round(performance.now() - qStartedAt),
     };
-    const nextAnswers = [...answers, entry];
-    setAnswers(nextAnswers);
+    answersRef.current = [
+      ...answersRef.current.filter((a) => a.questionId !== q.id),
+      entry,
+    ];
     setSelectedIndex(picked);
     setRevealResult(correct ? "goal" : "miss");
     setResults((prev) => {
@@ -101,18 +173,22 @@ export function DuelQuiz({
       setShake(true);
     }
 
-    window.setTimeout(() => {
-      if (index + 1 >= total) {
-        onComplete(nextAnswers);
-        return;
-      }
-      setIndex((i) => i + 1);
-      setSelectedIndex(null);
-      setRevealResult(null);
-      setLocked(false);
-      setQStartedAt(performance.now());
-    }, q.explanation ? 1600 : 750);
+    const isLast = index + 1 >= total;
+    // Last miss: only Continue. Auto-finish raced the button and re-submitted
+    // as not_your_turn, which reopened this sheet.
+    if (!correct && isLast) return;
+
+    const delay = correct ? (q.explanation ? 1600 : 750) : q.explanation ? 2200 : 1400;
+    clearAdvanceTimer();
+    advanceTimerRef.current = window.setTimeout(() => {
+      advanceTimerRef.current = null;
+      advanceAfterReveal();
+    }, delay);
   }
+
+  if (!q) return null;
+
+  const content = q.content[lang] ?? q.content.en;
 
   return (
     <section className="relative -mx-4 flex min-h-0 flex-1 flex-col bg-arena px-4 text-arena-fg">
@@ -181,7 +257,6 @@ export function DuelQuiz({
               totalKicks={total}
               goals={goals}
             />
-            {/* Shot result strip — DNA sibling to fuse, no timer */}
             <div className="flex w-full items-center gap-1.5">
               {Array.from({ length: total }, (_, i) => {
                 const r = results[i];
@@ -265,7 +340,7 @@ export function DuelQuiz({
               <AnswerButton
                 label={label}
                 index={i}
-                disabled={locked || Boolean(pending)}
+                disabled={locked || Boolean(pending) || finishing}
                 reveal={
                   revealResult
                     ? {
@@ -283,37 +358,56 @@ export function DuelQuiz({
 
         <ExplanationFact
           explanation={q.explanation}
-          visible={Boolean(revealResult)}
+          visible={Boolean(revealResult) && !showFinishing}
         />
       </div>
 
       <AnimatePresence>
-        {revealResult === "goal" && <GoalBurst key="goal" fans={0} />}
+        {revealResult === "goal" && !showFinishing && (
+          <GoalBurst key="goal" fans={0} />
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
-        {revealResult === "miss" && (
+        {revealResult === "miss" && !showFinishing && (
+          <MissedPopup key="miss" onContinue={advanceAfterReveal} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showFinishing && (
           <motion.div
-            key="miss-burst"
-            className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"
+            key="finishing"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/55 px-6 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div
-              initial={{ scale: 0.4, y: 20 }}
-              animate={{ scale: [0.4, 1.15, 1], y: [20, -8, -28] }}
-              exit={{ opacity: 0, y: -50 }}
-              transition={{ duration: 0.85 }}
-              className="flex flex-col items-center gap-1"
+            <GamePanel
+              tone={panelTone}
+              className="flex max-w-xs flex-col items-center gap-2 px-5 py-4"
             >
-              <span className="text-4xl drop-shadow" aria-hidden>
-                🧤
-              </span>
-              <span className="font-display text-3xl font-black text-rose-400 drop-shadow">
-                {t("quiz.missed")}
-              </span>
-            </motion.div>
+              <motion.div
+                aria-hidden
+                className="inline-flex"
+                animate={{ y: [0, -8, 0], opacity: [0.75, 1, 0.75] }}
+                transition={{
+                  duration: 1.05,
+                  repeat: Infinity,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/memory-ball.png"
+                  alt=""
+                  className="h-12 w-12 object-contain"
+                />
+              </motion.div>
+              <p className="font-display text-sm font-black text-white">
+                {t("duel.quizFinishing")}
+              </p>
+            </GamePanel>
           </motion.div>
         )}
       </AnimatePresence>
